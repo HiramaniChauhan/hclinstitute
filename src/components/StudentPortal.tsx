@@ -22,14 +22,30 @@ import { AttendanceView } from "@/components/features/attendance/AttendanceView"
 type ActiveTab = 'dashboard' | 'tests' | 'lectures' | 'results' | 'chat' | 'leaderboard' | 'profile' | 'forum' | 'live-classes' | 'courses' | 'batches' | 'notes' | 'announcements' | 'selected-students' | 'notifications' | 'fees' | 'attendance';
 
 export const StudentPortal = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return (hash as ActiveTab) || 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Sync state with URL hash on browser back/forward
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      setActiveTab((hash as ActiveTab) || 'dashboard');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Listen for navigation events fired by child components (e.g. Dashboard)
   useEffect(() => {
     const handler = (e: Event) => {
       const tab = (e as CustomEvent).detail;
-      if (tab) setActiveTab(tab as ActiveTab);
+      if (tab) {
+        setActiveTab(tab as ActiveTab);
+        window.location.hash = tab;
+      }
     };
     window.addEventListener('navigate-to-tab', handler);
     return () => window.removeEventListener('navigate-to-tab', handler);
@@ -37,6 +53,7 @@ export const StudentPortal = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as ActiveTab);
+    window.location.hash = tab;
   };
 
   const renderContent = () => {

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { Header } from "@/components/layout/Header";
 import { AdminDashboard } from "@/components/features/admin/dashboard/AdminDashboard";
@@ -23,11 +22,24 @@ import { StudentManagement } from "@/components/features/admin/student-managemen
 type AdminActiveTab = 'dashboard' | 'profile' | 'test-creation' | 'video-management' | 'performance-tracker' | 'analytics' | 'real-time-monitoring' | 'course-management' | 'batch-management' | 'chat' | 'lecture-management' | 'notes-management' | 'announcements' | 'selected-students' | 'student-management' | 'about-management' | 'fees-management';
 
 export const AdminPortal = () => {
-  const [activeTab, setActiveTab] = useState<AdminActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<AdminActiveTab>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return (hash as AdminActiveTab) || 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      setActiveTab((hash as AdminActiveTab) || 'dashboard');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as AdminActiveTab);
+    window.location.hash = tab;
   };
 
   const renderContent = () => {
@@ -82,7 +94,7 @@ export const AdminPortal = () => {
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          onProfileClick={() => setActiveTab('profile')}
+          onProfileClick={() => handleTabChange('profile')}
         />
         <main className="p-6">
           {renderContent()}
