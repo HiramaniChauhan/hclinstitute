@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { Dashboard } from "@/components/features/dashboard/Dashboard";
@@ -24,6 +24,16 @@ type ActiveTab = 'dashboard' | 'tests' | 'lectures' | 'results' | 'chat' | 'lead
 export const StudentPortal = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Listen for navigation events fired by child components (e.g. Dashboard)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail;
+      if (tab) setActiveTab(tab as ActiveTab);
+    };
+    window.addEventListener('navigate-to-tab', handler);
+    return () => window.removeEventListener('navigate-to-tab', handler);
+  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as ActiveTab);
