@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 export const Lectures = () => {
   const [selectedSubject, setSelectedSubject] = useState("Mathematics");
-  const subjects = ["Mathematics", "Reasoning", "Computer"];
+  const [subjects, setSubjects] = useState<string[]>(["Mathematics", "Reasoning", "Computer"]);
   const [lectureStructure, setLectureStructure] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +36,12 @@ export const Lectures = () => {
       const resp = await fetch("/api/config/lecture-structure");
       const data = await resp.json();
       setLectureStructure(data);
+      if (data && Object.keys(data).length > 0) {
+        setSubjects(Object.keys(data));
+        if (!Object.keys(data).includes(selectedSubject) && Object.keys(data).length > 0) {
+          setSelectedSubject(Object.keys(data)[0]);
+        }
+      }
     } catch (err) {
       toast.error("Failed to load lectures");
     } finally {
@@ -65,6 +71,11 @@ export const Lectures = () => {
       });
       if (!resp.ok) throw new Error("No practice test found");
       const testData = await resp.json();
+
+      // Normalize ID to ensure handleCompleteTest can retrieve it reliably
+      if (!testData.id && !testData.chapterId) testData.id = testId;
+      if (!testData.chapterId) testData.chapterId = testId;
+
       setActiveTest(testData);
       setReviewMode(false);
       setShowInstructions(true);
@@ -91,6 +102,10 @@ export const Lectures = () => {
       if (!resp.ok) throw new Error("Failed to fetch test structure");
       const testData = await resp.json();
 
+      // Normalize ID
+      if (!testData.id && !testData.chapterId) testData.id = testId;
+      if (!testData.chapterId) testData.chapterId = testId;
+
       setActiveTest(testData);
       setReviewMode(true);
       setAttempts(prev => ({ ...prev, [String(testId)]: [lastResult] }));
@@ -100,7 +115,7 @@ export const Lectures = () => {
   };
 
   const handleCompleteTest = async (results: any) => {
-    const testId = (activeTest as any)?.id;
+    const testId = (activeTest as any)?.chapterId || (activeTest as any)?.testId || (activeTest as any)?.id;
     if (testId) {
       try {
         const token = localStorage.getItem('token');
@@ -154,12 +169,16 @@ export const Lectures = () => {
         </Button>
       </div>
 
-      <Tabs value={selectedSubject} onValueChange={setSelectedSubject}>
-        <TabsList className="grid w-full grid-cols-3">
-          {subjects.map((subject) => (
-            <TabsTrigger key={subject} value={subject}>{subject}</TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={selectedSubject} onValueChange={setSelectedSubject} className="w-full">
+        <div className="overflow-x-auto pb-2 mb-6">
+          <TabsList className="inline-flex w-auto min-w-full justify-start h-12 p-1">
+            {subjects.map((subject) => (
+              <TabsTrigger key={subject} value={subject} className="px-6 data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded-lg font-bold text-sm h-full">
+                {subject}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {subjects.map((subject) => (
           <TabsContent key={subject} value={subject} className="space-y-6">

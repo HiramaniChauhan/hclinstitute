@@ -85,7 +85,6 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
         setIsSubmitting(true);
 
         try {
-            const token = localStorage.getItem('token');
             const totalPossibleMarks = test.sections.reduce((acc, s) => acc + (s.questions.length * (Number(s.marksPerQuestion) || 1)), 0);
 
             let totalScore = 0;
@@ -103,31 +102,15 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
             });
 
             const results = {
-                chapterId: (test as any).chapterId,
                 score: totalScore,
                 totalMarks: totalPossibleMarks,
                 userAnswers: savedAnswers
             };
 
-            const resp = await fetch("/api/chapter-tests/results", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(results)
-            });
-
-            if (resp.ok) {
-                const savedResult = await resp.json();
-                toast.success("Practice test completed!");
-                onComplete(savedResult);
-            } else {
-                toast.error("Failed to save results");
-            }
+            onComplete(results);
         } catch (error) {
             console.error("Submission error", error);
-            toast.error("Network error during submission");
+            toast.error("Error during submission");
         } finally {
             setIsSubmitting(false);
         }
