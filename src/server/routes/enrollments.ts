@@ -67,6 +67,39 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
+// GET — Current student's allowed feature access based on enrolled courses
+router.get("/my-access", verifyToken, async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+
+        const enrollments = await getAllItems<EnrollmentData>(
+            TABLES.ENROLLMENTS,
+            "userId = :userId",
+            { ":userId": req.user.id }
+        );
+
+        const activeEnrollments = enrollments.filter(e => e.status === "active" && !!e.courseId);
+
+        if (activeEnrollments.length === 0) {
+            return res.json({ accessFeatures: [] });
+        }
+
+        const allCourses = await getAllItems<any>(TABLES.COURSES);
+        const permittedFeatures = new Set<string>();
+
+        activeEnrollments.forEach(enrollment => {
+            const course = allCourses.find(c => c.id === enrollment.courseId);
+            if (course && Array.isArray(course.accessFeatures)) {
+                course.accessFeatures.forEach((f: string) => permittedFeatures.add(f));
+            }
+        });
+
+        res.json({ accessFeatures: Array.from(permittedFeatures) });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET — All enrollments (Admin)
 router.get("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {

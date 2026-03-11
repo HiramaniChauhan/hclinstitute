@@ -13,7 +13,8 @@ import {
   Calendar,
   AlertCircle,
   Zap,
-  ChevronRight
+  ChevronRight,
+  Video
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 export const Dashboard = () => {
   const { user } = useAuth();
   const [activeTests, setActiveTests] = useState<any[]>([]);
+  const [activeLiveClasses, setActiveLiveClasses] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [loadingTests, setLoadingTests] = useState(true);
   const [bestRank, setBestRank] = useState<number | null>(null);
@@ -30,12 +32,20 @@ export const Dashboard = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const [testsResp, resultsResp] = await Promise.all([
+        const [testsResp, resultsResp, videosResp] = await Promise.all([
           fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/results/my-results', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/videos', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         const testsData = await testsResp.json();
         const resultsData = await resultsResp.json();
+        const videosData = await videosResp.json();
+
+        if (Array.isArray(videosData)) {
+          const live = videosData.filter((v: any) => v.type === 'live' && v.status === 'Live');
+          setActiveLiveClasses(live);
+        }
+
         if (Array.isArray(resultsData)) {
           setUserResults(resultsData);
           // Best rank from last 20 tests
@@ -74,6 +84,10 @@ export const Dashboard = () => {
   const navigateToTests = () => {
     // Navigate to Tests tab — fire a custom event the portal can listen to
     window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'tests' }));
+  };
+
+  const navigateToLiveClasses = () => {
+    window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'live-classes' }));
   };
 
   return (
@@ -137,6 +151,45 @@ export const Dashboard = () => {
 
       {/* Main Content */}
       <div className="space-y-6">
+        {/* Active Live Classes (Only show if there are any) */}
+        {activeLiveClasses.length > 0 && (
+          <Card className="border-red-200">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <Video className="h-5 w-5 animate-pulse" />
+                Live Classes Happening Now!
+              </CardTitle>
+              <Badge className="bg-red-500 animate-pulse text-white">
+                LIVE
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                {activeLiveClasses.map((liveClass: any) => (
+                  <div key={liveClass.id} className="p-4 rounded-xl border border-red-100 bg-red-50 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-100 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                    <h3 className="font-semibold text-gray-900 pr-6 relative z-10">{liveClass.title}</h3>
+                    {liveClass.subject && (
+                      <Badge variant="outline" className="mt-2 bg-white/50 border-red-200 text-red-700">
+                        {liveClass.subject}
+                      </Badge>
+                    )}
+                    <div className="mt-4 flex gap-2">
+                      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700" onClick={() => window.open(liveClass.url, '_blank')}>
+                        <Video size={14} className="mr-1" />
+                        Join Now
+                      </Button>
+                      <Button size="sm" variant="outline" className="w-full bg-white bg-opacity-50" onClick={navigateToLiveClasses}>
+                        Details →
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Today's Active Tests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
