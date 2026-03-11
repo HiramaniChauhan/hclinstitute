@@ -322,7 +322,12 @@ export const Chat = () => {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm truncate">{chat.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm truncate">{chat.name}</p>
+                          {chat.unread > 0 && selectedChat !== chat.id && (
+                            <span className="bg-red-500 rounded-full h-2.5 w-2.5 animate-pulse"></span>
+                          )}
+                        </div>
                         <span className="text-xs text-gray-500">{new Date(chat.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
@@ -453,12 +458,6 @@ export const Chat = () => {
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-500 transition-colors" onClick={() => handleFileClick('image')}>
                     <Image size={20} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-500 transition-colors" onClick={() => handleFileClick('voice')}>
-                    <Mic size={20} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-500 transition-colors" onClick={() => handleFileClick('video')}>
-                    <Video size={20} />
                   </Button>
                   <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-500 transition-colors" onClick={() => handleFileClick('pdf')}>
                     <FileText size={20} />
