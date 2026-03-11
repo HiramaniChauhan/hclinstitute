@@ -223,3 +223,9 @@ export const waiveFee = async (feeId: string) => {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 };
+
+export const fetchUnreadChatCount = async () => {
+    const res = await fetch(`${API_BASE}/chat/unread-count`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};

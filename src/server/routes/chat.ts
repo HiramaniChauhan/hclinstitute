@@ -54,6 +54,41 @@ router.get("/conversations", async (req: any, res: any) => {
     }
 });
 
+// GET /unread-count - Get total unread messages for current user
+router.get("/unread-count", async (req: any, res: any) => {
+    try {
+        const userRole = req.user.role; // 'admin' or 'student'
+        const userId = req.user.id;
+
+        // If student, find unread messages sent by admin to this student
+        // If admin, find unread messages sent by ANY student
+        let filterExpr = "#r = :unread";
+        let attrValues: any = { ":unread": false };
+        let attrNames: any = { "#r": "read" };
+
+        if (userRole === 'student') {
+            filterExpr += " AND studentId = :studentId AND sender = :sender";
+            attrValues[":studentId"] = userId;
+            attrValues[":sender"] = 'admin';
+        } else if (userRole === 'admin') {
+            filterExpr += " AND sender = :sender";
+            attrValues[":sender"] = 'student';
+        }
+
+        const result = await docClient.send(new ScanCommand({
+            TableName: TABLES.CHAT_MESSAGES,
+            FilterExpression: filterExpr,
+            ExpressionAttributeValues: attrValues,
+            ExpressionAttributeNames: attrNames
+        }));
+
+        res.json({ count: result.Items?.length || 0 });
+    } catch (error) {
+        console.error("Error fetching unread count:", error);
+        res.status(500).json({ error: "Failed to fetch unread count" });
+    }
+});
+
 // GET /messages/:studentId - Get messages for a conversation
 router.get("/messages/:studentId", async (req: any, res: any) => {
     const { studentId } = req.params;

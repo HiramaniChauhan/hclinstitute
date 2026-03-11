@@ -1,4 +1,5 @@
-
+import { useState, useEffect } from "react";
+import { fetchUnreadChatCount } from "@/api/portalApi";
 import {
   LayoutDashboard,
   FileEdit,
@@ -44,6 +45,24 @@ const menuItems = [
 ];
 
 export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: AdminSidebarProps) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    // Initial fetch
+    fetchUnreadChatCount()
+      .then(data => setUnreadCount(data.count))
+      .catch(err => console.error("Admin Sidebar Unread Error:", err));
+
+    // Poll every 15 seconds
+    const interval = setInterval(() => {
+      fetchUnreadChatCount()
+        .then(data => setUnreadCount(data.count))
+        .catch(err => console.error("Admin Sidebar Unread Error:", err));
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className={cn(
       "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 overflow-y-auto",
@@ -85,7 +104,12 @@ export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: Adm
               )}
               onClick={() => setActiveTab(item.id)}
             >
-              <Icon size={20} />
+              <div className="relative">
+                <Icon size={20} />
+                {item.id === 'chat' && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white"></span>
+                )}
+              </div>
               {isOpen && <span>{item.label}</span>}
             </Button>
           );
