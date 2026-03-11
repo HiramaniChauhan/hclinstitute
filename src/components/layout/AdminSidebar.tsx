@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchUnreadChatCount } from "@/api/portalApi";
+import { fetchUnreadChatCount, fetchAboutInfo } from "@/api/portalApi";
 import {
   LayoutDashboard,
   FileEdit,
@@ -46,8 +46,22 @@ const menuItems = [
 
 export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: AdminSidebarProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [aboutConfig, setAboutConfig] = useState<any>({
+    instituteName: "HCL Admin",
+    directorName: "Hiramani Chauhan",
+    instituteLogo: ""
+  });
 
   useEffect(() => {
+    // Fetch about info for logo/name
+    fetchAboutInfo()
+      .then(data => {
+        if (data) {
+          setAboutConfig((prev: any) => ({ ...prev, ...data }));
+        }
+      })
+      .catch(err => console.error("Admin Sidebar About Error:", err));
+
     // Initial fetch
     fetchUnreadChatCount()
       .then(data => setUnreadCount(data.count))
@@ -65,29 +79,32 @@ export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: Adm
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 overflow-y-auto",
+      "fixed left-0 top-0 h-full bg-[#24252a] text-gray-300 border-r border-gray-700 transition-all duration-300 z-40 overflow-y-auto",
       isOpen ? "w-64" : "w-16"
     )}>
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
           {isOpen && (
             <div className="flex items-center gap-2">
-              <img src="/placeholder.svg" alt="HCL Institute Logo" className="w-8 h-8" />
-              <h1 className="text-xl font-bold text-red-600">HCL Admin</h1>
+              {aboutConfig.instituteLogo ? (
+                <img src={aboutConfig.instituteLogo} alt={`${aboutConfig.instituteName} Logo`} className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-xs">
+                  {aboutConfig.instituteName?.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <h1 className="text-xl font-bold text-white line-clamp-1">{aboutConfig.instituteName}</h1>
             </div>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(!isOpen)}
-            className="p-1"
+            className="p-1 text-gray-300 hover:text-white hover:bg-white/10"
           >
             {isOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </Button>
         </div>
-        {isOpen && (
-          <p className="text-xs text-gray-500 mt-1">Director: Hiramani Chauhan</p>
-        )}
       </div>
 
       <nav className="p-4 space-y-2">
@@ -100,7 +117,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: Adm
               className={cn(
                 "w-full justify-start gap-3",
                 !isOpen && "justify-center px-2",
-                activeTab !== item.id && "text-gray-600 hover:text-gray-900"
+                activeTab === item.id ? "bg-red-600 text-white hover:bg-red-700" : "text-gray-300 hover:text-white hover:bg-white/10"
               )}
               onClick={() => setActiveTab(item.id)}
             >
