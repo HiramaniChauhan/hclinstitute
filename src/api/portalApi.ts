@@ -229,3 +229,34 @@ export const fetchUnreadChatCount = async () => {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 };
+
+export const fetchCourses = async () => {
+    const res = await fetch(`${API_BASE}/courses`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchSelectedStudents = async () => {
+    const res = await fetch(`${API_BASE}/selected-students`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchAboutInfo = async () => {
+    const res = await fetch(`${API_BASE}/about`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const updateAboutInfo = async (data: any) => {
+    const res = await fetch(`${API_BASE}/about`, {
+        method: "PUT",
+        headers: {
+            ...getHeaders(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};

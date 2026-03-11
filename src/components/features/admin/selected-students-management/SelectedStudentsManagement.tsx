@@ -14,6 +14,7 @@ import {
 import { Trophy, Plus, Trash2, Upload, Loader2, X, Linkedin, School, Search, Users, Star, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { ImageCropDialog } from "../course-management/ImageCropDialog";
 
 export const SelectedStudentsManagement = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -23,6 +24,8 @@ export const SelectedStudentsManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState("");
 
   const filteredSearchItems = allStudents.filter(s =>
     (s.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -162,9 +165,11 @@ export const SelectedStudentsManagement = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewStudent({ ...newStudent, photo: reader.result as string });
+        setRawImageSrc(reader.result as string);
+        setCropDialogOpen(true);
       };
       reader.readAsDataURL(file);
+      e.target.value = "";
     }
   };
 
@@ -272,6 +277,13 @@ export const SelectedStudentsManagement = () => {
                     </>
                   )}
                 </div>
+                <ImageCropDialog
+                  open={cropDialogOpen}
+                  imageSrc={rawImageSrc}
+                  aspectRatio={1}
+                  onClose={() => setCropDialogOpen(false)}
+                  onCropDone={(cropped) => setNewStudent((prev: any) => ({ ...prev, photo: cropped }))}
+                />
               </div>
               <DialogFooter>
                 <Button onClick={handleAddStudent} className="w-full">
@@ -283,113 +295,115 @@ export const SelectedStudentsManagement = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        </div>
-      ) : (
-        <>
-          {/* Success Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-              <CardContent className="p-6 text-center">
-                <Users className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">{allStudents.length}</div>
-                <p className="text-sm">Overall Selected</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
-              <CardContent className="p-6 text-center">
-                <Trophy className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">{students.length}</div>
-                <p className="text-sm">Selected in {selectedYear}</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-r from-green-400 to-green-600 text-white">
-              <CardContent className="p-6 text-center">
-                <Star className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">
-                  {students.length > 0 ? `#${Math.min(...students.map(s => s.rank))}` : "N/A"}
-                </div>
-                <p className="text-sm">Best Rank ({selectedYear})</p>
-              </CardContent>
-            </Card>
+      {
+        loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           </div>
+        ) : (
+          <>
+            {/* Success Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                <CardContent className="p-6 text-center">
+                  <Users className="h-8 w-8 mx-auto mb-2" />
+                  <div className="text-2xl font-bold">{allStudents.length}</div>
+                  <p className="text-sm">Overall Selected</p>
+                </CardContent>
+              </Card>
 
-          {/* Students List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {searchTerm.trim() ? `Search Results (${displayedStudents.length} items)` : `Selected Students - ${selectedYear}`}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {displayedStudents.length === 0 ? (
-                <div className="text-center py-10 text-gray-400">
-                  {searchTerm.trim()
-                    ? `No students found matching "${searchTerm}"`
-                    : `No records found for ${selectedYear}. Click "Add Selected Student" to create one.`}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {[...displayedStudents]
-                    .sort((a, b) => {
-                      if (searchTerm.trim()) {
-                        return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
-                      }
-                      return a.rank - b.rank;
-                    })
-                    .map((student) => (
-                      <div key={student.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="relative">
-                              <img
-                                src={student.photo || "https://images.unsplash.com/photo-1544717297-fa95b3396467?w=100&h=100&fit=crop"}
-                                alt={student.name}
-                                className="w-16 h-16 rounded-full object-cover shadow-sm ring-1 ring-gray-100"
-                              />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg text-gray-900">{student.name}</h3>
-                                <span className="text-2xl font-black text-blue-600 whitespace-nowrap">Rank-{student.rank}</span>
-                                {searchTerm.trim() && (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800 ml-1">
-                                    {student.year}
-                                  </Badge>
-                                )}
-                                {student.linkedinId && (
-                                  <a href={student.linkedinId} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                    <Linkedin size={16} />
-                                  </a>
-                                )}
+              <Card className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
+                <CardContent className="p-6 text-center">
+                  <Trophy className="h-8 w-8 mx-auto mb-2" />
+                  <div className="text-2xl font-bold">{students.length}</div>
+                  <p className="text-sm">Selected in {selectedYear}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-green-400 to-green-600 text-white">
+                <CardContent className="p-6 text-center">
+                  <Star className="h-8 w-8 mx-auto mb-2" />
+                  <div className="text-2xl font-bold">
+                    {students.length > 0 ? `#${Math.min(...students.map(s => s.rank))}` : "N/A"}
+                  </div>
+                  <p className="text-sm">Best Rank ({selectedYear})</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Students List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {searchTerm.trim() ? `Search Results (${displayedStudents.length} items)` : `Selected Students - ${selectedYear}`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {displayedStudents.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400">
+                    {searchTerm.trim()
+                      ? `No students found matching "${searchTerm}"`
+                      : `No records found for ${selectedYear}. Click "Add Selected Student" to create one.`}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {[...displayedStudents]
+                      .sort((a, b) => {
+                        if (searchTerm.trim()) {
+                          return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
+                        }
+                        return a.rank - b.rank;
+                      })
+                      .map((student) => (
+                        <div key={student.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="relative">
+                                <img
+                                  src={student.photo || "https://images.unsplash.com/photo-1544717297-fa95b3396467?w=100&h=100&fit=crop"}
+                                  alt={student.name}
+                                  className="w-16 h-16 rounded-full object-cover shadow-sm ring-1 ring-gray-100"
+                                />
                               </div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline">{student.collegeAllotted}</Badge>
-                                <Badge variant="secondary">{student.batch}</Badge>
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <h3 className="font-semibold text-lg text-gray-900">{student.name}</h3>
+                                  <span className="text-2xl font-black text-blue-600 whitespace-nowrap">Rank-{student.rank}</span>
+                                  {searchTerm.trim() && (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800 ml-1">
+                                      {student.year}
+                                    </Badge>
+                                  )}
+                                  {student.linkedinId && (
+                                    <a href={student.linkedinId} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                                      <Linkedin size={16} />
+                                    </a>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline">{student.collegeAllotted}</Badge>
+                                  <Badge variant="secondary">{student.batch}</Badge>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button size="icon" variant="ghost" className="text-blue-500 hover:bg-blue-50" onClick={() => handleEditClick(student)}>
-                              <Pencil size={18} />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteStudent(student.id)}>
-                              <Trash2 size={18} />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button size="icon" variant="ghost" className="text-blue-500 hover:bg-blue-50" onClick={() => handleEditClick(student)}>
+                                <Pencil size={18} />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteStudent(student.id)}>
+                                <Trash2 size={18} />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )
+      }
+    </div >
   );
 };

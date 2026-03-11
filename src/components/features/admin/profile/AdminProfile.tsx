@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, MapPin, Phone, Loader2, ShieldCheck, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { ImageCropDialog } from "../course-management/ImageCropDialog";
 
 export const AdminProfile = () => {
     const { getProfile, updateProfile } = useAuth();
@@ -14,6 +15,8 @@ export const AdminProfile = () => {
     const [editForm, setEditForm] = useState<any>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [rawImageSrc, setRawImageSrc] = useState("");
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -52,9 +55,11 @@ export const AdminProfile = () => {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setEditForm({ ...editForm, profileImage: reader.result as string });
+                setRawImageSrc(reader.result as string);
+                setCropDialogOpen(true);
             };
             reader.readAsDataURL(file);
+            e.target.value = "";
         }
     };
 
@@ -304,6 +309,15 @@ export const AdminProfile = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Image Crop Dialog */}
+            <ImageCropDialog
+                open={cropDialogOpen}
+                imageSrc={rawImageSrc}
+                aspectRatio={1}
+                onClose={() => setCropDialogOpen(false)}
+                onCropDone={(cropped) => setEditForm({ ...editForm, profileImage: cropped })}
+            />
         </div>
     );
 };
