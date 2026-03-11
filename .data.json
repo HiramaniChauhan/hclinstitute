@@ -773,6 +773,17 @@
       "attachmentUrl": null,
       "timestamp": "2026-03-11T22:36:10.522Z",
       "read": true
+    },
+    {
+      "id": "1773269012187",
+      "studentId": "1773267995737",
+      "sender": "student",
+      "senderId": "1773267995737",
+      "text": "vbnm",
+      "type": "text",
+      "attachmentUrl": null,
+      "timestamp": "2026-03-11T22:43:32.187Z",
+      "read": true
     }
   ],
   "Results": [
@@ -1162,7 +1173,7 @@
     {
       "id": "1773259144157fhvf9qb",
       "title": "new course",
-      "price": 999,
+      "price": 1,
       "duration": "12",
       "maxStudents": 100,
       "description": "",

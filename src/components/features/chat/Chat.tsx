@@ -21,6 +21,7 @@ export const Chat = () => {
   const [pendingAttachment, setPendingAttachment] = useState<{ file: File, base64: string, type: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [aboutConfig, setAboutConfig] = useState<any>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -101,6 +102,20 @@ export const Chat = () => {
   // Polling for real-time updates
   useEffect(() => {
     if (!selectedChat) return;
+
+    // Fetch about info for logo/name
+    const fetchLogo = async () => {
+      try {
+        const res = await fetch('/api/about');
+        if (res.ok) {
+          const data = await res.json();
+          setAboutConfig(data);
+        }
+      } catch (err) {
+        console.error("Chat Info Error:", err);
+      }
+    };
+    fetchLogo();
 
     console.log("[Chat] Selected chat changed:", selectedChat, "Fetching messages...");
     fetchMessages(selectedChat);
@@ -348,12 +363,22 @@ export const Chat = () => {
               <div className="flex items-center gap-3">
                 <Avatar>
                   <AvatarFallback className="bg-blue-100">
-                    {user?.role === 'admin' ? <User size={16} /> : <Shield size={16} />}
+                    {user?.role === 'admin' ? (
+                      <User size={16} />
+                    ) : (
+                      aboutConfig?.instituteLogo ? (
+                        <img src={aboutConfig.instituteLogo} alt="Logo" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        <Shield size={16} />
+                      )
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <CardTitle className="text-lg">
-                    {user?.role === 'admin' ? conversations.find(c => c.id === selectedChat)?.name : "Institute Support"}
+                    {user?.role === 'admin'
+                      ? conversations.find(c => c.id === selectedChat)?.name
+                      : (aboutConfig?.instituteName || "Institute Support")}
                   </CardTitle>
                   <p className="text-sm text-gray-600">
                     {user?.role === 'admin' ? "Student" : "Active"}
@@ -475,7 +500,9 @@ export const Chat = () => {
                 </Button>
               </div>
               <p className="text-[10px] text-gray-500 mt-2 text-center italic">
-                {user?.role === 'admin' ? "Respond securely to student requests." : "One shared support line for all admins. Messages are saved securely."}
+                {user?.role === 'admin'
+                  ? "Respond securely to student requests."
+                  : `One shared support line for all admins. Messages are saved securely with ${aboutConfig?.instituteName || "the institute"}.`}
               </p>
             </div>
           </div>
