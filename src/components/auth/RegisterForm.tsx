@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
 import { Fingerprint, FileText, Chrome, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface RegisterFormProps {
   onBack: () => void;
@@ -89,16 +90,11 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const onGoogleSignupSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) return;
     setLoading(true);
-    const mockGoogleUser = {
-      email: email || "google-user@example.com",
-      name: "Google User",
-      sub: "google_" + Date.now(),
-    };
-
     try {
-      const googleUser = await googleLogin(mockGoogleUser, 'student', undefined, true);
+      const googleUser = await googleLogin(credentialResponse.credential, 'student', undefined, true);
       if (googleUser) {
         // Pre-fill form data
         const names = googleUser.name.split(' ');
@@ -114,9 +110,14 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
       }
     } catch (error) {
       console.error('Google signup error:', error);
+      toast({ title: "Google Sign-up Failed", description: "Google authentication failed", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const onGoogleSignupError = () => {
+    toast({ title: "Google Sign-up Failed", description: "Google authentication failed", variant: "destructive" });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -217,9 +218,15 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Or continue with</span></div>
               </div>
 
-              <Button variant="outline" className="w-full gap-2" onClick={handleGoogleSignup} disabled={loading} type="button">
-                <Chrome className="w-4 h-4" /> Google
-              </Button>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={onGoogleSignupSuccess}
+                  onError={onGoogleSignupError}
+                  theme="outline"
+                  size="large"
+                  width="100%"
+                />
+              </div>
 
               <div className="mt-6 text-center text-sm space-y-2">
                 <p className="text-gray-600">

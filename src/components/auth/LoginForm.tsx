@@ -11,6 +11,7 @@ interface LoginFormProps {
   onBack: () => void;
 }
 import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { GoogleLogin } from '@react-oauth/google';
 
 export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
   const [email, setEmail] = useState('');
@@ -37,18 +38,24 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const onGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) return;
     setLoading(true);
-    const mockGoogleUser = {
-      email: email || "google-user@example.com",
-      name: "Google User",
-      sub: "google_" + Date.now(),
-    };
-    const success = await googleLogin(mockGoogleUser, 'student');
-    setLoading(false);
-    if (success) {
-      toast({ title: "Login Successful", description: "Signed in with Google" });
+    try {
+      const success = await googleLogin(credentialResponse.credential, 'student');
+      if (success) {
+        toast({ title: "Login Successful", description: "Signed in with Google" });
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      toast({ title: "Login Failed", description: "Google authentication failed", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const onGoogleError = () => {
+    toast({ title: "Login Failed", description: "Google authentication failed", variant: "destructive" });
   };
 
   return (
@@ -124,9 +131,16 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
             <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Or continue with</span></div>
           </div>
 
-          <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={loading}>
-            <Chrome className="w-4 h-4" /> Google
-          </Button>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={onGoogleSuccess}
+              onError={onGoogleError}
+              useOneTap
+              theme="outline"
+              size="large"
+              width="100%"
+            />
+          </div>
 
           <div className="mt-6 text-center text-sm space-y-2">
             <p className="text-gray-600">

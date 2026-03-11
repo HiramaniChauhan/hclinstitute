@@ -19,7 +19,7 @@ interface AuthContextType {
   logout: () => void;
   sendOtp: (email: string) => Promise<boolean>;
   verifyOtp: (email: string, otp: string) => Promise<boolean>;
-  googleLogin: (userInfo: any, role: 'student' | 'admin', adminSecret?: string, isSignup?: boolean) => Promise<any>;
+  googleLogin: (credential: string, role: 'student' | 'admin', adminSecret?: string, isSignup?: boolean) => Promise<any>;
   sendAdminSecretOtp: (email: string) => Promise<boolean>;
   updateAdminSecret: (email: string, otp: string, newSecret: string) => Promise<boolean>;
   requestPasswordReset: (email: string, role: string) => Promise<boolean>;
@@ -283,12 +283,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const googleLogin = async (userInfo: any, role: 'student' | 'admin', adminSecret?: string, isSignup?: boolean) => {
+  const googleLogin = async (credential: string, role: 'student' | 'admin', adminSecret?: string, isSignup?: boolean) => {
     try {
       const response = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...userInfo, role, adminSecret, isSignup }),
+        body: JSON.stringify({ credential, role, adminSecret, isSignup }),
       });
 
       const data = await response.json();
