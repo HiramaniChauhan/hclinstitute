@@ -5,6 +5,7 @@ import { ADMIN_SECRET } from "./constants";
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import { docClient, TABLES, isMemory } from "./db-wrapper";
@@ -502,19 +503,33 @@ app.post("/api/auth/login", async (req, res) => {
     }
 });
 
-// Google Login Mock
-app.post("/api/auth/google", async (req, res) => {
-    const { email, name, sub, role, adminSecret, isSignup } = req.body;
-    console.log(`[Google Auth] Attempt: ${email} as ${role} (isSignup: ${isSignup})`);
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-    if (role === 'admin') {
-        const isValidAdmin = await verifyAdminSecret(adminSecret);
-        if (!isValidAdmin) {
-            return res.status(401).json({ error: "Invalid Admin Secret Code" });
-        }
-    }
+// Google Login Secure Verification
+app.post("/api/auth/google", async (req, res) => {
+    const { credential, role, adminSecret, isSignup } = req.body;
 
     try {
+        // Verify the Google ID Token
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload) {
+            return res.status(401).json({ error: "Invalid Google token" });
+        }
+
+        const { email, name, sub, picture } = payload;
+        console.log(`[Google Auth] Verified: ${email} as ${role} (isSignup: ${isSignup})`);
+
+        if (role === 'admin') {
+            const isValidAdmin = await verifyAdminSecret(adminSecret);
+            if (!isValidAdmin) {
+                return res.status(401).json({ error: "Invalid Admin Secret Code" });
+            }
+        }
+
         const scanResult = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
             FilterExpression: "email = :email",
@@ -529,7 +544,7 @@ app.post("/api/auth/google", async (req, res) => {
             if (isSignup) {
                 console.log(`[Google Auth] User not found, returning profile for signup: ${email}`);
                 return res.json({
-                    user: { email, name, sub, role: requestedRole }
+                    user: { email, name, sub: sub, role: requestedRole }
                 });
             }
 

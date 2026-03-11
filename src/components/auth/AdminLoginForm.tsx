@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
-import { ShieldCheck, ArrowLeft, KeySquare, Eye, EyeOff, Lock } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, KeySquare, Eye, EyeOff, Lock, Chrome } from 'lucide-react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface AdminLoginFormProps {
     onRegisterClick: () => void;
@@ -44,9 +45,38 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
         setStep(2);
     };
 
-    const handleStep1Google = () => {
-        setAuthMethod('google');
-        setStep(2);
+    const onGoogleLoginSuccess = async (credentialResponse: any) => {
+        if (!credentialResponse.credential) return;
+        setLoading(true);
+        try {
+            // Store the credential for later use in handleFinalLogin
+            // We need to decode it partially to get the email, or just send it to backend to get the email
+            // For now, let's just get the user info from the token if possible or fetch it
+            const response = await fetch('/api/auth/google', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: credentialResponse.credential, role: 'admin', isSignup: true }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setEmail(data.user.email);
+                setAuthMethod('google');
+                setStep(2);
+                // Store the credential to use in final step
+                (window as any).googleCredential = credentialResponse.credential;
+            } else {
+                toast({ title: "Auth Failed", description: data.error, variant: "destructive" });
+            }
+        } catch (error) {
+            console.error('Admin Google login error:', error);
+            toast({ title: "Google Auth Failed", description: "Connection error", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onGoogleLoginError = () => {
+        toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
     };
 
     const handleFinalLogin = async (e: React.FormEvent) => {
@@ -66,14 +96,11 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
                     // toast is handled in AuthProvider normally, but keeping as original
                 }
             } else {
-                const mockGoogleUser = {
-                    email: email || "admin-google@example.com",
-                    name: "Admin User",
-                    sub: "google_admin_" + Date.now(),
-                };
-                const success = await googleLogin(mockGoogleUser, 'admin', adminSecret);
+                // Use the stored google credential
+                const credential = (window as any).googleCredential;
+                const success = await googleLogin(credential, 'admin', adminSecret);
                 if (success) {
-                    // toast is handled in AuthProvider
+                    delete (window as any).googleCredential;
                 }
             }
         } catch (error) {
@@ -241,14 +268,15 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
                                 role="admin"
                             />
 
-                            <div className="relative my-4">
-                                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-purple-200" /></div>
-                                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-purple-600">Or continue with</span></div>
+                            <div className="flex justify-center">
+                                <GoogleLogin
+                                    onSuccess={onGoogleLoginSuccess}
+                                    onError={onGoogleLoginError}
+                                    theme="outline"
+                                    size="large"
+                                    width="100%"
+                                />
                             </div>
-
-                            <Button variant="outline" className="w-full gap-2 border-purple-200 text-purple-700 hover:bg-purple-50" onClick={handleStep1Google}>
-                                Google Authentication
-                            </Button>
                         </div>
                     ) : (
                         <div className="space-y-4">

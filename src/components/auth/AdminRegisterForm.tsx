@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
 import { ArrowLeft, KeySquare, Eye, EyeOff, Chrome } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface AdminRegisterFormProps {
     onBack: () => void;
@@ -76,15 +77,11 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
         }
     };
 
-    const handleStep1Google = async () => {
+    const onGoogleSignupSuccess = async (credentialResponse: any) => {
+        if (!credentialResponse.credential) return;
         setLoading(true);
         try {
-            const mockGoogleUser = {
-                email: formData.email || "admin-google@example.com",
-                name: (formData.firstName + " " + formData.lastName).trim() || "Admin Google User",
-                sub: "google_admin_" + Date.now(),
-            };
-            const googleUser = await googleLogin(mockGoogleUser, 'admin', undefined, true);
+            const googleUser = await googleLogin(credentialResponse.credential, 'admin', undefined, true);
             if (googleUser) {
                 const names = googleUser.name.split(' ');
                 setFormData(prev => ({
@@ -94,16 +91,21 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                     lastName: names.slice(1).join(' ') || '',
                 }));
                 setMockGoogleEmail(googleUser.email);
+                (window as any).googleCredential = credentialResponse.credential;
                 setAuthMethod('google');
                 setStep(3); // Advance to Secret Key
                 toast({ title: "Google Authenticated", description: "Please provide the Admin Secret Code to complete setup." });
             }
         } catch (error) {
             console.error('Admin Google signup error:', error);
+            toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
         } finally {
-            setLoading(true); // Wait for next action
             setLoading(false);
         }
+    };
+
+    const onGoogleSignupError = () => {
+        toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
     };
 
     const handleFinalSubmit = async (e: React.FormEvent) => {
@@ -129,14 +131,11 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                 toast({ title: "Success", description: "Admin registration request submitted." });
                 onSuccess();
             } else {
-                const mockGoogleUser = {
-                    email: mockGoogleEmail,
-                    name: "Admin Google User",
-                    sub: "google_admin_reg_" + Date.now(),
-                };
-                const success = await googleLogin(mockGoogleUser, 'admin', formData.adminCode);
+                const credential = (window as any).googleCredential;
+                const success = await googleLogin(credential, 'admin', formData.adminCode);
                 if (success) {
                     toast({ title: "Google Admin Signup Successful" });
+                    delete (window as any).googleCredential;
                     onSuccess();
                 }
             }
@@ -294,14 +293,15 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                         </Button>
                     </form>
 
-                    <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div>
-                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">Or sign up with</span></div>
+                    <div className="flex justify-center">
+                        <GoogleLogin
+                            onSuccess={onGoogleSignupSuccess}
+                            onError={onGoogleSignupError}
+                            theme="outline"
+                            size="large"
+                            width="100%"
+                        />
                     </div>
-
-                    <Button variant="outline" className="w-full gap-2 border-gray-300 hover:bg-gray-50 text-gray-700" onClick={handleStep1Google} disabled={loading}>
-                        <Chrome className="w-4 h-4" /> Google Authentication
-                    </Button>
 
                     <div className="text-center mt-4 text-sm">
                         Already have an account?{" "}
