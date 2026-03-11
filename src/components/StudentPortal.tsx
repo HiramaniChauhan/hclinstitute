@@ -30,23 +30,32 @@ export const StudentPortal = () => {
   const [accessFeatures, setAccessFeatures] = useState<string[]>([]);
   const restrictedTabs = ['tests', 'lectures', 'live-classes', 'notes'];
 
-  useEffect(() => {
-    const fetchAccessFeatures = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch('/api/enrollments/my-access', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAccessFeatures(data.accessFeatures || []);
-        }
-      } catch (err) {
-        console.error("Error fetching access features", err);
+  const fetchAccessFeatures = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAccessFeatures(data.accessFeatures || []);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching access features", err);
+    }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
     fetchAccessFeatures();
+  }, []);
+
+  // Re-fetch when a course enrollment happens (fired by PaymentModal)
+  useEffect(() => {
+    const handleEnrollmentUpdated = () => fetchAccessFeatures();
+    window.addEventListener('enrollment-updated', handleEnrollmentUpdated);
+    return () => window.removeEventListener('enrollment-updated', handleEnrollmentUpdated);
   }, []);
 
   const enforceAccess = (tab: ActiveTab) => {

@@ -1,185 +1,158 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Megaphone, Calendar, Pin, Clock, Users } from "lucide-react";
+import { Megaphone, Calendar, Pin, Users, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export const Announcements = () => {
-  const announcements = [
-    {
-      id: 1,
-      title: "New Batch Starting - Computer Science Fundamentals",
-      content: "We are excited to announce a new batch for Computer Science Fundamentals starting from February 1st, 2024. Limited seats available. Register now!",
-      priority: "high",
-      author: "Hiramani Chauhan",
-      date: "2024-01-20",
-      pinned: true,
-      category: "Admission",
-      targetBatches: ["All Batches"]
-    },
-    {
-      id: 2,
-      title: "Test of the Day Schedule Update",
-      content: "Starting next week, Test of the Day will be conducted at 10:00 AM instead of 9:00 AM. Please note the timing change.",
-      priority: "medium",
-      author: "Admin Team",
-      date: "2024-01-19",
-      pinned: false,
-      category: "Schedule",
-      targetBatches: ["Morning Batch", "Evening Batch"]
-    },
-    {
-      id: 3,
-      title: "Holiday Notice - Republic Day",
-      content: "The institute will remain closed on January 26th, 2024 on account of Republic Day. Regular classes will resume from January 27th.",
-      priority: "medium",
-      author: "Admin Team",
-      date: "2024-01-18",
-      pinned: false,
-      category: "Holiday",
-      targetBatches: ["All Batches"]
-    },
-    {
-      id: 4,
-      title: "New Study Material Available",
-      content: "Latest study material for Mathematics - Advanced Calculus has been uploaded to the Notes section. Download and start studying!",
-      priority: "low",
-      author: "Dr. Rajesh Kumar",
-      date: "2024-01-17",
-      pinned: false,
-      category: "Study Material",
-      targetBatches: ["Morning Batch"]
-    },
-    {
-      id: 5,
-      title: "Monthly Test Results Published",
-      content: "January monthly test results are now available in the Results section. Check your performance and improvement areas.",
-      priority: "high",
-      author: "Result Team",
-      date: "2024-01-16",
-      pinned: true,
-      category: "Results",
-      targetBatches: ["All Batches"]
-    }
-  ];
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("/api/announcements/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          setAnnouncements(await res.json());
+        } else {
+          toast.error("Failed to load announcements");
+        }
+      } catch {
+        toast.error("Failed to load announcements");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high": return "bg-red-100 text-red-800 border-red-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+    if (priority === "high") return "bg-red-100 text-red-800 border-red-200";
+    if (priority === "medium") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    return "bg-green-100 text-green-800 border-green-200";
   };
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Admission": return "bg-blue-500";
-      case "Schedule": return "bg-purple-500";
-      case "Holiday": return "bg-orange-500";
-      case "Study Material": return "bg-green-500";
-      case "Results": return "bg-red-500";
-      default: return "bg-gray-500";
-    }
+    const map: Record<string, string> = {
+      "Admission": "bg-blue-500",
+      "Schedule": "bg-purple-500",
+      "Holiday": "bg-orange-500",
+      "Study Material": "bg-green-500",
+      "Results": "bg-red-500",
+      "Exam": "bg-indigo-500",
+    };
+    return map[category] || "bg-gray-500";
   };
+
+  const pinned = announcements.filter(a => a.pinned);
+  const rest = announcements.filter(a => !a.pinned);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+      </div>
+    );
+  }
+
+  if (announcements.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Megaphone className="h-8 w-8" />
+          Announcements
+        </h1>
+        <Card>
+          <CardContent className="py-16 text-center text-gray-400">
+            <Megaphone className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p className="text-lg">No announcements yet</p>
+            <p className="text-sm mt-1">Check back later for updates from your institute</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const AnnouncementCard = ({ a, highlighted = false }: { a: any; highlighted?: boolean }) => (
+    <div className={`p-4 rounded-lg border ${highlighted ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2 flex-1">
+          {a.pinned && <Pin className="h-4 w-4 text-blue-500 shrink-0" />}
+          <Megaphone className={`h-4 w-4 shrink-0 ${highlighted ? "text-blue-600" : "text-gray-500"}`} />
+          <h3 className="font-semibold text-base">{a.title}</h3>
+        </div>
+        <Badge className={`${getPriorityColor(a.priority)} ml-2 shrink-0`}>
+          {a.priority.toUpperCase()}
+        </Badge>
+      </div>
+
+      <p className="text-gray-700 mb-3 text-sm leading-relaxed">{a.content}</p>
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <Calendar size={12} />
+            {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
+          <span>by {a.author}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {a.category && (
+            <Badge variant="secondary" className={`${getCategoryColor(a.category)} text-white text-xs`}>
+              {a.category}
+            </Badge>
+          )}
+          {a.targetCourseIds && a.targetCourseIds.length > 0 && !a.targetCourseIds.includes("all") && (
+            <span className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              <Users size={10} />
+              Course-specific
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Announcements</h1>
-        <Button variant="outline">Mark All as Read</Button>
-      </div>
+      <h1 className="text-3xl font-bold flex items-center gap-2">
+        <Megaphone className="h-8 w-8" />
+        Announcements
+      </h1>
 
-      {/* Pinned Announcements */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Pin className="h-5 w-5 text-blue-500" />
-            Pinned Announcements
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {announcements.filter(ann => ann.pinned).map((announcement) => (
-              <div key={announcement.id} className="p-4 bg-blue-50 rounded-lg border">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Megaphone className="h-5 w-5 text-blue-600" />
-                    <h3 className="font-semibold text-lg">{announcement.title}</h3>
-                  </div>
-                  <Badge className={getPriorityColor(announcement.priority)}>
-                    {announcement.priority.toUpperCase()}
-                  </Badge>
-                </div>
-                <p className="text-gray-700 mb-3">{announcement.content}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {announcement.date}
-                    </span>
-                    <span>by {announcement.author}</span>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${getCategoryColor(announcement.category)} text-white`}
-                    >
-                      {announcement.category}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={14} className="text-gray-500" />
-                    <span className="text-sm text-gray-600">{announcement.targetBatches.join(", ")}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Pinned */}
+      {pinned.length > 0 && (
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Pin className="h-4 w-4 text-blue-500" />
+              Pinned Announcements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pinned.map(a => <AnnouncementCard key={a.id} a={a} highlighted />)}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* All Announcements */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Announcements</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {announcements.filter(ann => !ann.pinned).map((announcement) => (
-              <div key={announcement.id} className="p-4 border rounded-lg hover:bg-gray-50">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Megaphone className="h-4 w-4 text-gray-600" />
-                    <h3 className="font-semibold">{announcement.title}</h3>
-                  </div>
-                  <Badge className={getPriorityColor(announcement.priority)}>
-                    {announcement.priority.toUpperCase()}
-                  </Badge>
-                </div>
-                <p className="text-gray-700 mb-3">{announcement.content}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {announcement.date}
-                    </span>
-                    <span>by {announcement.author}</span>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${getCategoryColor(announcement.category)} text-white`}
-                    >
-                      {announcement.category}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={14} className="text-gray-500" />
-                    <span className="text-sm text-gray-600">{announcement.targetBatches.join(", ")}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Rest */}
+      {rest.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent Announcements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {rest.map(a => <AnnouncementCard key={a.id} a={a} />)}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -6,12 +6,23 @@ import { Response } from "express";
 
 const router = Router();
 
+// Duration is stored as a plain integer = number of months
+// e.g. 6 = 6 months, 12 = 1 year, 24 = 2 years
+const parseDuration = (duration: string | number, fromDate: Date = new Date()): string | null => {
+    const months = parseInt(String(duration));
+    if (isNaN(months) || months <= 0) return null;
+    const date = new Date(fromDate);
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString();
+};
+
 interface EnrollmentData {
     enrollmentId: string;
     userId: string;
     batchId: string;
     courseId?: string;
     enrolledAt: string;
+    expiresAt?: string | null;
     enrolledBy?: string;
     status: "active" | "completed" | "dropped";
 }
@@ -51,16 +62,57 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
+// POST — Direct course enrollment (for testing / free course bypass)
+// TODO: Remove or restrict this endpoint before going to production
+router.post("/enroll-course", verifyToken, async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+
+        const { courseId } = req.body;
+        if (!courseId) return res.status(400).json({ error: "courseId is required" });
+
+        // Prevent duplicate enrollments
+        const existing = await getAllItems<EnrollmentData>(
+            TABLES.ENROLLMENTS,
+            "userId = :userId",
+            { ":userId": req.user.id }
+        );
+        const alreadyEnrolled = existing.find(e => e.courseId === courseId && e.status === "active");
+        if (alreadyEnrolled) {
+            return res.status(409).json({ error: "Already enrolled in this course" });
+        }
+
+        // Fetch the course for duration
+        const allCourses = await getAllItems<any>(TABLES.COURSES);
+        const enrolledCourse = allCourses.find((c: any) => c.id === courseId);
+        const enrolledAt = new Date().toISOString();
+        const expiresAt = enrolledCourse ? parseDuration(enrolledCourse.duration) : null;
+
+        const enrollment: EnrollmentData = {
+            enrollmentId: generateId(),
+            userId: req.user.id,
+            batchId: "direct",
+            courseId,
+            enrolledAt,
+            expiresAt,
+            status: "active",
+        };
+
+        const created = await createItem<EnrollmentData>(TABLES.ENROLLMENTS, enrollment);
+        res.status(201).json(created);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET — Current student's own enrollments
 router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const enrollments = await getAllItems<EnrollmentData>(
-            TABLES.ENROLLMENTS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        // Fetch all and filter in JS — mock DB ignores FilterExpression
+        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        const enrollments = all.filter(e => e.userId === req.user!.id);
         res.json(enrollments);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -72,13 +124,16 @@ router.get("/my-access", verifyToken, async (req: AuthRequest, res: Response) =>
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const enrollments = await getAllItems<EnrollmentData>(
-            TABLES.ENROLLMENTS,
-            "userId = :userId",
-            { ":userId": req.user.id }
+        // Fetch all and filter in JS — mock DB ignores FilterExpression
+        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        const now = new Date();
+        const activeEnrollments = all.filter(e =>
+            e.userId === req.user!.id &&
+            e.status === "active" &&
+            !!e.courseId &&
+            // Exclude expired enrollments (if expiresAt is set and has passed)
+            (!e.expiresAt || new Date(e.expiresAt) > now)
         );
-
-        const activeEnrollments = enrollments.filter(e => e.status === "active" && !!e.courseId);
 
         if (activeEnrollments.length === 0) {
             return res.json({ accessFeatures: [] });
@@ -88,7 +143,7 @@ router.get("/my-access", verifyToken, async (req: AuthRequest, res: Response) =>
         const permittedFeatures = new Set<string>();
 
         activeEnrollments.forEach(enrollment => {
-            const course = allCourses.find(c => c.id === enrollment.courseId);
+            const course = allCourses.find((c: any) => c.id === enrollment.courseId);
             if (course && Array.isArray(course.accessFeatures)) {
                 course.accessFeatures.forEach((f: string) => permittedFeatures.add(f));
             }
