@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { Dashboard } from "@/components/features/dashboard/Dashboard";
@@ -27,33 +27,79 @@ export const StudentPortal = () => {
     return (hash as ActiveTab) || 'dashboard';
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [accessFeatures, setAccessFeatures] = useState<string[]>([]);
+  const restrictedTabs = ['tests', 'lectures', 'live-classes', 'notes'];
+
+  useEffect(() => {
+    const fetchAccessFeatures = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch('/api/enrollments/my-access', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAccessFeatures(data.accessFeatures || []);
+        }
+      } catch (err) {
+        console.error("Error fetching access features", err);
+      }
+    };
+    fetchAccessFeatures();
+  }, []);
+
+  const enforceAccess = (tab: ActiveTab) => {
+    // Mapping URL tab names to backend 'accessFeatures' strings
+    const tabFeatureMap: Record<string, string> = {
+      'tests': 'Tests',
+      'lectures': 'Lectures',
+      'live-classes': 'Live Classes',
+      'notes': 'Notes'
+    };
+
+    if (restrictedTabs.includes(tab)) {
+      const requiredFeature = tabFeatureMap[tab];
+      if (!accessFeatures.includes(requiredFeature)) {
+        toast.error(`You need to enroll in a course to access ${requiredFeature}.`);
+        return 'courses';
+      }
+    }
+    return tab;
+  };
 
   // Sync state with URL hash on browser back/forward
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      setActiveTab((hash as ActiveTab) || 'dashboard');
+      const hash = window.location.hash.replace('#', '') as ActiveTab;
+      const safeTab = enforceAccess(hash || 'dashboard');
+      if (safeTab !== hash) {
+        window.location.hash = safeTab;
+      }
+      setActiveTab(safeTab);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [accessFeatures]);
 
   // Listen for navigation events fired by child components (e.g. Dashboard)
   useEffect(() => {
     const handler = (e: Event) => {
-      const tab = (e as CustomEvent).detail;
+      const tab = (e as CustomEvent).detail as ActiveTab;
       if (tab) {
-        setActiveTab(tab as ActiveTab);
-        window.location.hash = tab;
+        const safeTab = enforceAccess(tab);
+        setActiveTab(safeTab);
+        window.location.hash = safeTab;
       }
     };
     window.addEventListener('navigate-to-tab', handler);
     return () => window.removeEventListener('navigate-to-tab', handler);
-  }, []);
+  }, [accessFeatures]);
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab as ActiveTab);
-    window.location.hash = tab;
+    const safeTab = enforceAccess(tab as ActiveTab);
+    setActiveTab(safeTab);
+    window.location.hash = safeTab;
   };
 
   const renderContent = () => {

@@ -40,9 +40,6 @@ const menuItems = [
   { id: 'student-management', label: 'Student Management', icon: Users },
   { id: 'selected-students', label: 'Selected Students', icon: Trophy },
   { id: 'about-management', label: 'About Management', icon: Info },
-  { id: 'performance-tracker', label: 'Performance Tracker', icon: BarChart3 },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-  { id: 'real-time-monitoring', label: 'Real-time Monitoring', icon: Monitor },
   { id: 'chat', label: 'Student Chat', icon: MessageCircle },
 ];
 
@@ -84,7 +81,7 @@ export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: Adm
               className={cn(
                 "w-full justify-start gap-3",
                 !isOpen && "justify-center px-2",
-                activeTab !== item.id && "dark:text-gray-300"
+                activeTab !== item.id && "text-gray-600 hover:text-gray-900"
               )}
               onClick={() => setActiveTab(item.id)}
             >

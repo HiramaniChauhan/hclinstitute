@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Users, IndianRupee, Plus, Edit, Trash2 } from "lucide-react";
-import { dummyCourses, Course } from "@/data/courseData";
+import { BookOpen, Users, IndianRupee, Plus, Edit, Trash2, Upload, ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -18,24 +18,49 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { ImageCropDialog } from "./ImageCropDialog";
 
 export const CourseManagement = () => {
-  const [courses, setCourses] = useState<Course[]>(dummyCourses);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingCourse, setEditingCourse] = useState<any | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     duration: "",
-    level: "",
-    instructor: "",
     maxStudents: "",
     description: "",
-    subjects: "",
+    profilePicData: "", // Base64 string for image
     accessFeatures: [] as string[]
   });
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/courses', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data || []);
+      }
+    } catch (error) {
+      console.error("Fetch courses error:", error);
+      toast.error("Failed to load courses");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleAccess = (feature: string) => {
     setFormData(prev => ({
@@ -46,69 +71,113 @@ export const CourseManagement = () => {
     }));
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size exceeds 5MB limit");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setRawImageSrc(event.target?.result as string);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
   const handleCreateOpen = () => {
     setEditingCourse(null);
     setFormData({
       title: "",
       price: "",
       duration: "",
-      level: "",
-      instructor: "",
       maxStudents: "",
       description: "",
-      subjects: "",
+      profilePicData: "",
       accessFeatures: []
     });
     setOpen(true);
   };
 
-  const handleEditOpen = (course: Course) => {
+  const handleEditOpen = (course: any) => {
     setEditingCourse(course);
     setFormData({
-      title: course.title,
-      price: course.price.toString(),
-      duration: course.duration,
-      level: course.level,
-      instructor: "Dr. Rajesh Kumar", // Mock data doesn't have instructor, using default
-      maxStudents: course.maxStudents.toString(),
-      description: course.description,
-      subjects: course.subjects.join(", "),
-      accessFeatures: ['Lectures', 'Tests', 'Notes'] // Mock default access
+      title: course.title || "",
+      price: (course.price || 0).toString(),
+      duration: course.duration || "",
+      maxStudents: (course.maxStudents || 0).toString(),
+      description: course.description || "",
+      profilePicData: course.profilePicData || "",
+      accessFeatures: course.accessFeatures || ['Lectures', 'Tests', 'Notes']
     });
     setOpen(true);
   };
 
-  const handleSubmit = () => {
-    if (editingCourse) {
-      // Update logic
-      setCourses(prev => prev.map(c => c.id === editingCourse.id ? {
-        ...c,
-        title: formData.title,
-        price: Number(formData.price),
-        duration: formData.duration,
-        level: formData.level,
-        maxStudents: Number(formData.maxStudents),
-        description: formData.description,
-        subjects: formData.subjects.split(",").map(s => s.trim())
-      } : c));
-      console.log("Updated course:", { ...editingCourse, ...formData });
-    } else {
-      // Create logic
-      const newCourse = {
-        id: courses.length + 1,
-        title: formData.title,
-        price: Number(formData.price),
-        duration: formData.duration,
-        level: formData.level,
-        maxStudents: Number(formData.maxStudents),
-        description: formData.description,
-        subjects: formData.subjects.split(",").map(s => s.trim()),
-        enrolledStudents: 0
-      };
-      setCourses(prev => [...prev, newCourse]);
-      console.log("Created course:", newCourse);
+  const handleDelete = async (courseId: string) => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/courses/${courseId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        toast.success("Course deleted successfully");
+        fetchCourses();
+      } else {
+        toast.error("Failed to delete course");
+      }
+    } catch (error) {
+      console.error("Delete error", error);
     }
-    setOpen(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.price || !formData.duration) {
+      toast.error("Please fill in course title, price, and duration");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const payload = {
+        title: formData.title,
+        price: Number(formData.price),
+        duration: formData.duration,
+        maxStudents: Number(formData.maxStudents) || 100,
+        description: formData.description,
+        accessFeatures: formData.accessFeatures,
+        profilePicData: formData.profilePicData,
+      };
+
+      const url = editingCourse ? `/api/courses/${editingCourse.id}` : '/api/courses';
+      const method = editingCourse ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        toast.success(`Course ${editingCourse ? 'updated' : 'created'} successfully`);
+        setOpen(false);
+        fetchCourses();
+      } else {
+        toast.error("Failed to save course");
+      }
+    } catch (error) {
+      console.error("Save course error", error);
+      toast.error("Network error");
+    }
   };
 
   return (
@@ -158,30 +227,6 @@ export const CourseManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Level</Label>
-                  <Select
-                    value={formData.level}
-                    onValueChange={(val) => setFormData({ ...formData, level: val })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Instructor</Label>
-                  <Input
-                    value={formData.instructor}
-                    onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
-                    placeholder="Dr. Rajesh Kumar"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label>Max Students</Label>
                   <Input
                     type="number"
@@ -201,13 +246,55 @@ export const CourseManagement = () => {
                 />
               </div>
 
+              {/* Photo Upload */}
               <div className="space-y-2">
-                <Label>Subjects (comma separated)</Label>
-                <Input
-                  value={formData.subjects}
-                  onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
-                  placeholder="Mathematics, Reasoning, Computer"
+                <Label>Course Cover Photo</Label>
+                <div
+                  className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {formData.profilePicData ? (
+                    <div className="w-full flex flex-col items-center gap-2">
+                      <img
+                        src={formData.profilePicData}
+                        alt="Course cover preview"
+                        className="w-full max-h-48 object-cover rounded-lg shadow"
+                      />
+                      <p className="text-xs text-gray-500">Click to change photo</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-4 text-gray-400">
+                      <ImageIcon size={40} className="opacity-50" />
+                      <p className="text-sm font-medium text-gray-500">Click to upload a cover photo</p>
+                      <p className="text-xs text-gray-400">JPG, PNG, WEBP — max 5MB</p>
+                    </div>
+                  )}
+                </div>
+                {/* Crop Dialog */}
+                <ImageCropDialog
+                  open={cropDialogOpen}
+                  imageSrc={rawImageSrc}
+                  onClose={() => setCropDialogOpen(false)}
+                  onCropDone={(cropped) => setFormData(prev => ({ ...prev, profilePicData: cropped }))}
                 />
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                {formData.profilePicData && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => setFormData(prev => ({ ...prev, profilePicData: "" }))}
+                  >
+                    Remove Photo
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -292,46 +379,70 @@ export const CourseManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {courses.map((course) => (
-              <div key={course.id} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{course.title}</h3>
-                    <p className="text-gray-600 text-sm">{course.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <IndianRupee size={14} />
-                        {course.price.toLocaleString()}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users size={14} />
-                        {course.enrolledStudents} / {course.maxStudents} students
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <BookOpen size={14} />
-                        {course.duration}
-                      </span>
+            {loading ? (
+              <p className="text-center p-4 text-gray-500">Loading courses...</p>
+            ) : courses.length === 0 ? (
+              <p className="text-center p-4 text-gray-500">No courses available.</p>
+            ) : (
+              courses.map((course) => (
+                <div key={course.id} className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {course.profilePicData ? (
+                      <div className="w-full md:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border">
+                        <img src={course.profilePicData} alt={course.title} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-full md:w-48 h-32 rounded-lg bg-gray-100 border flex flex-col items-center justify-center flex-shrink-0 text-gray-400">
+                        <ImageIcon size={32} className="mb-2 opacity-50" />
+                        <span className="text-xs">No Image</span>
+                      </div>
+                    )}
+
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between">
+                          <h3 className="font-semibold text-lg">{course.title}</h3>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditOpen(course)}>
+                              <Edit size={14} className="mr-1" />
+                              Edit
+                            </Button>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(course.id)}>
+                              <Trash2 size={14} className="mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">{course.description}</p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-600">
+                        <span className="flex items-center gap-1 font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-md">
+                          <IndianRupee size={14} />
+                          {Number(course.price).toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users size={14} />
+                          {course.enrolledStudents || 0} / {course.maxStudents || 100} students
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <BookOpen size={14} />
+                          {course.duration}
+                        </span>
+                      </div>
+
+                      {course.accessFeatures && course.accessFeatures.length > 0 && (
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          {course.accessFeatures.map((feature: string, idx: number) => (
+                            <Badge key={idx} variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-100">{feature}</Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline">{course.level}</Badge>
-                      {course.subjects.map((subject) => (
-                        <Badge key={subject} variant="secondary">{subject}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditOpen(course)}>
-                      <Edit size={14} className="mr-1" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Trash2 size={14} className="mr-1" />
-                      Delete
-                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
