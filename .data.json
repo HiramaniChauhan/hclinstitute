@@ -87,6 +87,30 @@
       "isVerified": false,
       "provider": "local",
       "createdAt": "2026-03-10T11:55:39.016Z"
+    },
+    {
+      "id": "1773228490066",
+      "name": "kumar hira",
+      "firstName": "kumar",
+      "lastName": "hira",
+      "email": "kumarhira2399@gmail.com",
+      "password": "$2b$10$uM37T4P1I3Q4v4FOhbe7Ue./dQzQneb1jCiN0OybNronVzwyoY3nC",
+      "role": "student",
+      "aadharNumber": "098765432134",
+      "phone": "",
+      "dateOfBirth": "",
+      "gender": "male",
+      "address": "",
+      "city": "",
+      "state": "",
+      "pincode": "",
+      "qualification": "",
+      "institute": "",
+      "parentPhone": "",
+      "emergencyContact": "",
+      "isVerified": false,
+      "provider": "local",
+      "createdAt": "2026-03-11T11:28:10.066Z"
     }
   ],
   "Tests": [
@@ -492,6 +516,17 @@
       "photo": "",
       "id": "1773163556430",
       "createdAt": "2026-03-10T17:25:56.430Z"
+    },
+    {
+      "name": "neha",
+      "rank": 6,
+      "collegeAllotted": "nitt",
+      "linkedinId": "",
+      "batch": "2024",
+      "year": "2025",
+      "photo": "",
+      "id": "1773228367012",
+      "createdAt": "2026-03-11T11:26:07.012Z"
     }
   ],
   "ChatMessages": [
@@ -517,6 +552,28 @@
       "type": "text",
       "attachmentUrl": null,
       "timestamp": "2026-03-10T20:24:53.230Z",
+      "read": true
+    },
+    {
+      "id": "1773228551552",
+      "studentId": "1773228490066",
+      "sender": "student",
+      "senderId": "1773228490066",
+      "text": "hi sir",
+      "type": "text",
+      "attachmentUrl": null,
+      "timestamp": "2026-03-11T11:29:11.552Z",
+      "read": true
+    },
+    {
+      "id": "1773228568225",
+      "studentId": "1773228490066",
+      "sender": "admin",
+      "senderId": "1773145252705",
+      "text": "hello ",
+      "type": "text",
+      "attachmentUrl": null,
+      "timestamp": "2026-03-11T11:29:28.225Z",
       "read": true
     }
   ],
@@ -650,6 +707,23 @@
         "sec_1773166833901 _1773168785010": 1,
         "sec_1773169753246 _1773169760645": 0
       }
+    },
+    {
+      "resultId": "17732282138655ngblgu",
+      "userId": "1773143739016",
+      "testId": "1773178229732q16uoom",
+      "courseId": "General",
+      "score": 8,
+      "totalQuestions": 2,
+      "correctAnswers": 1,
+      "percentage": 50,
+      "status": "passed",
+      "submittedAt": "2026-03-11T11:23:33.865Z",
+      "duration": 0,
+      "userAnswers": {
+        "sec_1773167574305 _1773174201147": 1,
+        "sec_1773167574305 _1773175679634": 0
+      }
     }
   ],
   "ChapterTests": [
@@ -749,15 +823,43 @@
   ],
   "ChapterResults": [
     {
-      "resultId": "cres_1773180739151",
+      "resultId": "cres_1773229978602",
       "chapterId": 1773180473203,
       "userId": "1773143739016",
-      "score": 12,
+      "score": -4,
       "totalMarks": 12,
       "userAnswers": {
-        "sec_1773180712936_1773180718037": 0
+        "sec_1773180712936_1773180718037": 3
       },
-      "submittedAt": "2026-03-10T22:12:19.152Z"
+      "submittedAt": "2026-03-11T11:52:58.602Z"
+    }
+  ],
+  "Videos": [
+    {
+      "title": "continuous",
+      "subject": "maths",
+      "url": "https://youtu.be/UUN3xy6pS8U?si=cq9hgEuENqtHxWCB",
+      "type": "live",
+      "status": "Published",
+      "date": "2026-03-11",
+      "time": "18:07",
+      "id": "vid_1773232624843",
+      "createdAt": "2026-03-11T12:37:04.843Z",
+      "updatedAt": "2026-03-11T12:37:22.751Z",
+      "views": 0
+    },
+    {
+      "title": "conti",
+      "subject": "maths",
+      "url": "https://youtu.be/UUN3xy6pS8U?si=cq9hgEuENqtHxWCB",
+      "type": "live",
+      "status": "Published",
+      "date": "2026-03-11",
+      "time": "18:07",
+      "id": "vid_1773232685457",
+      "createdAt": "2026-03-11T12:38:05.457Z",
+      "updatedAt": "2026-03-11T12:38:31.505Z",
+      "views": 0
     }
   ]
 }

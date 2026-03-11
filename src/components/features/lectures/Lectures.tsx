@@ -16,15 +16,36 @@ export const Lectures = () => {
   const [lectureStructure, setLectureStructure] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
+  // Helper to initialize from sessionStorage
+  const initStorage = (key: string, defaultVal: any) => {
+    try {
+      const saved = sessionStorage.getItem(`lecturesState_${key}`);
+      return saved ? JSON.parse(saved) : defaultVal;
+    } catch { return defaultVal; }
+  };
+
   // Interaction states
   const [activeLecture, setActiveLecture] = useState<any>(null);
-  const [activeTest, setActiveTest] = useState<Test | null>(null);
-  const [testMode, setTestMode] = useState<'take' | 'review' | null>(null);
+  const [activeTest, setActiveTest] = useState<Test | null>(() => initStorage('activeTest', null));
+  const [testMode, setTestMode] = useState<'take' | 'review' | null>(() => initStorage('testMode', null));
 
   // Persistence logic (Mocking attempt storage)
-  const [attempts, setAttempts] = useState<Record<string, any[]>>({});
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [reviewMode, setReviewMode] = useState(false);
+  const [attempts, setAttempts] = useState<Record<string, any[]>>(() => initStorage('attempts', {}));
+  const [showInstructions, setShowInstructions] = useState(() => initStorage('showInstructions', false));
+  const [reviewMode, setReviewMode] = useState(() => initStorage('reviewMode', false));
+
+  // Sync state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (activeTest) {
+      sessionStorage.setItem('lecturesState_activeTest', JSON.stringify(activeTest));
+    } else {
+      sessionStorage.removeItem('lecturesState_activeTest');
+    }
+    sessionStorage.setItem('lecturesState_testMode', JSON.stringify(testMode));
+    sessionStorage.setItem('lecturesState_attempts', JSON.stringify(attempts));
+    sessionStorage.setItem('lecturesState_showInstructions', JSON.stringify(showInstructions));
+    sessionStorage.setItem('lecturesState_reviewMode', JSON.stringify(reviewMode));
+  }, [activeTest, testMode, attempts, showInstructions, reviewMode]);
 
   useEffect(() => {
     fetchData();

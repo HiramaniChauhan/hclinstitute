@@ -106,5 +106,6 @@ export const TABLES = {
     FEES: "Fees",
     SELECTED_STUDENTS: "SelectedStudents",
     CHAPTER_TESTS: "ChapterTests",
-    CHAPTER_RESULTS: "ChapterResults"
+    CHAPTER_RESULTS: "ChapterResults",
+    VIDEOS: "Videos"
 };

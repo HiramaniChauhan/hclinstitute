@@ -1,12 +1,12 @@
 
-import { 
-  Home, 
-  FileText, 
-  Play, 
-  BarChart3, 
-  MessageCircle, 
-  Trophy, 
-  User, 
+import {
+  Home,
+  FileText,
+  Play,
+  BarChart3,
+  MessageCircle,
+  Trophy,
+  User,
   MessageSquare,
   Video,
   BookOpen,
@@ -31,15 +31,12 @@ const menuItems = [
   { id: 'tests', label: 'Tests', icon: FileText },
   { id: 'courses', label: 'Courses', icon: BookOpen },
   { id: 'lectures', label: 'Lectures', icon: Play },
-  { id: 'batches', label: 'My Batches', icon: Users },
   { id: 'live-classes', label: 'Live Classes', icon: Video },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
-  { id: 'results', label: 'Results', icon: BarChart3 },
   { id: 'selected-students', label: 'Selected Students', icon: Trophy },
   { id: 'chat', label: 'Support Chat', icon: MessageCircle },
   { id: 'profile', label: 'Profile', icon: User },
-  { id: 'forum', label: 'Forum', icon: MessageSquare },
 ];
 
 export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarProps) => {
@@ -69,7 +66,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarP
           <p className="text-xs text-gray-500 mt-1">Founded by Hiramani Chauhan</p>
         )}
       </div>
-      
+
       <nav className="p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
