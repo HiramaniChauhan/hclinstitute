@@ -1,6 +1,5 @@
-import { Bell, Search, Menu, LogOut, Sun, Moon, User } from "lucide-react";
+import { Menu, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useEffect, useState } from "react";
@@ -37,31 +36,18 @@ export const Header = ({ onMenuClick, onProfileClick }: HeaderProps) => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 transition-colors duration-200">
+    <header className="bg-[#24252a] border-b border-gray-700 px-6 py-4 transition-colors duration-200">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onMenuClick} className="lg:hidden">
+          <Button variant="ghost" size="sm" onClick={onMenuClick} className="lg:hidden text-white hover:bg-white/10">
             <Menu size={20} />
           </Button>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <Input
-              placeholder="Search courses, tests..."
-              className="pl-10 w-80 bg-gray-50"
-            />
-          </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={toggleTheme} className="dark:text-gray-100">
-            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-          </Button>
-          <Button variant="ghost" size="sm" className="dark:text-gray-100">
-            <Bell size={20} />
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-gray-600 hover:bg-white/10">
                 <Avatar>
                   <AvatarImage src={user?.profileImage} />
                   <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() || '??'}</AvatarFallback>

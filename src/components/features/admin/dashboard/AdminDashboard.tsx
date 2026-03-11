@@ -1,36 +1,68 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, TrendingUp, Monitor } from "lucide-react";
+import { Users, FileText } from "lucide-react";
 
 export const AdminDashboard = () => {
+  const [totalStudents, setTotalStudents] = useState<number>(0);
+  const [activeTests, setActiveTests] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Fetch Total Students
+        const studentsResp = await fetch('/api/admin/students', { headers });
+        if (studentsResp.ok) {
+          const studentsData = await studentsResp.json();
+          setTotalStudents(Array.isArray(studentsData) ? studentsData.length : 0);
+        }
+
+        // Fetch Active Tests
+        const testsResp = await fetch('/api/tests', { headers });
+        if (testsResp.ok) {
+          const testsData = await testsResp.json();
+          if (Array.isArray(testsData)) {
+            const now = new Date();
+            const active = testsData.filter(test => {
+              if (!test.startDate) return false; // Needs a start date to be "active"
+
+              // Check start time
+              const start = new Date(`${test.startDate}T${test.startTime || '00:00'}`);
+              if (now < start) return false; // Hasn't started yet
+
+              // Check end time (if specified)
+              if (test.endDate) {
+                const end = new Date(`${test.endDate}T${test.endTime || '23:59'}`);
+                if (now > end) return false; // Has ended
+              }
+
+              return true; // Is within active window
+            });
+            setActiveTests(active.length);
+          } else {
+            setActiveTests(0);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+      }
+    };
+    fetchData();
+  }, []);
+
   const stats = [
     {
       title: "Total Students",
-      value: "1,234",
+      value: totalStudents.toString(),
       icon: Users,
-      change: "+12%",
-      changeType: "positive"
     },
     {
       title: "Active Tests",
-      value: "45",
+      value: activeTests.toString(),
       icon: FileText,
-      change: "+3",
-      changeType: "positive"
-    },
-    {
-      title: "Avg Performance",
-      value: "78.5%",
-      icon: TrendingUp,
-      change: "+2.3%",
-      changeType: "positive"
-    },
-    {
-      title: "Online Now",
-      value: "156",
-      icon: Monitor,
-      change: "+23",
-      changeType: "positive"
     }
   ];
 
@@ -41,7 +73,7 @@ export const AdminDashboard = () => {
         <p className="text-gray-600">Welcome back, Admin!</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -54,61 +86,10 @@ export const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-green-600">
-                  {stat.change} from last month
-                </p>
               </CardContent>
             </Card>
           );
         })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activities</CardTitle>
-            <CardDescription>Latest system activities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                "New test 'Physics Chapter 1' created",
-                "Student John Doe completed Math Test",
-                "Video lecture uploaded: Chemistry Basics",
-                "Performance report generated for Class 12A"
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">{activity}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>System Status</CardTitle>
-            <CardDescription>Current system health</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: "Server Status", status: "Online", color: "green" },
-                { name: "Database", status: "Connected", color: "green" },
-                { name: "Video Service", status: "Running", color: "green" },
-                { name: "Notification Service", status: "Active", color: "green" }
-              ].map((service, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{service.name}</span>
-                  <span className={`text-sm px-2 py-1 rounded-full bg-${service.color}-100 text-${service.color}-800`}>
-                    {service.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

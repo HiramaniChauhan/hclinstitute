@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram } from "lucide-react";
+import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram, Plus, Trash2, Link as LinkIcon } from "lucide-react";
 import { useState, useEffect, ChangeEvent } from "react";
 import { fetchAboutInfo, updateAboutInfo } from "@/api/portalApi";
 import { toast } from "sonner";
@@ -31,7 +31,8 @@ export const AboutManagement = () => {
     city: "",
     state: "",
     instituteAchievements: "",
-    directorAchievements: ""
+    directorAchievements: "",
+    additionalLinks: []
   });
   const [loading, setLoading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
@@ -72,6 +73,25 @@ export const AboutManagement = () => {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setAboutData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddLink = () => {
+    setAboutData((prev: any) => ({
+      ...prev,
+      additionalLinks: [...(prev.additionalLinks || []), { title: "", url: "" }]
+    }));
+  };
+
+  const handleLinkChange = (index: number, field: 'title' | 'url', value: string) => {
+    const newLinks = [...(aboutData.additionalLinks || [])];
+    newLinks[index] = { ...newLinks[index], [field]: value };
+    setAboutData((prev: any) => ({ ...prev, additionalLinks: newLinks }));
+  };
+
+  const handleRemoveLink = (index: number) => {
+    const newLinks = [...(aboutData.additionalLinks || [])];
+    newLinks.splice(index, 1);
+    setAboutData((prev: any) => ({ ...prev, additionalLinks: newLinks }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldName: 'directorPhoto' | 'instituteLogo') => {
@@ -205,6 +225,38 @@ export const AboutManagement = () => {
             <div className="flex items-center gap-2">
               <Instagram className="h-4 w-4 text-gray-500" />
               <Input placeholder="Instagram Handle" name="contactInstagram" value={aboutData.contactInstagram} onChange={handleChange} />
+            </div>
+          </div>
+          <div className="pt-4 border-t border-gray-200 mt-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-semibold">Additional Links (YouTube, Facebook, Twitter, etc.)</h3>
+              <Button type="button" variant="outline" size="sm" onClick={handleAddLink}>
+                <Plus className="h-4 w-4 mr-1" /> Add Link
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {(aboutData.additionalLinks || []).map((link: any, index: number) => (
+                <div key={index} className="flex gap-3 items-center">
+                  <div className="flex-1 grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="e.g. YouTube"
+                      value={link.title}
+                      onChange={(e) => handleLinkChange(index, 'title', e.target.value)}
+                    />
+                    <Input
+                      placeholder="https://"
+                      value={link.url}
+                      onChange={(e) => handleLinkChange(index, 'url', e.target.value)}
+                    />
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleRemoveLink(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {(!aboutData.additionalLinks || aboutData.additionalLinks.length === 0) && (
+                <p className="text-sm text-gray-500 text-center py-2">No additional links added yet.</p>
+              )}
             </div>
           </div>
         </CardContent>

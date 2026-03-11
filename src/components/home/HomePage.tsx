@@ -16,7 +16,8 @@ import {
   IndianRupee,
   ArrowRight,
   Calculator,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchAboutInfo, fetchCourses, fetchSelectedStudents } from "@/api/portalApi";
@@ -69,6 +70,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
     contactInstagram: "#",
     contactEmail: "director@hclinstitute.com",
     establishedYear: "2008",
+    additionalLinks: []
   });
 
   useEffect(() => {
@@ -82,9 +84,30 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
 
         if (Object.keys(aboutData).length > 0) {
           const updatedAbout = { ...about };
+
+          // Map API fields to state fields
+          const fieldMapping: Record<string, string> = {
+            instituteName: 'instituteName',
+            instituteDescription: 'instituteDescription',
+            directorName: 'directorName',
+            directorBio: 'directorBio',
+            directorDesignation: 'directorDesignation',
+            instituteLogo: 'instituteLogo',
+            directorPhoto: 'directorPhoto',
+            directorLinkedin: 'contactLinkedin',
+            directorInstagram: 'contactInstagram',
+            directorEmail: 'contactEmail',
+            additionalLinks: 'additionalLinks',
+          };
+
           Object.keys(aboutData).forEach(key => {
-            if (aboutData[key] && aboutData[key].trim() !== "") {
-              updatedAbout[key] = aboutData[key];
+            const stateKey = fieldMapping[key] || key;
+            if (aboutData[key] !== undefined && aboutData[key] !== null) {
+              if (Array.isArray(aboutData[key])) {
+                updatedAbout[stateKey] = aboutData[key];
+              } else if (typeof aboutData[key] === 'string' && aboutData[key].trim() !== "") {
+                updatedAbout[stateKey] = aboutData[key];
+              }
             }
           });
           setAbout(updatedAbout);
@@ -356,6 +379,23 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
                       </Button>
                     </a>
                   )}
+                  {about.additionalLinks && about.additionalLinks.map((link: any, index: number) => {
+                    const isYoutube = link.title.toLowerCase().includes('youtube');
+                    const isFacebook = link.title.toLowerCase().includes('facebook');
+                    const isTwitter = link.title.toLowerCase().includes('twitter') || link.title.toLowerCase().includes('x');
+
+                    return (
+                      <a key={index} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" className="border-white/10 text-black hover:bg-blue-600 hover:text-white transition-all rounded group">
+                          {isYoutube ? <span className="font-bold text-red-500 group-hover:text-white mr-2">YT</span> :
+                            isFacebook ? <span className="font-bold text-blue-500 group-hover:text-white mr-2">f</span> :
+                              isTwitter ? <span className="font-bold mr-2 text-black group-hover:text-white">𝕏</span> :
+                                <Globe className="mr-2 h-4 w-4" />}
+                          {link.title}
+                        </Button>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -431,6 +471,20 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
                   <Mail className="w-5 h-5" />
                 </a>
               )}
+              {about.additionalLinks && about.additionalLinks.map((link: any, index: number) => {
+                const isYoutube = link.title.toLowerCase().includes('youtube');
+                const isFacebook = link.title.toLowerCase().includes('facebook');
+                const isTwitter = link.title.toLowerCase().includes('twitter') || link.title.toLowerCase().includes('x');
+
+                return (
+                  <a key={index} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
+                    {isYoutube ? <span className="font-bold text-red-500 group-hover:text-white">YT</span> :
+                      isFacebook ? <span className="font-bold text-blue-500 group-hover:text-white font-serif">f</span> :
+                        isTwitter ? <span className="font-bold text-black group-hover:text-white">𝕏</span> :
+                          <Globe className="w-5 h-5" />}
+                  </a>
+                );
+              })}
             </div>
           </div>
 
