@@ -101,6 +101,36 @@ router.put("/students/:id/verify", verifyToken, requireAdmin, async (req: AuthRe
     }
 });
 
+// PUT unverify a student
+router.put("/students/:id/unverify", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await getItem<any>(TABLES.USERS, { id: req.params.id });
+        if (!user || user.role !== "student") {
+            return res.status(404).json({ error: "Student not found" });
+        }
+        const updated = { ...user, isVerified: false };
+        delete updated.verifiedAt;
+        delete updated.verifiedBy;
+        await createItem(TABLES.USERS, updated);
+
+        // Create notification for student
+        await createItem(TABLES.NOTIFICATIONS, {
+            notificationId: generateId("notif"),
+            userId: user.id,
+            title: "Verification Revoked",
+            message: "Your account verification has been removed by the admin. Please correct any missing documents.",
+            type: "verification",
+            isRead: false,
+            createdAt: new Date().toISOString(),
+        });
+
+        const { password, ...rest } = updated;
+        res.json({ message: "Student unverified successfully", student: rest });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // PUT suspend a student
 router.put("/students/:id/suspend", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {

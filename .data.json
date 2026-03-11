@@ -86,31 +86,9 @@
       "emergencyContact": "",
       "isVerified": false,
       "provider": "local",
-      "createdAt": "2026-03-10T11:55:39.016Z"
-    },
-    {
-      "id": "1773228490066",
-      "name": "kumar hira",
-      "firstName": "kumar",
-      "lastName": "hira",
-      "email": "kumarhira2399@gmail.com",
-      "password": "$2b$10$uM37T4P1I3Q4v4FOhbe7Ue./dQzQneb1jCiN0OybNronVzwyoY3nC",
-      "role": "student",
-      "aadharNumber": "098765432134",
-      "phone": "",
-      "dateOfBirth": "",
-      "gender": "male",
-      "address": "",
-      "city": "",
-      "state": "",
-      "pincode": "",
-      "qualification": "",
-      "institute": "",
-      "parentPhone": "",
-      "emergencyContact": "",
-      "isVerified": false,
-      "provider": "local",
-      "createdAt": "2026-03-11T11:28:10.066Z"
+      "createdAt": "2026-03-10T11:55:39.016Z",
+      "verifiedAt": "2026-03-11T17:08:18.776Z",
+      "verifiedBy": "1773145252705"
     }
   ],
   "Tests": [
@@ -724,6 +702,20 @@
         "sec_1773167574305 _1773174201147": 1,
         "sec_1773167574305 _1773175679634": 0
       }
+    },
+    {
+      "resultId": "1773251831498bknps15",
+      "userId": "1773228490066",
+      "testId": "1773178229732q16uoom",
+      "courseId": "General",
+      "score": 0,
+      "totalQuestions": 2,
+      "correctAnswers": 0,
+      "percentage": 0,
+      "status": "failed",
+      "submittedAt": "2026-03-11T17:57:11.498Z",
+      "duration": 0,
+      "userAnswers": {}
     }
   ],
   "ChapterTests": [
@@ -972,6 +964,17 @@
       "paymentId": "free",
       "amount": 0,
       "batchId": "direct"
+    },
+    {
+      "enrollmentId": "1773251820105v4z3of0",
+      "userId": "1773228490066",
+      "courseId": "1773245830656inr57uw",
+      "enrolledAt": "2026-03-11T17:57:00.105Z",
+      "expiresAt": "2026-09-11T17:57:00.105Z",
+      "status": "active",
+      "paymentId": "free",
+      "amount": 0,
+      "batchId": "direct"
     }
   ],
   "Announcements": [
@@ -989,6 +992,62 @@
       "author": "hiramanichauhan2399@gmail.com",
       "createdAt": "2026-03-11T16:33:32.261Z",
       "views": 0
+    }
+  ],
+  "Notifications": [
+    {
+      "notificationId": "1773248405930dkifo2x",
+      "userId": "1773228490066",
+      "title": "Account Verified",
+      "message": "Your student account has been verified by the admin. You now have full access.",
+      "type": "verification",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:00:05.930Z"
+    },
+    {
+      "notificationId": "1773248874419c9cyfgg",
+      "userId": "1773228490066",
+      "title": "Account Suspended",
+      "message": "you are not good for us",
+      "type": "suspension",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:07:54.419Z"
+    },
+    {
+      "notificationId": "17732488956305z2dnwk",
+      "userId": "1773228490066",
+      "title": "Account Reinstated",
+      "message": "Your account suspension has been lifted. Welcome back!",
+      "type": "verification",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:08:15.630Z"
+    },
+    {
+      "notificationId": "177324889878448e2ty7",
+      "userId": "1773143739016",
+      "title": "Account Verified",
+      "message": "Your student account has been verified by the admin. You now have full access.",
+      "type": "verification",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:08:18.784Z"
+    },
+    {
+      "notificationId": "1773251649327eswsdch",
+      "userId": "1773143739016",
+      "title": "Verification Revoked",
+      "message": "Your account verification has been removed by the admin. Please correct any missing documents.",
+      "type": "verification",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:54:09.327Z"
+    },
+    {
+      "notificationId": "17732516504014rbg433",
+      "userId": "1773228490066",
+      "title": "Verification Revoked",
+      "message": "Your account verification has been removed by the admin. Please correct any missing documents.",
+      "type": "verification",
+      "isRead": false,
+      "createdAt": "2026-03-11T17:54:10.401Z"
     }
   ]
 }

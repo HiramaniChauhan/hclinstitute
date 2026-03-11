@@ -29,7 +29,7 @@ export const Dashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (!token) return;
       try {
         const [testsResp, resultsResp, videosResp] = await Promise.all([

@@ -130,7 +130,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
         console.log("[TestInterface] handleSubmit triggered", { tabSwitchCount });
         setIsSubmitting(true);
         try {
-            const currentToken = localStorage.getItem('token');
+            const currentToken = sessionStorage.getItem('token');
             if (!currentToken) {
                 toast.error("Auth token missing. Please sign in again.");
                 setIsSubmitting(false);
@@ -232,7 +232,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
         const fetchLeaderboard = async () => {
             if (!reviewMode) return;
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const testId = test.testId || test.id;
                 const resp = await fetch(`/api/results/leaderboard/${testId}`, {
                     headers: { "Authorization": `Bearer ${token}` }

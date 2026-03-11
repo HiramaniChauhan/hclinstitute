@@ -35,7 +35,7 @@ export const Chat = () => {
     try {
       const response = await fetch('/api/chat/conversations', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       const data = await response.json();
@@ -50,7 +50,7 @@ export const Chat = () => {
     try {
       const response = await fetch(`/api/chat/messages/${studentId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
       const data = await response.json();
@@ -73,7 +73,7 @@ export const Chat = () => {
       await fetch(`/api/chat/read/${studentId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
     } catch (error) {
@@ -131,7 +131,7 @@ export const Chat = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         },
         body: JSON.stringify(body)
       });
@@ -154,7 +154,7 @@ export const Chat = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         },
         body: JSON.stringify({ text: editValue })
       });
@@ -176,7 +176,7 @@ export const Chat = () => {
       const response = await fetch(`/api/chat/${msgId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         }
       });
 

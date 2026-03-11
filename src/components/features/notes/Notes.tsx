@@ -17,7 +17,7 @@ export const Notes = () => {
 
   const fetchNotes = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch('/api/notes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -70,7 +70,7 @@ export const Notes = () => {
         }
 
         // Increment views (still stored as downloads in db for now)
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         await fetch(`/api/notes/${note.id}`, {
           method: 'PUT',
           headers: {

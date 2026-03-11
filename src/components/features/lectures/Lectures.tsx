@@ -86,7 +86,7 @@ export const Lectures = () => {
 
   const handleStartTest = async (testId: string | number) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const resp = await fetch(`/api/chapter-tests/test/${testId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -107,7 +107,7 @@ export const Lectures = () => {
 
   const handleReviewTest = async (testId: string | number) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       // 1. Fetch the latest result first
       const res = await fetch(`/api/chapter-tests/results/latest/${testId}`, {
         headers: { "Authorization": `Bearer ${token}` }
@@ -139,7 +139,7 @@ export const Lectures = () => {
     const testId = (activeTest as any)?.chapterId || (activeTest as any)?.testId || (activeTest as any)?.id;
     if (testId) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const res = await fetch("/api/chapter-tests/results", {
           method: "POST",
           headers: {

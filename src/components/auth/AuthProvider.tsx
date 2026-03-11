@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (response.ok) {
         setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
 
         if (role === 'admin') {
           navigate('/admin');
@@ -225,8 +225,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const getProfile = async () => {
-    const token = localStorage.getItem('token');
+  const getProfile = useCallback(async () => {
+    const token = sessionStorage.getItem('token');
     if (!token) return null;
 
     try {
@@ -238,7 +238,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data);
-        localStorage.setItem('user', JSON.stringify(data));
+        sessionStorage.setItem('user', JSON.stringify(data));
         return data;
       }
       return null;
@@ -246,13 +246,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Get profile error:', error);
       return null;
     }
-  };
+  }, []);
 
-  const updateProfile = async (data: any) => {
-    const token = localStorage.getItem('token');
-    if (!token) return false;
-
+  const updateProfile = useCallback(async (data: any) => {
     try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        toast.error('Not authenticated');
+        return false;
+      }
+
       const response = await fetch('/api/profile/me', {
         method: 'PUT',
         headers: {
@@ -261,23 +264,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
         body: JSON.stringify(data),
       });
+
+      const responseData = await response.json();
+
       if (response.ok) {
-        const updatedUser = await response.json();
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        toast.success('Profile updated successfully');
+        setUser(responseData);
+        sessionStorage.setItem('user', JSON.stringify(responseData));
+        toast.success(responseData.message || 'Profile updated successfully');
         return true;
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to update profile');
+        toast.error(responseData.error || 'Failed to update profile');
         return false;
       }
     } catch (error) {
       console.error('Update profile error:', error);
-      toast.error('Connection error');
+      toast.error('Connection error while updating profile');
       return false;
     }
-  };
+  }, []);
 
   const googleLogin = async (userInfo: any, role: 'student' | 'admin', adminSecret?: string, isSignup?: boolean) => {
     try {
@@ -295,8 +299,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         toast.success(`Welcome back ${data.user.name}!`);
         setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
         navigate(role === 'admin' ? '/admin' : '/');
         return true;
       }
@@ -312,8 +316,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
     navigate('/');
   };
 

@@ -46,7 +46,7 @@ export const CourseManagement = () => {
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch('/api/courses', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -121,7 +121,7 @@ export const CourseManagement = () => {
   const handleDelete = async (courseId: string) => {
     if (!window.confirm("Are you sure you want to delete this course?")) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -144,7 +144,7 @@ export const CourseManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const payload = {
         title: formData.title,
         price: Number(formData.price),

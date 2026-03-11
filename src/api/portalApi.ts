@@ -2,7 +2,7 @@ const API_BASE = "http://localhost:5001/api";
 
 const getHeaders = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    Authorization: `Bearer ${sessionStorage.getItem("token") || ""}`,
 });
 
 // ─────────────── Admin Dashboard ───────────────────────────────────────────
@@ -19,8 +19,34 @@ export const fetchAllStudents = async () => {
     return res.json();
 };
 
+export const fetchStudentProfile = async (id: string) => {
+    const res = await fetch(`${API_BASE}/profile/${id}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const updateStudentProfile = async (id: string, data: any) => {
+    const res = await fetch(`${API_BASE}/profile/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+
 export const verifyStudent = async (id: string) => {
     const res = await fetch(`${API_BASE}/admin/students/${id}/verify`, {
+        method: "PUT",
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const unverifyStudent = async (id: string) => {
+    const res = await fetch(`${API_BASE}/admin/students/${id}/unverify`, {
         method: "PUT",
         headers: getHeaders(),
     });

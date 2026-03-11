@@ -70,7 +70,7 @@ export const LectureManagement = () => {
   const saveStructure = async (newStructure: any) => {
     setLectureStructure(newStructure);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const resp = await fetch("/api/config/lecture-structure", {
         method: "POST",
         headers: {
@@ -83,7 +83,7 @@ export const LectureManagement = () => {
     } catch (err) {
       toast.error("Saved locally, but failed to sync with server");
       // Fallback for immediate UI feedback consistency, though we want server success
-      localStorage.setItem('lecture_structure', JSON.stringify(newStructure));
+      sessionStorage.setItem('lecture_structure', JSON.stringify(newStructure));
     }
   };
 
