@@ -5,12 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Clock, Users, BookOpen, Search, Filter, Star, IndianRupee, ImageIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { PaymentModal } from "./PaymentModal";
 
 export const Courses = () => {
   const [courses, setCourses] = useState<any[]>([]);
   const [myEnrollments, setMyEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -105,7 +108,7 @@ export const Courses = () => {
                 <div className="space-y-2 text-sm text-gray-600 mt-auto pt-4">
                   <div className="flex items-center gap-2">
                     <Clock size={14} />
-                    <span>{course.duration}</span>
+                    <span>{course.duration ? `${course.duration} months` : "—"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Users size={14} />
@@ -118,7 +121,14 @@ export const Courses = () => {
                     <IndianRupee size={18} />
                     {Number(course.price || 0).toLocaleString()}
                   </div>
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm">
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    onClick={() => {
+                      setSelectedCourse(course);
+                      setPaymentModalOpen(true);
+                    }}
+                  >
                     Enroll Now
                   </Button>
                 </div>
@@ -168,6 +178,19 @@ export const Courses = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        open={paymentModalOpen}
+        course={selectedCourse}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedCourse(null);
+        }}
+        onSuccess={() => {
+          fetchCourses();
+        }}
+      />
     </div>
   );
 };

@@ -28,6 +28,7 @@ import chatRouter from "./routes/chat";
 import selectedStudentsRouter from "./routes/selected-students";
 import chapterTestsRouter from "./routes/chapter-tests";
 import videosRouter from "./routes/videos";
+import paymentsRouter from "./routes/payments";
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -570,6 +571,7 @@ app.post("/api/auth/google", async (req, res) => {
 
 // API Routes
 app.use("/api/courses", coursesRouter);
+app.use("/api/payments", paymentsRouter);
 app.use("/api/batches", batchesRouter);
 app.use("/api/announcements", announcementsRouter);
 app.use("/api/lectures", lecturesRouter);

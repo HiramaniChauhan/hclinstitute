@@ -219,11 +219,13 @@ export const CourseManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Duration</Label>
+                  <Label>Duration <span className="text-xs text-gray-400 font-normal">(in months — e.g. 6, 12, 24)</span></Label>
                   <Input
+                    type="number"
+                    min={1}
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="6 Months"
+                    placeholder="e.g. 6"
                   />
                 </div>
                 <div className="space-y-2">
@@ -427,7 +429,7 @@ export const CourseManagement = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <BookOpen size={14} />
-                          {course.duration}
+                          {course.duration ? `${course.duration} months` : "—"}
                         </span>
                       </div>
 
