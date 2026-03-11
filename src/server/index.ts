@@ -29,6 +29,7 @@ import selectedStudentsRouter from "./routes/selected-students";
 import chapterTestsRouter from "./routes/chapter-tests";
 import videosRouter from "./routes/videos";
 import paymentsRouter from "./routes/payments";
+import aboutRouter from "./routes/about";
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -634,6 +635,8 @@ app.post("/api/config/lecture-structure", verifyToken, requireAdmin, async (req,
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
 });
+
+app.use("/api/about", aboutRouter);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -17,6 +17,7 @@ interface ImageCropDialogProps {
     imageSrc: string;
     onClose: () => void;
     onCropDone: (croppedImageData: string) => void;
+    aspectRatio?: number;
 }
 
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string> {
@@ -39,7 +40,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string>
     return canvas.toDataURL("image/jpeg", 0.9);
 }
 
-export const ImageCropDialog = ({ open, imageSrc, onClose, onCropDone }: ImageCropDialogProps) => {
+export const ImageCropDialog = ({ open, imageSrc, onClose, onCropDone, aspectRatio = 16 / 9 }: ImageCropDialogProps) => {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -72,7 +73,7 @@ export const ImageCropDialog = ({ open, imageSrc, onClose, onCropDone }: ImageCr
                         image={imageSrc}
                         crop={crop}
                         zoom={zoom}
-                        aspect={16 / 9}
+                        aspect={aspectRatio}
                         onCropChange={setCrop}
                         onZoomChange={setZoom}
                         onCropComplete={onCropComplete}

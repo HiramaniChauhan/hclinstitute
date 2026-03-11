@@ -10,6 +10,7 @@ import { User, MapPin, GraduationCap, Phone, Loader2, ArrowLeft, Camera, ShieldC
 import { fetchStudentProfile, updateStudentProfile } from "@/api/portalApi";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageCropDialog } from "../course-management/ImageCropDialog";
 
 interface StudentDetailProps {
     studentId: string;
@@ -22,6 +23,8 @@ export const StudentDetail = ({ studentId, onBack }: StudentDetailProps) => {
     const [student, setStudent] = useState<any>(null);
     const [formData, setFormData] = useState<any>({});
     const { toast } = useToast();
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [rawImageSrc, setRawImageSrc] = useState("");
 
     useEffect(() => {
         const loadStudent = async () => {
@@ -58,9 +61,15 @@ export const StudentDetail = ({ studentId, onBack }: StudentDetailProps) => {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData({ ...formData, [field]: reader.result as string });
+                if (field === 'profileImage') {
+                    setRawImageSrc(reader.result as string);
+                    setCropDialogOpen(true);
+                } else {
+                    setFormData({ ...formData, [field]: reader.result as string });
+                }
             };
             reader.readAsDataURL(file);
+            e.target.value = "";
         }
     };
 
@@ -361,6 +370,14 @@ export const StudentDetail = ({ studentId, onBack }: StudentDetailProps) => {
 
                 </div>
             </div>
+
+            <ImageCropDialog
+                open={cropDialogOpen}
+                imageSrc={rawImageSrc}
+                aspectRatio={1}
+                onClose={() => setCropDialogOpen(false)}
+                onCropDone={(cropped) => setFormData({ ...formData, profileImage: cropped })}
+            />
         </div>
     );
 };
