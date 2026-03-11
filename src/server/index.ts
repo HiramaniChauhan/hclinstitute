@@ -27,6 +27,7 @@ import feesRouter from "./routes/fees";
 import chatRouter from "./routes/chat";
 import selectedStudentsRouter from "./routes/selected-students";
 import chapterTestsRouter from "./routes/chapter-tests";
+import videosRouter from "./routes/videos";
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -222,6 +223,32 @@ app.post("/api/auth/forgot-password/reset", async (req, res) => {
         res.json({ message: "Password reset successful" });
     } catch (error) {
         res.status(500).json({ error: "Password reset failed" });
+    }
+});
+
+app.post("/api/auth/send-otp", async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const otp = generateOTP();
+        await docClient.send(new PutCommand({
+            TableName: TABLES.OTPS,
+            Item: {
+                email,
+                otp,
+                expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 mins
+            },
+        }));
+
+        const isSent = await sendOtpEmail(email, otp, "Registration OTP - HCL Institute");
+        if (isSent) {
+            res.json({ message: "OTP sent successfully" });
+        } else {
+            res.status(500).json({ error: "Failed to send OTP email" });
+        }
+    } catch (error) {
+        console.error("Failed to process send-otp request", error);
+        res.status(500).json({ error: "Failed to process request" });
     }
 });
 
@@ -558,6 +585,7 @@ app.use("/api/fees", feesRouter);
 app.use("/api/chat", verifyToken, chatRouter);
 app.use("/api/selected-students", selectedStudentsRouter);
 app.use("/api/chapter-tests", chapterTestsRouter);
+app.use("/api/videos", videosRouter);
 
 app.get("/api/auth/debug-secret", (req, res) => {
     res.json({

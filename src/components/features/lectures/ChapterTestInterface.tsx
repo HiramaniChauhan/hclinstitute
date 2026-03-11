@@ -26,10 +26,32 @@ interface ChapterTestInterfaceProps {
 }
 
 export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = false, allAttempts = [] }: ChapterTestInterfaceProps) => {
-    const [activeSectionIdx, setActiveSectionIdx] = useState(0);
-    const [activeQuestionIdx, setActiveQuestionIdx] = useState(0);
-    const [savedAnswers, setSavedAnswers] = useState<Record<string, number>>({});
-    const [draftAnswers, setDraftAnswers] = useState<Record<string, number>>({});
+    const storageKey = `chapterTestState_${test.id}`;
+
+    // Initialize states from local storage if available, otherwise default
+    const getInitialState = <T,>(key: string, defaultValue: T): T => {
+        if (reviewMode) return defaultValue;
+        try {
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed[key] !== undefined) {
+                    if (key === 'visitedQuestions' || key === 'reviewQuestions') {
+                        return new Set(parsed[key]) as unknown as T;
+                    }
+                    return parsed[key] as T;
+                }
+            }
+        } catch (e) {
+            console.error('Error parsing stored test state', e);
+        }
+        return defaultValue;
+    };
+
+    const [activeSectionIdx, setActiveSectionIdx] = useState(getInitialState('activeSectionIdx', 0));
+    const [activeQuestionIdx, setActiveQuestionIdx] = useState(getInitialState('activeQuestionIdx', 0));
+    const [savedAnswers, setSavedAnswers] = useState<Record<string, number>>(getInitialState('savedAnswers', {}));
+    const [draftAnswers, setDraftAnswers] = useState<Record<string, number>>(getInitialState('draftAnswers', {}));
     const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number>(
         allAttempts.length > 0 ? allAttempts.length - 1 : 0
     );
@@ -37,24 +59,40 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // CBT State Tracking
-    const [visitedQuestions, setVisitedQuestions] = useState<Set<string>>(new Set());
-    const [reviewQuestions, setReviewQuestions] = useState<Set<string>>(new Set());
+    const [visitedQuestions, setVisitedQuestions] = useState<Set<string>>(getInitialState('visitedQuestions', new Set()));
+    const [reviewQuestions, setReviewQuestions] = useState<Set<string>>(getInitialState('reviewQuestions', new Set()));
 
     const displayedAttempts = allAttempts.length <= 2 ? allAttempts : [allAttempts[0], allAttempts[allAttempts.length - 1]];
     const currentAttempt = allAttempts[selectedAttemptIdx] || {};
 
     const [startTime] = useState(Date.now());
     const [sectionTimers, setSectionTimers] = useState<Record<string, number>>(() => {
-        const timers: Record<string, number> = {};
+        const defaultTimers: Record<string, number> = {};
         test.sections.forEach(s => {
-            timers[s.id] = s.duration * 60;
+            defaultTimers[s.id] = s.duration * 60;
         });
-        return timers;
+        return getInitialState('sectionTimers', defaultTimers);
     });
 
     const activeSection = test.sections[activeSectionIdx];
     const activeQuestion = activeSection.questions[activeQuestionIdx];
-    const questionKey = `${activeSection.id}_${activeQuestion.id}`;
+    const questionKey = activeSection && activeQuestion ? `${activeSection.id}_${activeQuestion.id}` : null;
+
+    // Persist to local storage whenever state changes
+    useEffect(() => {
+        if (!reviewMode) {
+            const stateToSave = {
+                activeSectionIdx,
+                activeQuestionIdx,
+                savedAnswers,
+                draftAnswers,
+                visitedQuestions: Array.from(visitedQuestions),
+                reviewQuestions: Array.from(reviewQuestions),
+                sectionTimers
+            };
+            localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+        }
+    }, [activeSectionIdx, activeQuestionIdx, savedAnswers, draftAnswers, visitedQuestions, reviewQuestions, sectionTimers, reviewMode, storageKey]);
 
     // Populate answers for review
     useEffect(() => {
@@ -107,6 +145,9 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                 userAnswers: savedAnswers
             };
 
+            // Clear localStorage on submit
+            localStorage.removeItem(storageKey);
+
             onComplete(results);
         } catch (error) {
             console.error("Submission error", error);
@@ -114,7 +155,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
         } finally {
             setIsSubmitting(false);
         }
-    }, [test, savedAnswers, isSubmitting, onComplete]);
+    }, [test, savedAnswers, isSubmitting, onComplete, storageKey]);
 
     // Fullscreen logic
     useEffect(() => {

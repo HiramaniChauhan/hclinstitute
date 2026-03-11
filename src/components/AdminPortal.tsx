@@ -15,7 +15,7 @@ import { NotesManagement } from "@/components/features/admin/notes-management/No
 import { AnnouncementsManagement } from "@/components/features/admin/announcements-management/AnnouncementsManagement";
 import { SelectedStudentsManagement } from "@/components/features/admin/selected-students-management/SelectedStudentsManagement";
 import { AboutManagement } from "@/components/features/admin/about-management/AboutManagement";
-// AdminProfile import removed temporarily
+import { AdminProfile } from "@/components/features/admin/profile/AdminProfile";
 import { StudentManagement } from "@/components/features/admin/student-management/StudentManagement";
 // import { FeesManagement } from "@/components/features/admin/fees-management/FeesManagement";
 
@@ -47,7 +47,7 @@ export const AdminPortal = () => {
       case 'dashboard':
         return <AdminDashboard />;
       case 'profile':
-        return <div>Profile not available</div>;
+        return <AdminProfile />;
       case 'student-management':
         return <StudentManagement />;
       case 'test-creation':
