@@ -31,7 +31,7 @@ export const NotesManagement = () => {
 
   const fetchNotes = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch('/api/notes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -98,7 +98,7 @@ export const NotesManagement = () => {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const url = editingNote ? `/api/notes/${editingNote.id}` : '/api/notes';
       const method = editingNote ? 'PUT' : 'POST';
 
@@ -152,7 +152,7 @@ export const NotesManagement = () => {
     if (!window.confirm("Are you sure you want to delete this note?")) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`/api/notes/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -181,7 +181,7 @@ export const NotesManagement = () => {
 
       // Increment downloads
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         await fetch(`/api/notes/${note.id}`, {
           method: 'PUT',
           headers: {

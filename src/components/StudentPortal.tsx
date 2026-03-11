@@ -32,7 +32,7 @@ export const StudentPortal = () => {
 
   const fetchAccessFeatures = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (!token) return;
       const res = await fetch('/api/enrollments/my-access', {
         headers: { Authorization: `Bearer ${token}` }

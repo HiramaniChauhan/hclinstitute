@@ -21,7 +21,7 @@ export const Courses = () => {
 
   const fetchCourses = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
       const [coursesRes, enrollmentsRes] = await Promise.all([

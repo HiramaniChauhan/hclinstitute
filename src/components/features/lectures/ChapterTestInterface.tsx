@@ -32,7 +32,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     const getInitialState = <T,>(key: string, defaultValue: T): T => {
         if (reviewMode) return defaultValue;
         try {
-            const stored = localStorage.getItem(storageKey);
+            const stored = sessionStorage.getItem(storageKey);
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (parsed[key] !== undefined) {
@@ -90,7 +90,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                 reviewQuestions: Array.from(reviewQuestions),
                 sectionTimers
             };
-            localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+            sessionStorage.setItem(storageKey, JSON.stringify(stateToSave));
         }
     }, [activeSectionIdx, activeQuestionIdx, savedAnswers, draftAnswers, visitedQuestions, reviewQuestions, sectionTimers, reviewMode, storageKey]);
 
@@ -145,8 +145,8 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                 userAnswers: savedAnswers
             };
 
-            // Clear localStorage on submit
-            localStorage.removeItem(storageKey);
+            // Clear sessionStorage on submit
+            sessionStorage.removeItem(storageKey);
 
             onComplete(results);
         } catch (error) {

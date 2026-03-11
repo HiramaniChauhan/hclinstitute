@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, Award, BookOpen, Target, FileText, CheckCircle, User, MapPin, GraduationCap, Phone, Loader2 } from "lucide-react";
+import { FileText, CheckCircle, User, MapPin, GraduationCap, Phone, Loader2, Camera, Upload } from "lucide-react";
 
 export const Profile = () => {
   const { getProfile, updateProfile } = useAuth();
@@ -56,6 +56,17 @@ export const Profile = () => {
     }
   };
 
+  const handleFileUpdate = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditForm({ ...editForm, [field]: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -74,21 +85,7 @@ export const Profile = () => {
     );
   }
 
-  const achievements = [
-    { name: "Speed Demon", description: "Complete a test in under 30 minutes", earned: true },
-    { name: "Perfect Score", description: "Score 100% on any test", earned: true },
-    { name: "Consistent Performer", description: "Score above 80% for 5 consecutive tests", earned: true },
-    { name: "Math Master", description: "Score above 90% in 10 math tests", earned: false },
-    { name: "Physics Pro", description: "Complete all physics modules", earned: false },
-    { name: "Study Streak", description: "Study for 30 consecutive days", earned: false }
-  ];
 
-  const stats = [
-    { label: "Tests Completed", value: "127", icon: Target },
-    { label: "Study Hours", value: "284", icon: BookOpen },
-    { label: "Current Streak", value: "12 days", icon: Star },
-    { label: "Badges Earned", value: "8", icon: Award }
-  ];
 
   return (
     <div className="space-y-6">
@@ -125,14 +122,7 @@ export const Profile = () => {
             <div className="flex-1">
               <h2 className="text-2xl font-bold">{studentData.firstName} {studentData.lastName}</h2>
               <p className="text-gray-600">{studentData.email}</p>
-              <div className="flex items-center gap-4 mt-3">
-                <Badge variant="secondary" className="text-sm">Rank #42</Badge>
-                <Badge variant="outline" className="text-sm">Level 15</Badge>
-                <div className="flex items-center text-sm text-yellow-600">
-                  <Star className="w-4 h-4 mr-1 fill-yellow-600" />
-                  2,847 XP
-                </div>
-              </div>
+
             </div>
           </div>
         </CardContent>
@@ -248,7 +238,7 @@ export const Profile = () => {
                 <FileText className="w-5 h-5" /> Verification Status
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span className="text-sm">Account Verification</span>
                 {studentData.isVerified ?
@@ -256,72 +246,80 @@ export const Profile = () => {
                   <Badge variant="outline" className="text-gray-500 italic">Pending Manual Verification</Badge>
                 }
               </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">10th Marksheet</span>
-                <Badge variant="default" className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" /> Submitted</Badge>
+
+              {/* 10th Marksheet Section */}
+              <div className="space-y-2 p-2 bg-gray-50 rounded">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">10th Marksheet (Result)</span>
+                  {editForm?.marksheet10th || studentData.marksheet10th ?
+                    <Badge variant="default" className="bg-green-600 font-normal"><CheckCircle className="w-3 h-3 mr-1" /> Uploaded</Badge> :
+                    <Badge variant="outline" className="text-gray-400 font-normal">Not Uploaded</Badge>
+                  }
+                </div>
+                {(studentData.marksheet10th || editForm?.marksheet10th) && (
+                  <div className="mt-2 text-center border rounded-md p-1 bg-white">
+                    <img
+                      src={editForm?.marksheet10th || studentData.marksheet10th}
+                      alt="10th Marksheet"
+                      className="max-h-32 mx-auto rounded object-contain"
+                    />
+                  </div>
+                )}
+                {isEditing && !studentData.isVerified && (
+                  <div className="mt-2 space-y-2">
+                    <Label className="text-xs text-blue-600 cursor-pointer block hover:underline">
+                      {editForm?.marksheet10th || studentData.marksheet10th ? "Change Marksheet" : "Upload 10th Marksheet"}
+                      <Input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpdate(e, 'marksheet10th')}
+                      />
+                    </Label>
+                    <p className="text-[10px] text-gray-400">Accepted formats: JPG, PNG, PDF</p>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">Aadhar Number</span>
-                <Badge variant="default" className="bg-green-600"><CheckCircle className="w-3 h-3 mr-1" /> Provided</Badge>
+
+              {/* Aadhar Photo Section */}
+              <div className="space-y-2 p-2 bg-gray-50 rounded">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Aadhar Card Photo</span>
+                  {editForm?.aadharPhoto || studentData.aadharPhoto ?
+                    <Badge variant="default" className="bg-green-600 font-normal"><CheckCircle className="w-3 h-3 mr-1" /> Uploaded</Badge> :
+                    <Badge variant="outline" className="text-gray-400 font-normal">No Photo</Badge>
+                  }
+                </div>
+                {(studentData.aadharPhoto || editForm?.aadharPhoto) && (
+                  <div className="mt-2 text-center border rounded-md p-1 bg-white">
+                    <img
+                      src={editForm?.aadharPhoto || studentData.aadharPhoto}
+                      alt="Aadhar Photo"
+                      className="max-h-32 mx-auto rounded object-contain"
+                    />
+                  </div>
+                )}
+                {isEditing && !studentData.isVerified && (
+                  <div className="mt-2 space-y-2">
+                    <Label className="text-xs text-blue-600 cursor-pointer block hover:underline">
+                      {editForm?.aadharPhoto || studentData.aadharPhoto ? "Change Aadhar Photo" : "Upload Aadhar Photo"}
+                      <Input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpdate(e, 'aadharPhoto')}
+                      />
+                    </Label>
+                    <p className="text-[10px] text-gray-400">Accepted formats: JPG, PNG</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Gamification Stats (Existing) */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label}>
-              <CardContent className="p-6 text-center">
-                <Icon className="h-8 w-8 mx-auto mb-3 text-blue-600" />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-gray-600">{stat.label}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
-      {/* Achievements (Existing code logic simplified for brevity but kept in layout) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Achievements</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {achievements.map((achievement) => (
-              <div
-                key={achievement.name}
-                className={`p-3 rounded-lg border ${achievement.earned
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-gray-50 border-gray-200'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${achievement.earned ? 'bg-yellow-100' : 'bg-gray-200'
-                    }`}>
-                    <Award className={`h-4 w-4 ${achievement.earned ? 'text-yellow-600' : 'text-gray-400'
-                      }`} />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className={`font-medium ${achievement.earned ? 'text-yellow-900' : 'text-gray-600'
-                      }`}>
-                      {achievement.name}
-                    </h4>
-                    <p className={`text-sm ${achievement.earned ? 'text-yellow-700' : 'text-gray-500'
-                      }`}>
-                      {achievement.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

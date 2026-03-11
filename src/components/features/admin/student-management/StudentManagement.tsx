@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import {
     Search, Trash2, ShieldCheck, ShieldOff, Users, Activity,
-    CheckCircle, XCircle, Mail, UserCog, Bell, RefreshCw,
+    CheckCircle, XCircle, Mail, UserCog, Bell, RefreshCw, FileText
 } from "lucide-react";
+import { StudentDetail } from "./StudentDetail";
 import {
-    fetchAllStudents, verifyStudent, suspendStudent, unsuspendStudent,
+    fetchAllStudents, verifyStudent, unverifyStudent, suspendStudent, unsuspendStudent,
     deleteStudent, broadcastNotification,
 } from "@/api/portalApi";
 import { useToast } from "@/hooks/use-toast";
@@ -28,21 +29,25 @@ interface Student {
     batchName?: string;
     createdAt: string;
     aadharNumber?: string;
+    aadharPhoto?: string;
+    marksheet10th?: string;
 }
 
 export const StudentManagement = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [suspendDialog, setSuspendDialog] = useState<Student | null>(null);
     const [suspendReason, setSuspendReason] = useState("");
     const [deleteDialog, setDeleteDialog] = useState<Student | null>(null);
     const [broadcastDialog, setBroadcastDialog] = useState(false);
+    const [photoDialog, setPhotoDialog] = useState<{ title: string, url: string } | null>(null);
     const [broadcast, setBroadcast] = useState({ title: "", message: "" });
     const { toast } = useToast();
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchAllStudents();
@@ -52,7 +57,7 @@ export const StudentManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [toast]);
 
     useEffect(() => { load(); }, []);
 
@@ -66,6 +71,19 @@ export const StudentManagement = () => {
         try {
             await verifyStudent(student.id);
             toast({ title: `${student.name} verified!` });
+            load();
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const doUnverify = async (student: Student) => {
+        setActionLoading(student.id);
+        try {
+            await unverifyStudent(student.id);
+            toast({ title: `${student.name} unverified.` });
             load();
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -132,6 +150,15 @@ export const StudentManagement = () => {
 
     const verified = students.filter(s => s.isVerified).length;
     const suspended = students.filter(s => s.isSuspended).length;
+
+    const handleBack = useCallback(() => {
+        setSelectedStudentId(null);
+        load();
+    }, [load]);
+
+    if (selectedStudentId) {
+        return <StudentDetail studentId={selectedStudentId} onBack={handleBack} />;
+    }
 
     return (
         <div className="space-y-6">
@@ -232,6 +259,34 @@ export const StudentManagement = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 flex-wrap">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => setSelectedStudentId(student.id)}
+                                                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                            >
+                                                <FileText className="h-4 w-4 mr-1" /> Details
+                                            </Button>
+                                            {student.aadharPhoto && !student.isVerified && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => setPhotoDialog({ title: "Aadhar Photo", url: student.aadharPhoto! })}
+                                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                                >
+                                                    View Aadhar
+                                                </Button>
+                                            )}
+                                            {student.marksheet10th && !student.isVerified && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => setPhotoDialog({ title: "10th Marksheet", url: student.marksheet10th! })}
+                                                    className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                                >
+                                                    View 10th Result
+                                                </Button>
+                                            )}
                                             {!student.isVerified && (
                                                 <Button
                                                     size="sm"
@@ -241,6 +296,17 @@ export const StudentManagement = () => {
                                                 >
                                                     <ShieldCheck className="h-4 w-4 mr-1" />
                                                     {actionLoading === student.id ? "..." : "Verify"}
+                                                </Button>
+                                            )}
+                                            {student.isVerified && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => doUnverify(student)}
+                                                    disabled={actionLoading === student.id}
+                                                    className="border-yellow-200 text-yellow-600 hover:bg-yellow-50"
+                                                >
+                                                    <ShieldOff className="h-4 w-4 mr-1" /> Unverify
                                                 </Button>
                                             )}
                                             {!student.isSuspended ? (
@@ -338,6 +404,27 @@ export const StudentManagement = () => {
                         <Button onClick={doBroadcast} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                             <Bell className="h-4 w-4 mr-2" /> Send to All
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Photo Viewing Dialog */}
+            <Dialog open={!!photoDialog} onOpenChange={(open) => !open && setPhotoDialog(null)}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>{photoDialog?.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-center p-2 bg-gray-50 rounded-lg min-h-[300px]">
+                        {photoDialog && (
+                            <img
+                                src={photoDialog.url}
+                                alt={photoDialog.title}
+                                className="max-w-full max-h-[70vh] object-contain rounded"
+                            />
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPhotoDialog(null)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

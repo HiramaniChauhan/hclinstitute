@@ -42,7 +42,7 @@ export const TestCreation = () => {
 
   const fetchTests = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const resp = await fetch("/api/tests", {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -328,7 +328,7 @@ export const TestCreation = () => {
       };
 
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const resp = await fetch(`/api/tests/${viewingTestQuestions.testId || viewingTestQuestions.id}`, {
           method: "PATCH",
           headers: {
@@ -361,7 +361,7 @@ export const TestCreation = () => {
       const oldTestId = isActuallyRescheduling ? (editingTest.testId || editingTest.id) : null;
       let url = (editingTest && !isActuallyRescheduling) ? `/api/tests/${editingTest.testId || editingTest.id}` : "/api/tests";
 
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
 
       const testToSave = {
         ...testFormData,
@@ -415,7 +415,7 @@ export const TestCreation = () => {
   const handleDeleteTest = async (testId: string | number, silent = false) => {
     if (!silent && !confirm("Are you sure you want to delete this test?")) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const resp = await fetch(`/api/tests/${testId}`, {
         method: "DELETE",
         headers: {
@@ -436,7 +436,7 @@ export const TestCreation = () => {
 
   const handleSaveAsNewTest = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
 
       const testToSave = {
         ...testFormData,
@@ -540,7 +540,7 @@ export const TestCreation = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const resp = await fetch(`/api/tests/${viewingTestQuestions.testId || viewingTestQuestions.id}`, {
         method: "PATCH",
         headers: {

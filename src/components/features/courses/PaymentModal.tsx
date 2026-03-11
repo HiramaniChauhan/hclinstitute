@@ -40,7 +40,7 @@ export const PaymentModal = ({ open, course, onClose, onSuccess }: PaymentModalP
     const handleEnroll = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
+            const token = sessionStorage.getItem("token");
             const headers: Record<string, string> = {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,

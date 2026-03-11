@@ -29,7 +29,7 @@ export const Tests = () => {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const [testsResp, resultsResp] = await Promise.all([
         fetch("/api/tests", {
           headers: { "Authorization": `Bearer ${token}` }

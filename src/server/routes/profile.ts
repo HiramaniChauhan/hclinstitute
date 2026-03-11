@@ -113,7 +113,40 @@ router.put("/me", verifyToken, async (req: AuthRequest, res: Response) => {
             role: user.role, // Ensure role is not changed
         };
 
-        await createItem<UserProfileData>(TABLES.USERS, updatedUser);
+        await createItem(TABLES.USERS, updatedUser);
+
+        // Remove password from response
+        const { password, ...userWithoutPassword } = updatedUser as any;
+        res.json(userWithoutPassword);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT update any user profile (Admin only)
+router.put("/:userId", verifyToken, async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user || req.user.role !== "admin") {
+            return res.status(403).json({ error: "Admin access required" });
+        }
+
+        const { userId } = req.params;
+        const updates = req.body;
+
+        const user = await getItem<UserProfileData>(TABLES.USERS, { id: userId });
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const updatedUser: UserProfileData = {
+            ...user,
+            ...updates,
+            id: user.id, // Ensure ID is not changed
+            email: user.email, // Ensure email is not changed
+            role: user.role, // Ensure role is not changed
+        };
+
+        await createItem(TABLES.USERS, updatedUser);
 
         // Remove password from response
         const { password, ...userWithoutPassword } = updatedUser as any;

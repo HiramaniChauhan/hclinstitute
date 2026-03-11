@@ -31,7 +31,7 @@ export const AnnouncementsManagement = () => {
     status: "published",
   });
 
-  const token = () => localStorage.getItem("token");
+  const token = () => sessionStorage.getItem("token");
   const headers = () => ({
     "Content-Type": "application/json",
     Authorization: `Bearer ${token()}`,

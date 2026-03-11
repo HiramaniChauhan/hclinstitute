@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { docClient, TABLES } from "../db-wrapper";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -14,7 +16,7 @@ export interface AuthRequest extends Request {
     };
 }
 
-export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(" ")[1];
 
@@ -37,6 +39,18 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
 
         const decoded = jwt.verify(token, secretToUse) as any;
         console.log("[Auth] Token Decoded Successfully:", { id: decoded.id, role: decoded.role, exp: new Date(decoded.exp * 1000).toISOString() });
+
+        // Database sanity check: verify the user still exists and hasn't been deleted
+        const dbResult = await docClient.send(new GetCommand({
+            TableName: TABLES.USERS,
+            Key: { id: decoded.id }
+        }));
+
+        if (!dbResult.Item) {
+            console.warn("[Auth] Token valid, but user no longer exists in DB. Logging out.");
+            return res.status(401).json({ error: "User account no longer exists." });
+        }
+
         req.user = decoded;
         next();
     } catch (error: any) {

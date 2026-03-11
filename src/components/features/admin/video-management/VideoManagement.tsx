@@ -38,7 +38,7 @@ export const VideoManagement = () => {
 
     const fetchVideos = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch('/api/videos', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -62,7 +62,7 @@ export const VideoManagement = () => {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch('/api/videos', {
                 method: 'POST',
                 headers: {
@@ -106,7 +106,7 @@ export const VideoManagement = () => {
 
         setIsScheduling(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch('/api/videos', {
                 method: 'POST',
                 headers: {
@@ -145,7 +145,7 @@ export const VideoManagement = () => {
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch(`/api/videos/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -168,7 +168,7 @@ export const VideoManagement = () => {
 
     const handleSaveEdit = async (id: string, currentVideo: any) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch(`/api/videos/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -200,7 +200,7 @@ export const VideoManagement = () => {
         if (!window.confirm("Are you sure you want to delete this video?")) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch(`/api/videos/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }

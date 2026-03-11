@@ -171,7 +171,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const resp = await fetch("/api/chapter-tests", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
