@@ -53,11 +53,23 @@ if (useDynamoDb) {
                             if (expr.includes("courseId") && vals[":courseId"]) {
                                 match = match && item.courseId === vals[":courseId"];
                             }
+                            if (expr.includes("studentId") && vals[":studentId"]) {
+                                match = match && item.studentId === vals[":studentId"];
+                            }
+                            if (expr.includes("sender") && vals[":sender"]) {
+                                match = match && item.sender === vals[":sender"];
+                            }
+                            if ((expr.includes("#r = :unread") || expr.includes("read = :unread")) && vals[":unread"] !== undefined) {
+                                match = match && item.read === vals[":unread"];
+                            }
                             if (expr.includes("userId") && vals[":userId"]) {
                                 match = match && item.userId === vals[":userId"];
                             }
                             if (expr.includes("testId") && vals[":testId"]) {
                                 match = match && item.testId === vals[":testId"];
+                            }
+                            if (expr.includes("id = :id") && vals[":id"]) {
+                                match = match && item.id === vals[":id"];
                             }
                             // Support begins_with
                             if (expr.includes("begins_with(resultId, :testId)") && vals[":testId"]) {
