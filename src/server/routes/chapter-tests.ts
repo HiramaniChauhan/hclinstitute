@@ -27,8 +27,8 @@ router.get("/test/:testId", async (req: AuthRequest, res: Response) => {
         const test = await getItem(TABLES.CHAPTER_TESTS, { id: testId });
         if (!test) {
             // Fallback for older tests where id might not be explicitly set, fallback to searching by chapterId as id
-            const oldTest = await getItem(TABLES.CHAPTER_TESTS, { chapterId: testId });
-            if (oldTest) return res.json(oldTest);
+            const oldTests = await getAllItems(TABLES.CHAPTER_TESTS, "chapterId = :cid", { ":cid": testId });
+            if (oldTests && oldTests.length > 0) return res.json(oldTests[0]);
             return res.status(404).json({ error: "Test not found" });
         }
         res.json(test);
