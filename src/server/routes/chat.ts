@@ -19,7 +19,8 @@ router.get("/conversations", async (req: any, res: any) => {
     try {
         const result = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
-            FilterExpression: "role = :role",
+            FilterExpression: "#r = :role",
+            ExpressionAttributeNames: { "#r": "role" },
             ExpressionAttributeValues: { ":role": "student" }
         }));
 

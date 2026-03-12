@@ -1275,13 +1275,14 @@
     {
       "id": "1773259144157fhvf9qb",
       "title": "new course",
-      "price": 1,
+      "price": 10,
       "duration": "12",
       "maxStudents": 100,
       "description": "",
       "accessFeatures": [
         "Lectures",
-        "Notes"
+        "Notes",
+        "Live Classes"
       ],
       "profilePicData": "",
       "createdAt": "2026-03-11T19:59:04.157Z"
