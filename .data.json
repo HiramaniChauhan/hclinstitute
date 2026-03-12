@@ -1287,62 +1287,6 @@
   ],
   "Enrollments": [
     {
-      "enrollmentId": "177324508556228dc06c",
-      "userId": "1773143739016",
-      "batchId": "direct",
-      "courseId": "1773241351065ztr73uj",
-      "enrolledAt": "2026-03-11T16:04:45.562Z",
-      "status": "active"
-    },
-    {
-      "enrollmentId": "1773245282847ghv9wfm",
-      "userId": "1773143739016",
-      "batchId": "direct",
-      "courseId": "1773245271129t822p66",
-      "enrolledAt": "2026-03-11T16:08:02.847Z",
-      "status": "active"
-    },
-    {
-      "enrollmentId": "1773245763029wsi9rsy",
-      "userId": "1773143739016",
-      "courseId": "1773245755040emr34sz",
-      "enrolledAt": "2026-03-11T16:16:03.029Z",
-      "status": "active",
-      "paymentId": "free",
-      "amount": 0
-    },
-    {
-      "enrollmentId": "1773254747218qleb71e",
-      "userId": "1773143739016",
-      "courseId": "1773245830656inr57uw",
-      "enrolledAt": "2026-03-11T18:45:47.218Z",
-      "status": "active",
-      "paymentId": "free",
-      "amount": 0,
-      "expiresAt": "2026-09-11T18:45:47.219Z",
-      "batchId": "direct"
-    },
-    {
-      "enrollmentId": "17732458664899qqi32i",
-      "userId": "1773143739016",
-      "courseId": "177324581716979v974l",
-      "enrolledAt": "2026-03-11T16:17:46.489Z",
-      "status": "active",
-      "paymentId": "free",
-      "amount": 0
-    },
-    {
-      "enrollmentId": "17732461230816p55tin",
-      "userId": "1773143739016",
-      "courseId": "1773245790836sqlrkkm",
-      "enrolledAt": "2026-03-11T16:22:03.081Z",
-      "expiresAt": null,
-      "status": "active",
-      "paymentId": "free",
-      "amount": 0,
-      "batchId": "direct"
-    },
-    {
       "enrollmentId": "1773251820105v4z3of0",
       "userId": "1773228490066",
       "courseId": "1773245830656inr57uw",
@@ -1352,6 +1296,15 @@
       "paymentId": "free",
       "amount": 0,
       "batchId": "direct"
+    },
+    {
+      "enrollmentId": "1773293111159g4196ww",
+      "userId": "1773143739016",
+      "courseId": "1773259144157fhvf9qb",
+      "batchId": "direct",
+      "enrolledAt": "2026-03-12T05:25:11.159Z",
+      "enrolledBy": "1773145252705",
+      "status": "active"
     }
   ],
   "Announcements": [

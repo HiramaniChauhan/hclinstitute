@@ -260,3 +260,18 @@ export const updateAboutInfo = async (data: any) => {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 };
+export const fetchStudentEnrollments = async (userId: string) => {
+    const res = await fetch(`${API_BASE}/enrollments/student/${userId}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const adminEnrollStudent = async (data: { userId: string, courseId: string, batchId?: string }) => {
+    const res = await fetch(`${API_BASE}/enrollments/admin/enroll`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
