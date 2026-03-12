@@ -68,7 +68,7 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
             category: category || "General",
             pinned: !!pinned,
             status: status || "published",
-            author: req.user.name || req.user.email || "Admin",
+            author: req.user.firstName || req.user.email || "Admin",
             createdAt: new Date().toISOString(),
             views: 0,
         };

@@ -7,11 +7,13 @@ const router = Router();
 // Get all courses
 router.get("/", async (req, res) => {
     try {
-        const courses = await getAllItems(TABLES.COURSES);
-        res.json(courses || []);
+        const rawResult = await getAllItems(TABLES.COURSES);
+        const courses = rawResult || [];
+        console.log(`[Courses Route] Found ${courses.length} courses in DB`);
+        res.json(courses);
     } catch (error) {
         console.error("Error fetching courses", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error", message: error instanceof Error ? error.message : String(error) });
     }
 });
 

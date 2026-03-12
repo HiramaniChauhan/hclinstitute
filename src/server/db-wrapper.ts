@@ -27,6 +27,7 @@ if (useDynamoDb) {
     class MockDocClient {
         async send(command: any) {
             try {
+                console.log(`[MockDB Command] ${command.constructor.name} on Table: ${command.input.TableName}`);
                 if (command instanceof PutCommand) {
                     memoryDb.put(command.input.TableName, command.input.Item);
                     return { Item: command.input.Item };
@@ -79,7 +80,10 @@ if (useDynamoDb) {
                         });
                     }
 
-                    console.log(`[MockDB Scan] Table: ${command.input.TableName} | Found: ${filtered.length} items`);
+                    console.log(`[MockDB Scan] Table: ${command.input.TableName} | Raw Found: ${items.length} items`);
+                    if (items.length > 0) {
+                        console.log(`[MockDB Scan] Sample ID: ${items[0].id || items[0].key}`);
+                    }
                     return { Items: filtered };
                 } else if (command instanceof DeleteCommand) {
                     memoryDb.delete(command.input.TableName, command.input.Key);

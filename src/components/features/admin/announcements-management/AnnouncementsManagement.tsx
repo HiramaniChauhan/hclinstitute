@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Megaphone, Plus, Trash2, Calendar, Users, Pin, BookOpen, Loader2, Edit } from "lucide-react";
+import { Megaphone, Plus, Trash2, Calendar, Users, Pin, BookOpen, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +19,6 @@ export const AnnouncementsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -59,24 +58,7 @@ export const AnnouncementsManagement = () => {
     targetCourseIds: [], pinned: false, status: "published",
   });
 
-  const handleOpen = (announcement?: any) => {
-    if (announcement) {
-      setEditingId(announcement.id);
-      setFormData({
-        title: announcement.title || "",
-        content: announcement.content || "",
-        priority: announcement.priority || "medium",
-        category: announcement.category || "General",
-        targetCourseIds: announcement.targetCourseIds || [],
-        pinned: !!announcement.pinned,
-        status: announcement.status || "published",
-      });
-    } else {
-      setEditingId(null);
-      resetForm();
-    }
-    setOpen(true);
-  };
+  const handleOpen = () => { resetForm(); setOpen(true); };
 
   const toggleCourse = (courseId: string) => {
     setFormData(prev => ({
@@ -94,19 +76,17 @@ export const AnnouncementsManagement = () => {
     }
     setSaving(true);
     try {
-      const url = editingId ? `/api/announcements/${editingId}` : "/api/announcements";
-      const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
+      const res = await fetch("/api/announcements", {
+        method: "POST",
         headers: headers(),
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast.success(editingId ? "Announcement updated!" : "Announcement created!");
+      toast.success("Announcement created!");
       setOpen(false);
       fetchAll();
     } catch (e: any) {
-      toast.error(e.message || "Failed to save announcement");
+      toast.error(e.message || "Failed to create announcement");
     } finally {
       setSaving(false);
     }
@@ -144,7 +124,7 @@ export const AnnouncementsManagement = () => {
           <Megaphone className="h-8 w-8" />
           Announcements Management
         </h1>
-        <Button onClick={() => handleOpen()}>
+        <Button onClick={handleOpen}>
           <Plus className="h-4 w-4 mr-2" />
           Create Announcement
         </Button>
@@ -154,7 +134,7 @@ export const AnnouncementsManagement = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Announcement" : "Create Announcement"}</DialogTitle>
+            <DialogTitle>Create Announcement</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -266,7 +246,7 @@ export const AnnouncementsManagement = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-              {saving ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : editingId ? "Save Changes" : "Publish"}
+              {saving ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : "Publish"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -308,24 +288,14 @@ export const AnnouncementsManagement = () => {
                         <span>by {a.author}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => handleOpen(a)}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDelete(a.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
                   </div>
                 </div>
               ))}
