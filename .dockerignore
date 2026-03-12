@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.DS_Store
+*.log
+.env
+bun.lockb
+package-lock.json
+grep_results.txt
+test-api*.js
+test-db.ts
+test-update*.js
+verify-chat-fix.ts
+retrieve-db.ts
+.data.json
