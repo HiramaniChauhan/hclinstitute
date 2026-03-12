@@ -33,22 +33,11 @@ import paymentsRouter from "./routes/payments";
 import aboutRouter from "./routes/about";
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Serve static files from the React app
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// The dist folder is at the root level in the Docker container
-const distPath = path.join(__dirname, "../../dist");
-app.use(express.static(distPath));
 
 // Helper for OTP generation
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -680,11 +669,6 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/about", aboutRouter);
-
-// Wildcard route to serve React's index.html for SPA routing
-app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-});
 
 // Error handling middleware
 app.use(errorHandler);
