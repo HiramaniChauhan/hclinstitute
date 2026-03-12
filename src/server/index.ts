@@ -334,7 +334,7 @@ app.post("/api/auth/update-admin-secret", async (req, res) => {
         await docClient.send(new PutCommand({
             TableName: TABLES.CONFIG,
             Item: {
-                key: "ADMIN_SECRET",
+                id: "ADMIN_SECRET",
                 value: newSecret,
                 updatedAt: new Date().toISOString()
             }
@@ -351,7 +351,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
     try {
         const result = await docClient.send(new GetCommand({
             TableName: TABLES.CONFIG,
-            Key: { key: "ADMIN_SECRET" }
+            Key: { id: "ADMIN_SECRET" }
         }));
         const storedSecret = result.Item?.value;
         const expectedSecret = storedSecret || ADMIN_SECRET;
@@ -618,7 +618,7 @@ app.get("/api/config/lecture-structure", async (req, res) => {
     try {
         const result = await docClient.send(new GetCommand({
             TableName: TABLES.CONFIG,
-            Key: { key: "LECTURE_STRUCTURE" }
+            Key: { id: "LECTURE_STRUCTURE" }
         }));
         res.json(result.Item?.value || {
             Mathematics: { portions: [] },
@@ -636,7 +636,7 @@ app.post("/api/config/lecture-structure", verifyToken, requireAdmin, async (req,
         await docClient.send(new PutCommand({
             TableName: TABLES.CONFIG,
             Item: {
-                key: "LECTURE_STRUCTURE",
+                id: "LECTURE_STRUCTURE",
                 value: structure,
                 updatedAt: new Date().toISOString()
             }

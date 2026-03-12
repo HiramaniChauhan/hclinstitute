@@ -17,12 +17,12 @@ const client = new DynamoDBClient({
 const tableConfigs = [
     { name: TABLES.USERS, pk: "id" },
     { name: TABLES.OTPS, pk: "email" },
-    { name: TABLES.CONFIG, pk: "key" },
+    { name: TABLES.CONFIG, pk: "id" },
     { name: TABLES.COURSES, pk: "id" },
     { name: TABLES.BATCHES, pk: "id" },
     { name: TABLES.ANNOUNCEMENTS, pk: "id" },
     { name: TABLES.LECTURES, pk: "id" },
-    { name: TABLES.TESTS, pk: "id" },
+    { name: TABLES.TESTS, pk: "testId" },
     { name: TABLES.RESULTS, pk: "resultId" },
     { name: TABLES.FORUM_POSTS, pk: "id" },
     { name: TABLES.CHAT_MESSAGES, pk: "id" },
@@ -67,4 +67,31 @@ async function initTables() {
     console.log("[Init] Table Initialization Complete.");
 }
 
-initTables().catch(console.error);
+async function seedAdminSecret() {
+    try {
+        const { ADMIN_SECRET } = await import("./constants");
+        const exists = await client.send(new DescribeTableCommand({ TableName: TABLES.CONFIG }));
+        if (exists.Table) {
+            console.log("[Init] Seeding default ADMIN_SECRET...");
+            const { PutCommand } = await import("@aws-sdk/lib-dynamodb");
+            const { DynamoDBDocumentClient } = await import("@aws-sdk/lib-dynamodb");
+            const ddbDocClient = DynamoDBDocumentClient.from(client);
+
+            await ddbDocClient.send(new PutCommand({
+                TableName: TABLES.CONFIG,
+                Item: {
+                    id: "ADMIN_SECRET",
+                    value: ADMIN_SECRET,
+                    updatedAt: new Date().toISOString()
+                }
+            }));
+            console.log("[Init] Default ADMIN_SECRET seeded.");
+        }
+    } catch (error: any) {
+        console.warn("[Init] Could not seed ADMIN_SECRET:", error.message);
+    }
+}
+
+initTables()
+    .then(() => seedAdminSecret())
+    .catch(console.error);
