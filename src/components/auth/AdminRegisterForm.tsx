@@ -54,6 +54,11 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
             return;
         }
 
+        if (formData.password.length < 6) {
+            toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+            return;
+        }
+
         setLoading(true);
         const success = await sendOtp(formData.email);
         setLoading(false);
@@ -158,6 +163,10 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
     };
 
     const handleUpdateSecret = async () => {
+        if (newSecret.length < 6) {
+            toast({ title: "Error", description: "New secret must be at least 6 characters", variant: "destructive" });
+            return;
+        }
         setLoading(true);
         const success = await updateAdminSecret('hiramanichauhan2399@gmail.com', resetOtp, newSecret);
         setLoading(false);
@@ -216,6 +225,7 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                                             {showNewSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                    <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                                 </div>
                                 <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" onClick={handleUpdateSecret} disabled={loading}>
                                     {loading ? 'Updating...' : 'Verify & Update Secret'}
@@ -266,6 +276,7 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password *</label>
@@ -286,6 +297,7 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                         </div>
 
                         <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white" disabled={loading}>
@@ -365,6 +377,7 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                                     {showAdminSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                         </div>
                         <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white" disabled={loading}>
                             {loading ? 'Authenticating...' : 'Complete Registration'}

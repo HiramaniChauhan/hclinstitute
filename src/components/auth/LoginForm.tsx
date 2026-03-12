@@ -24,6 +24,10 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 6) {
+      toast({ title: "Validation Error", description: "Password must be at least 6 characters long.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -105,6 +109,7 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Logging in...' : 'Login as Student'}

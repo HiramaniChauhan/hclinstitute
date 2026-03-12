@@ -142,6 +142,11 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
       toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
       return;
     }
+
+    if (formData.password.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
     if (!formData.agreeTerms) {
       toast({ title: "Error", description: "Please agree to terms and conditions", variant: "destructive" });
       return;
@@ -330,6 +335,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Confirm Password *</label>
@@ -349,6 +355,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
               </div>
             </div>
 

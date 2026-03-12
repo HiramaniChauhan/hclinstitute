@@ -181,6 +181,10 @@ app.post("/api/auth/forgot-password/verify", async (req, res) => {
 app.post("/api/auth/forgot-password/reset", async (req, res) => {
     const { email, otp, newPassword, role } = req.body;
 
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
     try {
         // Verify OTP again for security
         const otpResult = await docClient.send(new GetCommand({
@@ -315,6 +319,10 @@ app.post("/api/auth/update-admin-secret", async (req, res) => {
         return res.status(403).json({ error: "Unauthorized email" });
     }
 
+    if (!newSecret || newSecret.length < 6) {
+        return res.status(400).json({ error: "Secret must be at least 6 characters" });
+    }
+
     try {
         const result = await docClient.send(new GetCommand({
             TableName: TABLES.OTPS,
@@ -380,6 +388,10 @@ app.post("/api/auth/register", async (req, res) => {
         qualification, institute, parentName, parentPhone, emergencyContact
     } = req.body;
 
+    if (!password || password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
     if (role === "admin") {
         console.log(`[Register] Verifying Admin Secret for ${email}`);
         const isValidAdmin = await verifyAdminSecret(adminSecret);
@@ -441,6 +453,11 @@ app.post("/api/auth/register", async (req, res) => {
 
 app.post("/api/auth/login", async (req, res) => {
     const { email, password, role, adminSecret } = req.body;
+
+    if (!password || password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
     console.log(`[Login] Attempt: ${email} as ${role}`);
 
     if (role === 'admin') {
