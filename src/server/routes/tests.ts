@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { validateInput, testSchema } from "../utils/validators";
 import { createItem, getAllItems, getItem, deleteItem, generateId } from "../utils/db-helpers";
-import { TABLES } from "../db";
+import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 
 const router = Router();
@@ -33,6 +33,7 @@ interface TestData {
     startTime?: string;
     endDate?: string;
     endTime?: string;
+    updatedAt?: string;
 }
 
 // GET all tests

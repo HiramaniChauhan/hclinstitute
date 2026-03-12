@@ -160,6 +160,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, role }: ForgotPasswordMod
                                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -171,6 +172,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, role }: ForgotPasswordMod
                                 required
                                 placeholder="••••••••"
                             />
+                            <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
                             {confirmPassword && newPassword !== confirmPassword && (
                                 <p className="text-xs text-destructive">Passwords do not match</p>
                             )}

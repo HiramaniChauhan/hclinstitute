@@ -1,7 +1,10 @@
 import { GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "../db-wrapper";
 
-export const generateId = () => Date.now().toString() + Math.random().toString(36).substring(2, 9);
+export const generateId = (prefix?: string) => {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    return prefix ? `${prefix}_${id}` : id;
+};
 
 export async function getItem<T>(tableName: string, key: any): Promise<T | null> {
     const result = await docClient.send(new GetCommand({ TableName: tableName, Key: key }));
@@ -18,8 +21,9 @@ export async function getAllItems<T>(tableName: string, filterExpression?: strin
     return (result.Items as T[]) || [];
 }
 
-export async function createItem(tableName: string, item: any): Promise<void> {
+export async function createItem<T>(tableName: string, item: T): Promise<T> {
     await docClient.send(new PutCommand({ TableName: tableName, Item: item }));
+    return item;
 }
 
 export async function updateItem(tableName: string, key: any, updateExpression: string, expressionAttributeValues: any): Promise<void> {

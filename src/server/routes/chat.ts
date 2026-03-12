@@ -48,6 +48,9 @@ router.get("/conversations", async (req: any, res: any) => {
             };
         }));
 
+        // Sort conversations by latest message time
+        conversations.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
         res.json(conversations);
     } catch (error) {
         console.error("Error fetching conversations:", error);
