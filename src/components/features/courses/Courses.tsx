@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Clock, Users, BookOpen, Search, Filter, Star, IndianRupee, ImageIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PaymentModal } from "./PaymentModal";
+import { toast } from "sonner";
 
 export const Courses = () => {
   const [courses, setCourses] = useState<any[]>([]);
@@ -125,6 +126,14 @@ export const Courses = () => {
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700 shadow-sm"
                     onClick={() => {
+                      const alreadyEnrolled = myEnrollments.some(e => e.courseId === course.id && e.status === 'active');
+                      if (alreadyEnrolled) {
+                        toast.error("You are already enrolled in this course.", {
+                          description: "Check 'My Enrolled Courses' below.",
+                          duration: 4000
+                        });
+                        return;
+                      }
                       setSelectedCourse(course);
                       setPaymentModalOpen(true);
                     }}

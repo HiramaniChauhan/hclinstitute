@@ -34,6 +34,7 @@ const tableConfigs = [
     { name: TABLES.SELECTED_STUDENTS, pk: "id" },
     { name: TABLES.CHAPTER_TESTS, pk: "id" },
     { name: TABLES.CHAPTER_RESULTS, pk: "resultId" },
+    { name: TABLES.CHAPTER_TEST_LAST_RESULTS, pk: "id" },
     { name: TABLES.VIDEOS, pk: "id" }
 ];
 

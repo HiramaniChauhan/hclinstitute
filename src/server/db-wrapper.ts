@@ -123,5 +123,6 @@ export const TABLES = {
     SELECTED_STUDENTS: "SelectedStudents",
     CHAPTER_TESTS: "ChapterTests",
     CHAPTER_RESULTS: "ChapterResults",
+    CHAPTER_TEST_LAST_RESULTS: "ChapterTestLastResults",
     VIDEOS: "Videos"
 };

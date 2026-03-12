@@ -25,6 +25,7 @@ export const Dashboard = () => {
   const [activeLiveClasses, setActiveLiveClasses] = useState<any[]>([]);
   const [userResults, setUserResults] = useState<any[]>([]);
   const [loadingTests, setLoadingTests] = useState(true);
+  const [accessFeatures, setAccessFeatures] = useState<string[]>([]);
   const [bestRank, setBestRank] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,14 +33,20 @@ export const Dashboard = () => {
       const token = sessionStorage.getItem('token');
       if (!token) return;
       try {
-        const [testsResp, resultsResp, videosResp] = await Promise.all([
+        const [testsResp, resultsResp, videosResp, accessResp] = await Promise.all([
           fetch('/api/tests', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/results/my-results', { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/videos', { headers: { Authorization: `Bearer ${token}` } })
+          fetch('/api/videos', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/enrollments/my-access', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         const testsData = await testsResp.json();
         const resultsData = await resultsResp.json();
         const videosData = await videosResp.json();
+        const accessData = await accessResp.json();
+
+        if (accessData && Array.isArray(accessData.accessFeatures)) {
+          setAccessFeatures(accessData.accessFeatures);
+        }
 
         if (Array.isArray(videosData)) {
           const live = videosData.filter((v: any) => v.type === 'live' && v.status === 'Live');
@@ -88,6 +95,18 @@ export const Dashboard = () => {
 
   const navigateToLiveClasses = () => {
     window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'live-classes' }));
+  };
+
+  const handleJoinLiveClass = (url: string) => {
+    if (!accessFeatures.includes('Live Classes')) {
+      toast.error("Access Denied", {
+        description: "You need to enroll in a course with Live Classes to join.",
+        duration: 5000
+      });
+      window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+      return;
+    }
+    window.open(url, '_blank');
   };
 
   return (
@@ -175,7 +194,7 @@ export const Dashboard = () => {
                       </Badge>
                     )}
                     <div className="mt-4 flex gap-2">
-                      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700" onClick={() => window.open(liveClass.url, '_blank')}>
+                      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700" onClick={() => handleJoinLiveClass(liveClass.url)}>
                         <Video size={14} className="mr-1" />
                         Join Now
                       </Button>

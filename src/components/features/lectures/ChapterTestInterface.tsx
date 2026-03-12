@@ -126,15 +126,22 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
             const totalPossibleMarks = test.sections.reduce((acc, s) => acc + (s.questions.length * (Number(s.marksPerQuestion) || 1)), 0);
 
             let totalScore = 0;
+            let totalCorrect = 0;
+            let totalWrong = 0;
             test.sections.forEach(section => {
                 const marks = Number(section.marksPerQuestion) || 1;
                 const negMarks = Number(section.negativeMarks) || 0;
                 section.questions.forEach(q => {
                     const key = `${section.id}_${q.id}`;
                     const ans = savedAnswers[key];
-                    if (ans !== undefined) {
-                        if (Number(ans) === Number(q.correctAnswer)) totalScore += marks;
-                        else totalScore -= negMarks;
+                    if (ans !== undefined && ans !== null) {
+                        if (Number(ans) === Number(q.correctAnswer)) {
+                            totalScore += marks;
+                            totalCorrect++;
+                        } else {
+                            totalScore -= negMarks;
+                            totalWrong++;
+                        }
                     }
                 });
             });
@@ -142,7 +149,9 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
             const results = {
                 score: totalScore,
                 totalMarks: totalPossibleMarks,
-                userAnswers: savedAnswers
+                userAnswers: savedAnswers,
+                correctAnswers: totalCorrect,
+                wrongAnswers: totalWrong
             };
 
             // Clear sessionStorage on submit
@@ -357,8 +366,8 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 {currentAttempt && sectionStats && (
                                     <>
                                         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl shadow-inner">
-                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200 px-2.5 py-1 text-xs">{sectionStats.sections[activeSection.id]?.correct || 0} Correct</Badge>
-                                            <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200 px-2.5 py-1 text-xs">{sectionStats.sections[activeSection.id]?.wrong || 0} Wrong</Badge>
+                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200 px-2.5 py-1 text-xs">{sectionStats.totalCorrect} Correct</Badge>
+                                            <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200 px-2.5 py-1 text-xs">{sectionStats.totalWrong} Wrong</Badge>
                                         </div>
 
                                         <div className="flex items-center gap-3 bg-white border border-blue-100 p-1.5 rounded-xl shadow-sm px-3">
