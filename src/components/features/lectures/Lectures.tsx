@@ -136,7 +136,7 @@ export const Lectures = () => {
   };
 
   const handleCompleteTest = async (results: any) => {
-    const testId = (activeTest as any)?.chapterId || (activeTest as any)?.testId || (activeTest as any)?.id;
+    const testId = (activeTest as any)?.id || (activeTest as any)?.testId || (activeTest as any)?.chapterId;
     if (testId) {
       try {
         const token = sessionStorage.getItem('token');
@@ -156,10 +156,13 @@ export const Lectures = () => {
 
         if (res.ok) {
           const savedResult = await res.json();
-          setAttempts(prev => ({
-            ...prev,
-            [String(testId)]: [savedResult]
-          }));
+          setAttempts(prev => {
+            const currentAttempts = prev[String(testId)] || [];
+            return {
+              ...prev,
+              [String(testId)]: [savedResult] // Only keep the latest for "Review Last"
+            };
+          });
           toast.success("Practice test completed!");
         }
       } catch (err) {
@@ -407,7 +410,7 @@ export const Lectures = () => {
           onComplete={handleCompleteTest}
           onCancel={() => { setActiveTest(null); setReviewMode(false); }}
           reviewMode={reviewMode}
-          allAttempts={attempts[String((activeTest as any).chapterId || (activeTest as any).testId || (activeTest as any).id)] || []}
+          allAttempts={attempts[String((activeTest as any).id || (activeTest as any).testId || (activeTest as any).chapterId)] || []}
         />
       )}
 

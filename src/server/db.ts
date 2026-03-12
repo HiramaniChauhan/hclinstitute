@@ -16,23 +16,7 @@ const client = new DynamoDBClient({
 
 export const docClient = DynamoDBDocumentClient.from(client);
 
-export const TABLES = {
-    USERS: process.env.DYNAMODB_USERS_TABLE || "Users",
-    OTPS: "Otps",
-    CONFIG: "Config",
-    COURSES: "Courses",
-    BATCHES: "Batches",
-    ANNOUNCEMENTS: "Announcements",
-    LECTURES: "Lectures",
-    TESTS: "Tests",
-    RESULTS: "Results",
-    FORUM_POSTS: "ForumPosts",
-    CHAT_MESSAGES: "ChatMessages",
-    NOTES: "Notes",
-    SELECTED_STUDENTS: "SelectedStudents",
-    CHAPTER_TESTS: "ChapterTests",
-    CHAPTER_RESULTS: "ChapterResults"
-};
+export { TABLES } from "./db-wrapper";
 
 // Helper to initialize tables if they don't exist (optional, for demo)
 // In a real app, you'd use CDK or Terraform
