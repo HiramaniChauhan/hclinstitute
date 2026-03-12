@@ -9,14 +9,29 @@ import {
 } from "@/components/ui/dialog";
 import {
     Search, Trash2, ShieldCheck, ShieldOff, Users, Activity,
-    CheckCircle, XCircle, Mail, UserCog, Bell, RefreshCw, FileText
+    CheckCircle, XCircle, Mail, UserCog, Bell, RefreshCw, FileText,
+    BookOpen, Plus, Loader2
 } from "lucide-react";
 import { StudentDetail } from "./StudentDetail";
 import {
     fetchAllStudents, verifyStudent, unverifyStudent, suspendStudent, unsuspendStudent,
-    deleteStudent, broadcastNotification,
+    deleteStudent, broadcastNotification, fetchStudentEnrollments, adminEnrollStudent, unenroll, fetchCourses
 } from "@/api/portalApi";
 import { useToast } from "@/hooks/use-toast";
+
+interface Course {
+    id: string;
+    title: string;
+    price: number;
+}
+
+interface Enrollment {
+    enrollmentId: string;
+    userId: string;
+    courseId?: string;
+    enrolledAt: string;
+    status: string;
+}
 
 interface Student {
     id: string;
@@ -45,6 +60,10 @@ export const StudentManagement = () => {
     const [broadcastDialog, setBroadcastDialog] = useState(false);
     const [photoDialog, setPhotoDialog] = useState<{ title: string, url: string } | null>(null);
     const [broadcast, setBroadcast] = useState({ title: "", message: "" });
+    const [courseDialogStudent, setCourseDialogStudent] = useState<Student | null>(null);
+    const [studentEnrollments, setStudentEnrollments] = useState<Enrollment[]>([]);
+    const [allCourses, setAllCourses] = useState<Course[]>([]);
+    const [enrollLoading, setEnrollLoading] = useState(false);
     const { toast } = useToast();
 
     const load = useCallback(async () => {
@@ -145,6 +164,59 @@ export const StudentManagement = () => {
             setBroadcast({ title: "", message: "" });
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
+        }
+    };
+
+    const loadStudentEnrollments = async (studentId: string) => {
+        try {
+            const data = await fetchStudentEnrollments(studentId);
+            setStudentEnrollments(data);
+        } catch (e: any) {
+            toast({ title: "Error", description: "Failed to load enrollments", variant: "destructive" });
+        }
+    };
+
+    const openCourseDialog = async (student: Student) => {
+        setCourseDialogStudent(student);
+        setEnrollLoading(true);
+        try {
+            await Promise.all([
+                loadStudentEnrollments(student.id),
+                fetchCourses().then(setAllCourses)
+            ]);
+        } catch (e: any) {
+            toast({ title: "Error", description: "Failed to load course data", variant: "destructive" });
+        } finally {
+            setEnrollLoading(false);
+        }
+    };
+
+    const doEnroll = async (courseId: string) => {
+        if (!courseDialogStudent) return;
+        setEnrollLoading(true);
+        try {
+            await adminEnrollStudent({ userId: courseDialogStudent.id, courseId });
+            toast({ title: "Student enrolled successfully" });
+            await loadStudentEnrollments(courseDialogStudent.id);
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } finally {
+            setEnrollLoading(false);
+        }
+    };
+
+    const doUnenroll = async (enrollmentId: string) => {
+        if (!courseDialogStudent) return;
+        if (!confirm("Are you sure you want to remove this course?")) return;
+        setEnrollLoading(true);
+        try {
+            await unenroll(enrollmentId);
+            toast({ title: "Course removed" });
+            await loadStudentEnrollments(courseDialogStudent.id);
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } finally {
+            setEnrollLoading(false);
         }
     };
 
@@ -266,6 +338,14 @@ export const StudentManagement = () => {
                                                 className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                                             >
                                                 <FileText className="h-4 w-4 mr-1" /> Details
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => openCourseDialog(student)}
+                                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                                            >
+                                                <BookOpen className="h-4 w-4 mr-1" /> Courses
                                             </Button>
                                             {student.aadharPhoto && !student.isVerified && (
                                                 <Button
@@ -428,6 +508,83 @@ export const StudentManagement = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Course Enrollment Dialog */}
+            <Dialog open={!!courseDialogStudent} onOpenChange={(open) => !open && setCourseDialogStudent(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Manage Courses: {courseDialogStudent?.name}</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-4">
+                        {/* Current Enrollments */}
+                        <div>
+                            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 text-indigo-500" />
+                                Current Enrollments
+                            </h3>
+                            {enrollLoading ? (
+                                <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+                            ) : studentEnrollments.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic py-2">No active enrollments found.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {studentEnrollments.map(en => {
+                                        const course = allCourses.find(c => c.id === en.courseId);
+                                        return (
+                                            <div key={en.enrollmentId} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                                                <div>
+                                                    <p className="font-medium text-sm">{course?.title || "Unknown Course"}</p>
+                                                    <p className="text-xs text-gray-500">Enrolled: {new Date(en.enrolledAt).toLocaleDateString()}</p>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => doUnenroll(en.enrollmentId)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <hr />
+
+                        {/* Assign New Course */}
+                        <div>
+                            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <Plus className="h-4 w-4 text-green-500" />
+                                Assign New Course
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2">
+                                {allCourses.filter(c => !studentEnrollments.some(e => e.courseId === c.id)).map(course => (
+                                    <div key={course.id} className="p-2 border rounded-md flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                        <span className="text-sm truncate">{course.title}</span>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 px-2"
+                                            onClick={() => doEnroll(course.id)}
+                                            disabled={enrollLoading}
+                                        >
+                                            {enrollLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Assign"}
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCourseDialogStudent(null)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 };

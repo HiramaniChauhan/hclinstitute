@@ -47,7 +47,7 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
         }
 
         const enrollment: EnrollmentData = {
-            enrollmentId: generateId("enrollment"),
+            enrollmentId: generateId(),
             userId: req.user.id,
             batchId,
             courseId,
@@ -55,8 +55,8 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
             status: "active",
         };
 
-        const created = await createItem<EnrollmentData>(TABLES.ENROLLMENTS, enrollment);
-        res.status(201).json(created);
+        await createItem(TABLES.ENROLLMENTS, enrollment);
+        res.status(201).json(enrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -98,8 +98,8 @@ router.post("/enroll-course", verifyToken, async (req: AuthRequest, res: Respons
             status: "active",
         };
 
-        const created = await createItem<EnrollmentData>(TABLES.ENROLLMENTS, enrollment);
-        res.status(201).json(created);
+        await createItem(TABLES.ENROLLMENTS, enrollment);
+        res.status(201).json(enrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -194,6 +194,49 @@ router.delete("/:enrollmentId", verifyToken, async (req: AuthRequest, res: Respo
 
         await deleteItem(TABLES.ENROLLMENTS, { enrollmentId: req.params.enrollmentId });
         res.json({ message: "Unenrolled successfully" });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// GET — Enrollments for a specific student (Admin)
+router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        const enrollments = all.filter(e => e.userId === req.params.userId);
+        res.json(enrollments);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST — Admin enrolls a student in a course
+router.post("/admin/enroll", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const { userId, courseId, batchId } = req.body;
+        if (!userId || !courseId) return res.status(400).json({ error: "userId and courseId are required" });
+
+        // Check if student exists
+        const user = await getItem<any>(TABLES.USERS, { id: userId });
+        if (!user || user.role !== "student") return res.status(404).json({ error: "Student not found" });
+
+        // Prevent duplicate enrollments
+        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        const existing = all.find(e => e.userId === userId && e.courseId === courseId && e.status === "active");
+        if (existing) return res.status(409).json({ error: "Already enrolled in this course" });
+
+        const enrollment: EnrollmentData = {
+            enrollmentId: generateId(),
+            userId,
+            courseId,
+            batchId: batchId || "direct",
+            enrolledAt: new Date().toISOString(),
+            enrolledBy: req.user?.id,
+            status: "active",
+        };
+
+        await createItem(TABLES.ENROLLMENTS, enrollment);
+        res.status(201).json(enrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
