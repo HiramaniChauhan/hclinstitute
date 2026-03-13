@@ -524,7 +524,11 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Google Login Secure Verification
 app.post("/api/auth/google", async (req, res) => {
-    const { credential, role, adminSecret, isSignup } = req.body;
+    const { credential, role, isSignup } = req.body;
+
+    if (role === 'admin') {
+        return res.status(403).json({ error: "Google login is restricted for administrators." });
+    }
 
     try {
         // Verify the Google ID Token
@@ -537,15 +541,8 @@ app.post("/api/auth/google", async (req, res) => {
             return res.status(401).json({ error: "Invalid Google token" });
         }
 
-        const { email, name, sub, picture } = payload;
+        const { email, name, sub } = payload;
         console.log(`[Google Auth] Verified: ${email} as ${role} (isSignup: ${isSignup})`);
-
-        if (role === 'admin') {
-            const isValidAdmin = await verifyAdminSecret(adminSecret);
-            if (!isValidAdmin) {
-                return res.status(401).json({ error: "Invalid Admin Secret Code" });
-            }
-        }
 
         const scanResult = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
@@ -554,6 +551,14 @@ app.post("/api/auth/google", async (req, res) => {
         }));
 
         let user = scanResult.Items?.[0];
+
+        console.log(`[Google Auth] User lookup for ${email}: ${user ? 'found' : 'not found'} with role: ${user?.role}`);
+
+        if (user && user.role && user.role.toLowerCase() === 'admin') {
+            console.warn(`[Google Auth] SECURITY BLOCK: Admin user ${email} attempted login via Google OAuth (Requested Role: ${role})`);
+            return res.status(403).json({ error: "Google login is strictly prohibited for administrator accounts for security reasons." });
+        }
+
         const requestedRole = role || "student";
 
         if (!user) {
@@ -570,22 +575,6 @@ app.post("/api/auth/google", async (req, res) => {
                 console.log(`[Google Auth] Student account not found: ${email}`);
                 return res.status(404).json({ error: "No student account found. Please register first." });
             }
-
-            // For admins (or other cases if added), we can auto-register if the secret is valid
-            console.log(`[Google Auth] Creating new admin account via Google: ${email}`);
-            user = {
-                id: sub,
-                name,
-                email,
-                role: requestedRole,
-                provider: "google",
-                createdAt: new Date().toISOString(),
-                isVerified: requestedRole === 'admin' // Admins verified by secret key
-            };
-            await docClient.send(new PutCommand({
-                TableName: TABLES.USERS,
-                Item: user,
-            }));
         }
 
         console.log(`[Google Auth] Success: ${email} authenticated as ${user.role}`);

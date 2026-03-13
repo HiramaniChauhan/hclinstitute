@@ -3,18 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Clock, BookOpen, CheckCircle, ChevronRight, FileText, Download, Youtube, Trophy, RotateCcw, X, Target, Award, AlertCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Play, Clock, BookOpen, CheckCircle, ChevronRight, ChevronDown, FileText, Download, Youtube, Trophy, RotateCcw, X, Target, Award, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ChapterTestInterface } from "@/components/features/lectures/ChapterTestInterface";
 import { Test } from "@/data/testData";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Lectures = () => {
   const [selectedSubject, setSelectedSubject] = useState("Mathematics");
   const [subjects, setSubjects] = useState<string[]>(["Mathematics", "Reasoning", "Computer"]);
   const [lectureStructure, setLectureStructure] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [completedLectures, setCompletedLectures] = useState<string[]>([]);
 
   // Helper to initialize from sessionStorage
   const initStorage = (key: string, defaultVal: any) => {
@@ -49,7 +51,30 @@ export const Lectures = () => {
 
   useEffect(() => {
     fetchData();
+    fetchProgress();
   }, []);
+
+  const fetchProgress = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      console.log("[Lectures] fetchProgress starting, token:", token ? "FOUND" : "MISSING");
+      const resp = await fetch("/api/lectures/progress", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      console.log("[Lectures] fetchProgress status:", resp.status);
+      if (resp.ok) {
+        const data = await resp.json();
+        console.log("[Lectures] fetchProgress data:", data);
+        // Normalize to strings to avoid type mismatch
+        setCompletedLectures(Array.isArray(data) ? data.map(String) : []);
+      } else {
+        const errData = await resp.json();
+        console.error("[Lectures] fetchProgress error data:", errData);
+      }
+    } catch (err) {
+      console.error("[Lectures] Failed to load progress", err);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,7 +118,6 @@ export const Lectures = () => {
       if (!resp.ok) throw new Error("No practice test found");
       const testData = await resp.json();
 
-      // Normalize ID to ensure handleCompleteTest can retrieve it reliably
       if (!testData.id && !testData.chapterId) testData.id = testId;
       if (!testData.chapterId) testData.chapterId = testId;
 
@@ -108,7 +132,6 @@ export const Lectures = () => {
   const handleReviewTest = async (testId: string | number) => {
     try {
       const token = sessionStorage.getItem('token');
-      // 1. Fetch the latest result first
       const res = await fetch(`/api/chapter-tests/results/latest/${testId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -116,14 +139,12 @@ export const Lectures = () => {
       const lastResult = await res.json();
       if (!lastResult) throw new Error("No recent result found");
 
-      // 2. Fetch the test structure
       const resp = await fetch(`/api/chapter-tests/test/${testId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (!resp.ok) throw new Error("Failed to fetch test structure");
       const testData = await resp.json();
 
-      // Normalize ID
       if (!testData.id && !testData.chapterId) testData.id = testId;
       if (!testData.chapterId) testData.chapterId = testId;
 
@@ -147,7 +168,7 @@ export const Lectures = () => {
             "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify({
-            chapterId: testId, // mapping testId to chapterId in DB schema for consistency
+            chapterId: testId,
             score: results.score,
             totalMarks: results.totalMarks,
             userAnswers: results.userAnswers
@@ -157,10 +178,9 @@ export const Lectures = () => {
         if (res.ok) {
           const savedResult = await res.json();
           setAttempts(prev => {
-            const currentAttempts = prev[String(testId)] || [];
             return {
               ...prev,
-              [String(testId)]: [savedResult] // Only keep the latest for "Review Last"
+              [String(testId)]: [savedResult]
             };
           });
           toast.success("Practice test completed!");
@@ -172,6 +192,41 @@ export const Lectures = () => {
     setActiveTest(null);
     setReviewMode(false);
     setShowInstructions(false);
+  };
+
+  const toggleLectureCompletion = async (lectureId: string, shouldComplete: boolean) => {
+    console.log("[Lectures] toggleLectureCompletion:", lectureId, "shouldComplete:", shouldComplete);
+
+    try {
+      const token = sessionStorage.getItem('token');
+      console.log("[Lectures] Using token:", token ? "FOUND" : "MISSING");
+
+      const resp = await fetch("/api/lectures/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ lectureId: String(lectureId), completed: shouldComplete })
+      });
+
+      console.log("[Lectures] API response status:", resp.status);
+      if (resp.ok) {
+        setCompletedLectures(prev =>
+          shouldComplete
+            ? [...prev, String(lectureId)]
+            : prev.filter(id => id !== String(lectureId))
+        );
+        toast.success(shouldComplete ? "Marked as done" : "Marked as undone");
+      } else {
+        const data = await resp.json().catch(() => ({ error: "Received non-JSON response" }));
+        console.error("[Lectures] API Error details:", data);
+        toast.error(data.error || `Error ${resp.status}: Failed to update progress`);
+      }
+    } catch (err: any) {
+      console.error("[Lectures] toggleLectureCompletion exception:", err);
+      toast.error(`Fetch Error: ${err.message || "Failed to update progress"}`);
+    }
   };
 
   if (loading) {
@@ -187,10 +242,6 @@ export const Lectures = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Video Lectures</h1>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Download Study Plan
-        </Button>
       </div>
 
       <Tabs value={selectedSubject} onValueChange={setSelectedSubject} className="w-full">
@@ -206,7 +257,6 @@ export const Lectures = () => {
 
         {subjects.map((subject) => (
           <TabsContent key={subject} value={subject} className="space-y-6">
-
             <Accordion type="single" collapsible className="w-full space-y-4">
               {(lectureStructure[subject]?.portions?.length || 0) === 0 && (
                 <div className="text-center py-20 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
@@ -225,144 +275,162 @@ export const Lectures = () => {
                         <BookOpen className="h-5 w-5 text-blue-600 group-hover:text-white transition-colors" />
                       </div>
                       <span>{portion.name}</span>
-                      <Badge variant="secondary" className="font-bold ml-2 bg-slate-100 text-slate-500 border-none">{portion.chapters.length} Chapters</Badge>
+                      <Badge variant="secondary" className="font-bold ml-2 bg-slate-100 text-slate-500 border-none">{portion.chapters?.length || 0} Chapters</Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-5 space-y-5 border-t border-slate-50">
-                    {portion.chapters.map((chapter: any) => (
-                      <Card key={chapter.id} className="border-none bg-slate-50/70 rounded-3xl overflow-hidden shadow-none">
-                        <CardHeader className="py-4 px-6 bg-white/50 border-b border-white">
-                          <CardTitle className="flex items-center gap-3 text-base font-black text-slate-700 tracking-tight">
-                            <BookOpen size={18} className="text-blue-500" />
-                            {chapter.name}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-6 px-6">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Lectures */}
-                            <div className="space-y-4">
-                              <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest pl-1">
-                                <Play className="h-3.5 w-3.5" />
-                                Video Lectures
-                              </h4>
-                              <div className="grid gap-2">
-                                {chapter.lectures.map((lecture: any) => (
-                                  <div
-                                    key={lecture.id}
-                                    onClick={() => setActiveLecture(lecture)}
-                                    className="p-4 bg-white rounded-2xl border border-white shadow-sm flex items-center justify-between group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all cursor-pointer"
-                                  >
-                                    <div className="flex items-center gap-4">
-                                      <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-500 transition-colors">
-                                        <Youtube className="h-5 w-5 text-red-600 group-hover:text-white transition-colors" />
-                                      </div>
-                                      <div>
-                                        <div className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{lecture.title}</div>
-                                        <div className="text-xs text-slate-400 font-bold flex items-center gap-2">
-                                          <Clock size={12} /> {lecture.duration}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                                      <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-white transition-colors" />
-                                    </div>
-                                  </div>
-                                ))}
-                                {chapter.lectures.length === 0 && <div className="text-xs text-slate-400 font-bold italic py-6 text-center border-2 border-dashed rounded-3xl border-slate-200 bg-slate-50/30">No lectures in this chapter</div>}
+                    <Accordion type="multiple" className="w-full space-y-3">
+                      {portion.chapters?.map((chapter: any) => (
+                        <AccordionItem key={chapter.id} value={chapter.id} className="border-none bg-slate-50/70 rounded-3xl overflow-hidden shadow-none px-0">
+                          <AccordionTrigger className="hover:no-underline py-0 px-0 group data-[state=open]:bg-white/50 border-b border-transparent data-[state=open]:border-white transition-all [&>svg]:mr-6">
+                            <div className="py-4 px-6 flex items-center justify-between w-full">
+                              <div className="flex items-center gap-3 text-base font-black text-slate-700 tracking-tight">
+                                <BookOpen size={18} className="text-blue-500" />
+                                {chapter.name}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-bold text-[10px] py-0 px-2 h-5">
+                                  {chapter.lectures?.length || 0} Lectures
+                                </Badge>
                               </div>
                             </div>
-
-                            <div className="space-y-4">
-                              <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest pl-1">
-                                <FileText className="h-3.5 w-3.5" />
-                                Chapter Practice Test
-                              </h4>
-                              <div className="grid gap-2">
-                                {/* Legacy single test support */}
-                                {chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && (
-                                  <div className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                                        <FileText className="h-5 w-5 text-green-500" />
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-6 px-6 pb-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                              <div className="space-y-4">
+                                <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest pl-1">
+                                  <Play className="h-3.5 w-3.5" />
+                                  Video Lectures
+                                </h4>
+                                <div className="grid gap-2">
+                                  {chapter.lectures?.map((lecture: any) => (
+                                    <div
+                                      key={lecture.id}
+                                      onClick={() => setActiveLecture(lecture)}
+                                      className="p-4 bg-white rounded-2xl border border-white shadow-sm flex items-center justify-between group hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-500 transition-colors">
+                                          <Youtube className="h-5 w-5 text-red-600 group-hover:text-white transition-colors" />
+                                        </div>
+                                        <div>
+                                          <div className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{lecture.title}</div>
+                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-2">
+                                            <Clock size={12} /> {lecture.duration}
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <div className="font-bold text-slate-800">Chapter Support Test</div>
-                                        <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
-                                          <span>Practice Mode</span>
-                                          <span>•</span>
-                                          <span>Unlimited Attempts</span>
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                                          <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-white transition-colors" />
+                                        </div>
+                                        <div
+                                          className="flex items-center justify-center p-1"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Checkbox
+                                            checked={completedLectures.includes(String(lecture.id))}
+                                            onCheckedChange={(checked) => toggleLectureCompletion(String(lecture.id), !!checked)}
+                                            className="h-6 w-6 rounded-lg border-2 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                                          />
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2 justify-end">
-                                      <div className="flex gap-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                          onClick={() => handleReviewTest(chapter.chapterTestId)}
-                                        >
-                                          Review Last
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
-                                          onClick={() => handleStartTest(chapter.chapterTestId)}
-                                        >
-                                          Start Practice
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
+                                  ))}
+                                  {(chapter.lectures?.length || 0) === 0 && <div className="text-xs text-slate-400 font-bold italic py-6 text-center border-2 border-dashed rounded-3xl border-slate-200 bg-slate-50/30">No lectures in this chapter</div>}
+                                </div>
+                              </div>
 
-                                {/* Multi-test array support */}
-                                {chapter.chapterTests?.map((test: any, idx: number) => (
-                                  <div key={test.id} className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                                        <FileText className="h-5 w-5 text-green-500" />
+                              <div className="space-y-4">
+                                <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest pl-1">
+                                  <FileText className="h-3.5 w-3.5" />
+                                  Chapter Practice Test
+                                </h4>
+                                <div className="grid gap-2">
+                                  {chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && (
+                                    <div className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
+                                      <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                                          <FileText className="h-5 w-5 text-green-500" />
+                                        </div>
+                                        <div>
+                                          <div className="font-bold text-slate-800">Chapter Support Test</div>
+                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
+                                            <span>Practice Mode</span>
+                                            <span>•</span>
+                                            <span>Unlimited Attempts</span>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <div className="font-bold text-slate-800">Practice Test {idx + 1}</div>
-                                        <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
-                                          <span>{test.totalQuestions || 0} Questions</span>
-                                          <span>•</span>
-                                          <span>{test.duration || 30} min</span>
+                                      <div className="flex items-center gap-2 justify-end">
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            onClick={() => handleReviewTest(chapter.chapterTestId)}
+                                          >
+                                            Review Last
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
+                                            onClick={() => handleStartTest(chapter.chapterTestId)}
+                                          >
+                                            Start Practice
+                                          </Button>
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2 justify-end">
-                                      <div className="flex gap-2">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                          onClick={() => handleReviewTest(test.id)}
-                                        >
-                                          Review Last
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
-                                          onClick={() => handleStartTest(test.id)}
-                                        >
-                                          Start Practice
-                                        </Button>
+                                  )}
+
+                                  {chapter.chapterTests?.map((test: any, idx: number) => (
+                                    <div key={test.id} className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
+                                      <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                                          <FileText className="h-5 w-5 text-green-500" />
+                                        </div>
+                                        <div>
+                                          <div className="font-bold text-slate-800">Practice Test {idx + 1}</div>
+                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
+                                            <span>{test.totalQuestions || 0} Questions</span>
+                                            <span>•</span>
+                                            <span>{test.duration || 30} min</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 justify-end">
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            onClick={() => handleReviewTest(test.id)}
+                                          >
+                                            Review Last
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
+                                            onClick={() => handleStartTest(test.id)}
+                                          >
+                                            Start Practice
+                                          </Button>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
 
-                                {!chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && (
-                                  <div className="text-xs text-slate-400 font-bold italic py-6 text-center border-2 border-dashed rounded-3xl border-slate-200 bg-slate-50/30">No test created yet for this chapter</div>
-                                )}
+                                  {!chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && (
+                                    <div className="text-xs text-slate-400 font-bold italic py-6 text-center border-2 border-dashed rounded-3xl border-slate-200 bg-slate-50/30">No test created yet for this chapter</div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -371,7 +439,6 @@ export const Lectures = () => {
         ))}
       </Tabs>
 
-      {/* VIDEO PLAYER DIALOG */}
       <Dialog open={!!activeLecture} onOpenChange={(open) => !open && setActiveLecture(null)}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black rounded-3xl border-none shadow-2xl">
           <div className="aspect-video w-full bg-slate-900 flex items-center justify-center">
@@ -403,7 +470,6 @@ export const Lectures = () => {
         </DialogContent>
       </Dialog>
 
-      {/* TEST INTERFACE MODAL */}
       {activeTest && !showInstructions && (
         <ChapterTestInterface
           test={activeTest}
@@ -414,7 +480,6 @@ export const Lectures = () => {
         />
       )}
 
-      {/* FULL-PAGE INSTRUCTIONS OVERLAY (Matches Tests.tsx) */}
       <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
         <DialogContent className="max-w-[100vw] w-screen h-screen m-0 rounded-none border-none shadow-none p-0 overflow-y-auto bg-white z-[120]">
           <div className="max-w-5xl mx-auto p-4 md:p-12 space-y-10">
@@ -434,7 +499,6 @@ export const Lectures = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              {/* Left Column: CBT Guidelines */}
               <div className="lg:col-span-7 space-y-10">
                 <section className="space-y-6">
                   <h2 className="text-2xl font-black flex items-center gap-4 text-slate-800">
@@ -489,7 +553,6 @@ export const Lectures = () => {
                 </section>
               </div>
 
-              {/* Right Column: Test Structure */}
               <div className="lg:col-span-5 space-y-8">
                 <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full"></div>

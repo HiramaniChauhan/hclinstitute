@@ -4,8 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
-import { ArrowLeft, KeySquare, Eye, EyeOff, Chrome } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
+import { ArrowLeft, KeySquare, Eye, EyeOff } from 'lucide-react';
 
 interface AdminRegisterFormProps {
     onBack: () => void;
@@ -15,8 +14,6 @@ interface AdminRegisterFormProps {
 
 export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegisterFormProps) => {
     const [step, setStep] = useState(1);
-    const [authMethod, setAuthMethod] = useState<'local' | 'google'>('local');
-    const [mockGoogleEmail, setMockGoogleEmail] = useState('');
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -40,7 +37,7 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
 
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
-    const { register, googleLogin, sendAdminSecretOtp, updateAdminSecret, sendOtp, verifyOtp } = useAuth();
+    const { register, sendAdminSecretOtp, updateAdminSecret, sendOtp, verifyOtp } = useAuth();
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -64,7 +61,6 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
         setLoading(false);
         if (success) {
             toast({ title: "OTP Sent", description: "Please check your email for the verification code." });
-            setAuthMethod('local');
             setStep(2);
         }
     };
@@ -82,37 +78,6 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
         }
     };
 
-    const onGoogleSignupSuccess = async (credentialResponse: any) => {
-        if (!credentialResponse.credential) return;
-        setLoading(true);
-        try {
-            const googleUser = await googleLogin(credentialResponse.credential, 'admin', undefined, true);
-            if (googleUser) {
-                const names = googleUser.name.split(' ');
-                setFormData(prev => ({
-                    ...prev,
-                    email: googleUser.email,
-                    firstName: names[0] || '',
-                    lastName: names.slice(1).join(' ') || '',
-                }));
-                setMockGoogleEmail(googleUser.email);
-                (window as any).googleCredential = credentialResponse.credential;
-                setAuthMethod('google');
-                setStep(3); // Advance to Secret Key
-                toast({ title: "Google Authenticated", description: "Please provide the Admin Secret Code to complete setup." });
-            }
-        } catch (error) {
-            console.error('Admin Google signup error:', error);
-            toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onGoogleSignupError = () => {
-        toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
-    };
-
     const handleFinalSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -124,26 +89,16 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
         setLoading(true);
 
         try {
-            if (authMethod === 'local') {
-                const { ...rest } = formData;
-                await register({
-                    email: rest.email,
-                    password: rest.password,
-                    name: `${rest.firstName} ${rest.lastName}`,
-                    adminSecret: rest.adminCode,
-                    otp: rest.otp
-                }, 'admin');
-                toast({ title: "Success", description: "Admin registration request submitted." });
-                onSuccess();
-            } else {
-                const credential = (window as any).googleCredential;
-                const success = await googleLogin(credential, 'admin', formData.adminCode);
-                if (success) {
-                    toast({ title: "Google Admin Signup Successful" });
-                    delete (window as any).googleCredential;
-                    onSuccess();
-                }
-            }
+            const { ...rest } = formData;
+            await register({
+                email: rest.email,
+                password: rest.password,
+                name: `${rest.firstName} ${rest.lastName}`,
+                adminSecret: rest.adminCode,
+                otp: rest.otp
+            }, 'admin');
+            toast({ title: "Success", description: "Admin registration request submitted." });
+            onSuccess();
         } catch (error) {
             console.error('Registration error:', error);
             toast({ title: "Error", description: "Registration failed. Please try again.", variant: "destructive" });
@@ -304,16 +259,6 @@ export const AdminRegisterForm = ({ onBack, onSuccess, onLoginClick }: AdminRegi
                             {loading ? 'Sending OTP...' : 'Send OTP'}
                         </Button>
                     </form>
-
-                    <div className="flex justify-center">
-                        <GoogleLogin
-                            onSuccess={onGoogleSignupSuccess}
-                            onError={onGoogleSignupError}
-                            theme="outline"
-                            size="large"
-                            width="100%"
-                        />
-                    </div>
 
                     <div className="text-center mt-4 text-sm">
                         Already have an account?{" "}
