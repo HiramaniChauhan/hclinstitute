@@ -19,6 +19,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Test, Question, TestSection } from "@/data/testData";
 import { useEffect } from "react";
+import { Latex } from "@/components/ui/latex";
 
 
 
@@ -755,9 +756,22 @@ export const TestCreation = () => {
                     <Textarea
                       value={questionFormData.text}
                       onChange={(e) => setQuestionFormData({ ...questionFormData, text: e.target.value })}
-                      placeholder="Enter your question here..."
+                      placeholder="Enter your question here... (Use $...$ for inline and $$...$$ for block LaTeX)"
+                      className="min-h-[120px]"
                     />
                   </div>
+
+                  {questionFormData.text && (
+                    <div className="space-y-2">
+                      <Label className="text-blue-600 flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Live LaTeX Preview
+                      </Label>
+                      <div className="p-4 rounded-lg bg-white border border-blue-100 min-h-[60px] text-lg">
+                        <Latex content={questionFormData.text} />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-3">
                     <Label className="flex items-center gap-2">

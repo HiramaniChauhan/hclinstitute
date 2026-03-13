@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, ChevronLeft, ChevronRight, Save, Send, AlertCircle, Award, Trophy, ListOrdered, Target, X, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Test, Question, TestSection } from "@/data/testData";
 import { toast } from "sonner";
+import { Latex } from "@/components/ui/latex";
 
 interface ChapterTestInterfaceProps {
     test: Test;
@@ -451,7 +452,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                             </div>
                             <CardContent className="p-8 space-y-8">
                                 <div className="text-3xl font-semibold leading-relaxed text-slate-800">
-                                    {activeQuestion.question}
+                                    <Latex content={activeQuestion.question} />
                                 </div>
 
                                 {activeQuestion.image && (
@@ -484,7 +485,9 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                                     }`}>
                                                     {String.fromCharCode(65 + idx)}
                                                 </span>
-                                                <span className="flex-1 text-xl font-medium text-slate-700">{option}</span>
+                                                <span className="flex-1 text-xl font-medium text-slate-700">
+                                                    <Latex content={option} />
+                                                </span>
                                                 {isCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
                                                 {isUserWrong && <Badge className="bg-red-600 text-white font-bold ml-auto px-4 py-1 text-sm">Your Answer</Badge>}
                                                 {isSavedSelected && !reviewMode && isDraftSelected && (
@@ -502,7 +505,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                             Explanation
                                         </div>
                                         <p className="text-xl leading-relaxed text-slate-300">
-                                            {activeQuestion.explanation}
+                                            <Latex content={activeQuestion.explanation || ''} />
                                         </p>
                                     </div>
                                 )}

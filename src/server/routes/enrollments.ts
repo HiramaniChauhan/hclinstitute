@@ -55,8 +55,23 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
             status: "active",
         };
 
-        await createItem(TABLES.ENROLLMENTS, enrollment);
-        res.status(201).json(enrollment);
+        const createdEnrollment = await createItem(TABLES.ENROLLMENTS, enrollment);
+
+        // Create a fee record for consistency (Paid via batch/later)
+        await createItem(TABLES.FEES, {
+            feeId: generateId("fee"),
+            userId: req.user.id,
+            description: `Batch Enrollment: ${batchId}`,
+            amount: 0, // Amount may be handled separately for batches
+            status: "paid",
+            category: "tuition",
+            createdAt: enrollment.enrolledAt,
+            createdBy: req.user.id,
+            dueDate: enrollment.enrolledAt,
+            paidAt: enrollment.enrolledAt,
+        });
+
+        res.status(201).json(createdEnrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -83,10 +98,9 @@ router.post("/enroll-course", verifyToken, async (req: AuthRequest, res: Respons
         }
 
         // Fetch the course for duration
-        const allCourses = await getAllItems<any>(TABLES.COURSES);
-        const enrolledCourse = allCourses.find((c: any) => c.id === courseId);
+        const enrolledCourse = await getItem<any>(TABLES.COURSES, { id: courseId });
         const enrolledAt = new Date().toISOString();
-        const expiresAt = enrolledCourse ? parseDuration(enrolledCourse.duration) : null;
+        const expiresAt = enrolledCourse ? parseDuration(enrolledCourse.duration, new Date(enrolledAt)) : null;
 
         const enrollment: EnrollmentData = {
             enrollmentId: generateId(),
@@ -99,6 +113,23 @@ router.post("/enroll-course", verifyToken, async (req: AuthRequest, res: Respons
         };
 
         await createItem(TABLES.ENROLLMENTS, enrollment);
+
+        // Also create a fee record for consistency
+        const feeRecord = {
+            feeId: generateId("fee"),
+            userId: req.user.id,
+            courseId,
+            description: `Direct Enrollment: ${enrolledCourse?.title || 'Unknown Course'}`,
+            amount: 0,
+            status: "paid",
+            category: "tuition",
+            createdAt: enrolledAt,
+            createdBy: req.user.id,
+            dueDate: enrolledAt,
+            paidAt: enrolledAt,
+        };
+        await createItem(TABLES.FEES, feeRecord);
+
         res.status(201).json(enrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -139,15 +170,14 @@ router.get("/my-access", verifyToken, async (req: AuthRequest, res: Response) =>
             return res.json({ accessFeatures: [] });
         }
 
-        const allCourses = await getAllItems<any>(TABLES.COURSES);
         const permittedFeatures = new Set<string>();
 
-        activeEnrollments.forEach(enrollment => {
-            const course = allCourses.find((c: any) => c.id === enrollment.courseId);
+        for (const enrollment of activeEnrollments) {
+            const course = await getItem<any>(TABLES.COURSES, { id: enrollment.courseId });
             if (course && Array.isArray(course.accessFeatures)) {
                 course.accessFeatures.forEach((f: string) => permittedFeatures.add(f));
             }
-        });
+        }
 
         res.json({ accessFeatures: Array.from(permittedFeatures) });
     } catch (error: any) {
@@ -225,17 +255,38 @@ router.post("/admin/enroll", verifyToken, requireAdmin, async (req: AuthRequest,
         const existing = all.find(e => e.userId === userId && e.courseId === courseId && e.status === "active");
         if (existing) return res.status(409).json({ error: "Already enrolled in this course" });
 
+        const enrolledAt = new Date().toISOString();
+        const course = await getItem<any>(TABLES.COURSES, { id: courseId });
+        const expiresAt = course ? parseDuration(course.duration, new Date(enrolledAt)) : null;
+
         const enrollment: EnrollmentData = {
             enrollmentId: generateId(),
             userId,
             courseId,
             batchId: batchId || "direct",
-            enrolledAt: new Date().toISOString(),
+            enrolledAt,
+            expiresAt,
             enrolledBy: req.user?.id,
             status: "active",
         };
 
         await createItem(TABLES.ENROLLMENTS, enrollment);
+
+        // Create a $0 fee record for tracking
+        await createItem(TABLES.FEES, {
+            feeId: generateId("fee"),
+            userId,
+            courseId,
+            description: `Admin Enrollment: ${course?.title || 'Unknown Course'}${batchId ? ` (Batch: ${batchId})` : ''}`,
+            amount: 0,
+            status: "paid",
+            category: "tuition",
+            createdAt: enrolledAt,
+            createdBy: req.user?.id || "admin",
+            dueDate: enrolledAt,
+            paidAt: enrolledAt,
+        });
+
         res.status(201).json(enrollment);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

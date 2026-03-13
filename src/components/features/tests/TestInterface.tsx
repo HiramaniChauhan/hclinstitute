@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Test, Question, TestSection } from "@/data/testData";
 import { toast } from "sonner";
+import { Latex } from "@/components/ui/latex";
 
 interface TestInterfaceProps {
     test: Test;
@@ -622,7 +623,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                             </div>
                             <CardContent className="p-8 space-y-8">
                                 <div className="text-3xl font-semibold leading-relaxed text-slate-800">
-                                    {activeQuestion.question}
+                                    <Latex content={activeQuestion.question} />
                                 </div>
 
                                 {activeQuestion.image && (
@@ -655,7 +656,9 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                                     }`}>
                                                     {String.fromCharCode(65 + idx)}
                                                 </span>
-                                                <span className="flex-1 text-xl font-medium text-slate-700">{option}</span>
+                                                <span className="flex-1 text-xl font-medium text-slate-700">
+                                                    <Latex content={option} />
+                                                </span>
                                                 {isCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
                                                 {isUserWrong && <Badge className="bg-red-600 text-white font-bold ml-auto px-4 py-1 text-sm">Your Answer</Badge>}
                                                 {isSavedSelected && !reviewMode && isDraftSelected && (
@@ -673,7 +676,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                             Explanation
                                         </div>
                                         <p className="text-xl leading-relaxed text-slate-300">
-                                            {activeQuestion.explanation}
+                                            <Latex content={activeQuestion.explanation || ''} />
                                         </p>
                                     </div>
                                 )}
@@ -850,10 +853,10 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {test.sections.map((s, sIdx) => (
                                                         <span key={s.id} className={`text-[11px] px-2 py-0.5 rounded-full font-medium border ${activeSectionIdx === sIdx
-                                                                ? 'bg-blue-600 text-white border-blue-700'
-                                                                : completedSections.has(sIdx)
-                                                                    ? 'bg-red-100 text-red-600 border-red-200'
-                                                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                                            ? 'bg-blue-600 text-white border-blue-700'
+                                                            : completedSections.has(sIdx)
+                                                                ? 'bg-red-100 text-red-600 border-red-200'
+                                                                : 'bg-slate-100 text-slate-500 border-slate-200'
                                                             }`}>
                                                             {sIdx + 1}. {s.name}
                                                             {completedSections.has(sIdx) ? ' 🔒' : ''}

@@ -3,6 +3,7 @@ import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { createItem, getAllItems, getItem, deleteItem, generateId } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
+import { parseDuration } from "./payments";
 
 const router = Router();
 
@@ -134,13 +135,30 @@ router.put("/:feeId/pay", verifyToken, async (req: AuthRequest, res: Response) =
 
         await createItem<FeeRecord>(TABLES.FEES, updated);
 
+        // Automatic Enrollment: if tuition fee and has courseId, grant access
+        if (fee.category === "tuition" && (fee as any).courseId) {
+            const course = await getItem<any>(TABLES.COURSES, { id: (fee as any).courseId });
+            const enrolledAt = new Date().toISOString();
+
+            await createItem(TABLES.ENROLLMENTS, {
+                enrollmentId: generateId("enrollment"),
+                userId: fee.userId,
+                courseId: (fee as any).courseId,
+                enrolledAt,
+                status: "active",
+                paymentId: fee.feeId, // Link to fee as the 'payment'
+                batchId: "fee-payment",
+                expiresAt: course ? parseDuration(course.duration, new Date(enrolledAt)) : null,
+            });
+        }
+
         // Notify student if admin paid it
         if (req.user.role === "admin" && fee.userId !== req.user.id) {
             await createItem(TABLES.NOTIFICATIONS, {
                 notificationId: generateId("notif"),
                 userId: fee.userId,
                 title: "Fee Marked Paid",
-                message: `Your fee of ₹${fee.amount} for "${fee.description}" has been marked as paid.`,
+                message: `Your fee of ₹${fee.amount} for "${fee.description}" has been marked as paid. Access granted.`,
                 type: "fee",
                 isRead: false,
                 createdAt: new Date().toISOString(),
