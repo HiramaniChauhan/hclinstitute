@@ -360,7 +360,6 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
               <div className="flex-1 text-center md:text-left">
                 <Badge className="mb-4 bg-[#ef5350]/10 text-[#ef5350] hover:bg-[#ef5350]/20 border-none px-3 py-1 font-bold">Visionary Leader</Badge>
                 <h2 className="text-4xl md:text-5xl font-bold mb-2 text-white">{about.directorName}</h2>
-                <p className="text-xl text-gray-400 font-medium mb-6 tracking-wide">{about.directorDesignation}</p>
                 <p className="text-gray-400 text-base leading-relaxed mb-8 max-w-2xl whitespace-pre-line">
                   {about.directorBio}
                 </p>
