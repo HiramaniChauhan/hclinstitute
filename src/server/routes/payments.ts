@@ -95,12 +95,17 @@ router.post("/create-order", verifyToken, async (req: AuthRequest, res: Response
             },
         });
 
+        // Fetch user details to pass to Razorpay
+        const user = await getItem<any>(TABLES.USERS, { id: req.user.id });
+
         res.json({
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
             keyId: process.env.RAZORPAY_KEY_ID,
             courseName: course.title,
+            userName: user?.name || "",
+            userEmail: user?.email || req.user.email || "",
         });
     } catch (error: any) {
         console.error("Create order error:", error);

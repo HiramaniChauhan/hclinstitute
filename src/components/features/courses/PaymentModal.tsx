@@ -105,7 +105,10 @@ export const PaymentModal = ({ open, course, onClose, onSuccess }: PaymentModalP
                         toast.error(verifyData.error || "Payment verification failed. Contact support.");
                     }
                 },
-                prefill: { name: "", email: "" },
+                prefill: {
+                    name: orderData.userName || "",
+                    email: orderData.userEmail || ""
+                },
                 theme: { color: "#2563eb" },
                 modal: { ondismiss: () => setLoading(false) },
             };
