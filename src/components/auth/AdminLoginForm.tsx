@@ -4,9 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
-import { ShieldCheck, ArrowLeft, KeySquare, Eye, EyeOff, Lock, Chrome } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, KeySquare, Eye, EyeOff, Lock } from 'lucide-react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
-import { GoogleLogin } from '@react-oauth/google';
 
 interface AdminLoginFormProps {
     onRegisterClick: () => void;
@@ -15,7 +14,6 @@ interface AdminLoginFormProps {
 
 export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps) => {
     const [step, setStep] = useState(1);
-    const [authMethod, setAuthMethod] = useState<'local' | 'google'>('local');
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -33,7 +31,7 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
 
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
-    const { login, googleLogin, sendAdminSecretOtp, updateAdminSecret } = useAuth();
+    const { login, sendAdminSecretOtp, updateAdminSecret } = useAuth();
 
     const handleStep1Local = (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,42 +43,7 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
             toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
             return;
         }
-        setAuthMethod('local');
         setStep(2);
-    };
-
-    const onGoogleLoginSuccess = async (credentialResponse: any) => {
-        if (!credentialResponse.credential) return;
-        setLoading(true);
-        try {
-            // Store the credential for later use in handleFinalLogin
-            // We need to decode it partially to get the email, or just send it to backend to get the email
-            // For now, let's just get the user info from the token if possible or fetch it
-            const response = await fetch('/api/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ credential: credentialResponse.credential, role: 'admin', isSignup: true }),
-            });
-            const data = await response.json();
-            if (response.ok) {
-                setEmail(data.user.email);
-                setAuthMethod('google');
-                setStep(2);
-                // Store the credential to use in final step
-                (window as any).googleCredential = credentialResponse.credential;
-            } else {
-                toast({ title: "Auth Failed", description: data.error, variant: "destructive" });
-            }
-        } catch (error) {
-            console.error('Admin Google login error:', error);
-            toast({ title: "Google Auth Failed", description: "Connection error", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const onGoogleLoginError = () => {
-        toast({ title: "Google Auth Failed", description: "Authentication failed", variant: "destructive" });
     };
 
     const handleFinalLogin = async (e: React.FormEvent) => {
@@ -94,19 +57,7 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
         setLoading(true);
 
         try {
-            if (authMethod === 'local') {
-                const success = await login({ email, password, adminSecret }, 'admin');
-                if (success) {
-                    // toast is handled in AuthProvider normally, but keeping as original
-                }
-            } else {
-                // Use the stored google credential
-                const credential = (window as any).googleCredential;
-                const success = await googleLogin(credential, 'admin', adminSecret);
-                if (success) {
-                    delete (window as any).googleCredential;
-                }
-            }
+            await login({ email, password, adminSecret }, 'admin');
         } catch (error) {
             console.error('Login error:', error);
         } finally {
@@ -277,16 +228,6 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
                                 onClose={() => setIsForgotModalOpen(false)}
                                 role="admin"
                             />
-
-                            <div className="flex justify-center">
-                                <GoogleLogin
-                                    onSuccess={onGoogleLoginSuccess}
-                                    onError={onGoogleLoginError}
-                                    theme="outline"
-                                    size="large"
-                                    width="100%"
-                                />
-                            </div>
                         </div>
                     ) : (
                         <div className="space-y-4">
