@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Edit, Save, Target, Clock, FileText, X, Image as ImageIcon, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Question, TestSection } from "@/data/testData";
+import { Latex } from "@/components/ui/latex";
 
 interface ChapterTestModalProps {
     open: boolean;
@@ -361,6 +362,18 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                                         className="min-h-[120px] rounded-3xl border-none shadow-sm focus:ring-2 focus:ring-blue-500 p-6 text-lg font-medium leading-relaxed"
                                     />
                                 </div>
+
+                                {questionForm.text && (
+                                    <div className="space-y-3">
+                                        <Label className="text-blue-600 flex items-center gap-2 font-black uppercase tracking-widest pl-1">
+                                            <Target className="w-4 h-4" />
+                                            Live LaTeX Preview
+                                        </Label>
+                                        <div className="p-6 rounded-3xl bg-white border-2 border-blue-50 min-h-[80px] text-xl shadow-inner italic">
+                                            <Latex content={questionForm.text} />
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-3">
                                     <Label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Question Image (Optional)</Label>
                                     <div className="relative flex items-center gap-4">
@@ -460,7 +473,9 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                                                             <div className="mt-1 w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">
                                                                 {i + 1}
                                                             </div>
-                                                            <p className="font-bold text-slate-800 text-lg leading-snug">{q.question}</p>
+                                                            <div className="font-bold text-slate-800 text-lg leading-snug">
+                                                                <Latex content={q.question} />
+                                                            </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pl-9">
                                                             {['A', 'B', 'C', 'D'].map((opt, idx) => (
@@ -468,7 +483,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                                                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${q.correctAnswer === idx ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
                                                                         {opt}
                                                                     </div>
-                                                                    {q.options[idx]}
+                                                                    <Latex content={q.options[idx]} />
                                                                 </div>
                                                             ))}
                                                         </div>

@@ -178,7 +178,6 @@ export const Courses = () => {
                           ))}
                         </div>
                       </div>
-                      <Button variant="outline">Continue Learning</Button>
                     </div>
                   </div>
                 );

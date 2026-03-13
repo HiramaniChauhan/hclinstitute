@@ -2,7 +2,7 @@ import { Router } from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { verifyToken, AuthRequest } from "../middleware/auth";
-import { createItem, getAllItems, generateId } from "../utils/db-helpers";
+import { createItem, getAllItems, getItem, generateId } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 
@@ -10,7 +10,7 @@ const router = Router();
 
 // Duration is stored as a plain integer = number of months
 // e.g. 6 = 6 months, 12 = 1 year, 24 = 2 years
-const parseDuration = (duration: string | number, fromDate: Date = new Date()): string | null => {
+export const parseDuration = (duration: string | number, fromDate: Date = new Date()): string | null => {
     const months = parseInt(String(duration));
     if (isNaN(months) || months <= 0) return null;
     const date = new Date(fromDate);
@@ -37,8 +37,7 @@ router.post("/create-order", verifyToken, async (req: AuthRequest, res: Response
         if (!courseId) return res.status(400).json({ error: "courseId is required" });
 
         // Fetch the course to get the price
-        const courses = await getAllItems<any>(TABLES.COURSES);
-        const course = courses.find((c: any) => c.id === courseId);
+        const course = await getItem<any>(TABLES.COURSES, { id: courseId });
         if (!course) return res.status(404).json({ error: "Course not found" });
 
         const priceInPaise = Math.round(Number(course.price) * 100); // Razorpay uses paise
@@ -58,6 +57,24 @@ router.post("/create-order", verifyToken, async (req: AuthRequest, res: Response
                 batchId: "direct",
             };
             await createItem(TABLES.ENROLLMENTS, enrollment);
+
+            // Create a $0 fee record for free enrollment
+            const feeRecord = {
+                feeId: generateId("fee"),
+                userId: req.user.id,
+                courseId,
+                description: `Free Enrollment: ${course.title}`,
+                amount: 0,
+                status: "paid",
+                category: "tuition" as const,
+                paymentId: "free",
+                createdAt: enrolledAt,
+                createdBy: req.user.id,
+                dueDate: enrolledAt,
+                paidAt: enrolledAt,
+            };
+            await createItem(TABLES.FEES, feeRecord);
+
             return res.json({ free: true, enrollment });
         }
 
@@ -115,9 +132,10 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
         }
 
         // Create enrollment record with expiry based on course duration
-        const courses2 = await getAllItems<any>(TABLES.COURSES);
-        const enrolledCourse = courses2.find((c: any) => c.id === courseId);
+        const enrolledCourse = await getItem<any>(TABLES.COURSES, { id: courseId });
         const enrolledAt = new Date().toISOString();
+        const amountInRupees = Number(req.body.amount) / 100; // Razorpay uses paise, we store rupees
+
         const enrollment = {
             enrollmentId: generateId(),
             userId: req.user.id,
@@ -127,21 +145,26 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
             status: "active",
             paymentId: razorpay_payment_id,
             orderId: razorpay_order_id,
-            amount: req.body.amount,
+            amount: amountInRupees,
             batchId: "payment",
         };
         await createItem(TABLES.ENROLLMENTS, enrollment);
 
         // Log payment record
         const paymentRecord = {
-            id: generateId(),
+            feeId: generateId("fee"),
             userId: req.user.id,
             courseId,
+            description: `Payment for course: ${enrolledCourse?.title || 'Unknown Course'}`,
+            amount: amountInRupees,
+            status: "paid",
+            category: "tuition",
             paymentId: razorpay_payment_id,
             orderId: razorpay_order_id,
-            amount: req.body.amount,
-            status: "paid",
-            paidAt: new Date().toISOString(),
+            paidAt: enrolledAt,
+            createdAt: enrolledAt,
+            createdBy: req.user.id,
+            dueDate: enrolledAt,
         };
         await createItem(TABLES.FEES, paymentRecord);
 

@@ -3,6 +3,7 @@ import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { getAllItems, getItem, createItem, deleteItem, generateId } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
+import { parseDuration } from "./payments";
 
 const router = Router();
 
@@ -200,19 +201,42 @@ router.put("/students/:id/batch", verifyToken, requireAdmin, async (req: AuthReq
         if (!user || user.role !== "student") {
             return res.status(404).json({ error: "Student not found" });
         }
-        const { batchId, batchName } = req.body;
+        const { batchId, batchName, courseId } = req.body;
         if (!batchId) return res.status(400).json({ error: "batchId is required" });
 
         const updated = { ...user, batchId, batchName };
+        if (courseId) (updated as any).courseId = courseId;
+
         await createItem(TABLES.USERS, updated);
+
+        const enrolledAt = new Date().toISOString();
+        const course = courseId ? await getItem<any>(TABLES.COURSES, { id: courseId }) : null;
 
         // Also create enrollment record
         await createItem(TABLES.ENROLLMENTS, {
             enrollmentId: generateId("enrollment"),
             userId: user.id,
+            courseId: courseId || null,
             batchId,
-            enrolledAt: new Date().toISOString(),
+            enrolledAt,
             enrolledBy: req.user?.id,
+            status: "active",
+            expiresAt: course ? parseDuration(course.duration, new Date(enrolledAt)) : null,
+        });
+
+        // Create a $0 fee record for tracking
+        await createItem(TABLES.FEES, {
+            feeId: generateId("fee"),
+            userId: user.id,
+            courseId: courseId || null,
+            description: `Batch Assignment: ${batchName || batchId}${course ? ` (${course.title})` : ''}`,
+            amount: 0,
+            status: "paid",
+            category: "tuition",
+            createdAt: enrolledAt,
+            createdBy: req.user?.id || "system",
+            dueDate: enrolledAt,
+            paidAt: enrolledAt,
         });
 
         // Notify student
