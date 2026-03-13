@@ -7,13 +7,14 @@ import { useAuth } from './AuthProvider';
 import { LogIn, Chrome, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormProps {
-  onRegisterClick: () => void;
-  onBack: () => void;
+  onRegisterClick?: () => void;
+  onBack?: () => void;
+  forcedRole?: 'student' | 'admin';
 }
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { GoogleLogin } from '@react-oauth/google';
 
-export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
+export const LoginForm = ({ onRegisterClick, onBack, forcedRole }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +22,8 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const { toast } = useToast();
   const { login, googleLogin } = useAuth();
+
+  const currentRole = forcedRole || 'student';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +34,9 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
     setLoading(true);
 
     try {
-      const success = await login({ email, password }, 'student');
+      const success = await login({ email, password }, currentRole);
       if (success) {
-        toast({ title: "Login Successful", description: "Welcome back!" });
+        toast({ title: "Login Successful", description: `Welcome back, ${currentRole}!` });
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -46,7 +49,7 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
     if (!credentialResponse.credential) return;
     setLoading(true);
     try {
-      const success = await googleLogin(credentialResponse.credential, 'student');
+      const success = await googleLogin(credentialResponse.credential, currentRole);
       if (success) {
         toast({ title: "Login Successful", description: "Signed in with Google" });
       }
@@ -64,20 +67,22 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 relative">
-      <Button
-        variant="ghost"
-        className="absolute top-4 left-4 flex items-center gap-2"
-        onClick={onBack}
-      >
-        <ArrowLeft className="w-5 h-5" /> Back Home
-      </Button>
+      {onBack && (
+        <Button
+          variant="ghost"
+          className="absolute top-4 left-4 flex items-center gap-2"
+          onClick={onBack}
+        >
+          <ArrowLeft className="w-5 h-5" /> Back Home
+        </Button>
+      )}
 
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-            <LogIn className="w-6 h-6" /> Student Login
+            <LogIn className="w-6 h-6" /> {currentRole === 'admin' ? 'Admin Login' : 'Student Login'}
           </CardTitle>
-          <CardDescription>Login to access your student portal</CardDescription>
+          <CardDescription>Login to access your {currentRole} portal</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -112,7 +117,7 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
               <p className="text-[10px] text-gray-500 mt-1">enter atleast 6 charector</p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login as Student'}
+              {loading ? 'Logging in...' : `Login as ${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}`}
             </Button>
             <div className="text-center">
               <button
@@ -128,7 +133,7 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
           <ForgotPasswordModal
             isOpen={isForgotModalOpen}
             onClose={() => setIsForgotModalOpen(false)}
-            role="student"
+            role={currentRole}
           />
 
           <div className="relative my-6">
@@ -147,17 +152,19 @@ export const LoginForm = ({ onRegisterClick, onBack }: LoginFormProps) => {
             />
           </div>
 
-          <div className="mt-6 text-center text-sm space-y-2">
-            <p className="text-gray-600">
-              Don't have an account?{' '}
-              <button
-                onClick={onRegisterClick}
-                className="text-primary font-semibold hover:underline"
-              >
-                Register Now
-              </button>
-            </p>
-          </div>
+          {onRegisterClick && currentRole === 'student' && (
+            <div className="mt-6 text-center text-sm space-y-2">
+              <p className="text-gray-600">
+                Don't have an account?{' '}
+                <button
+                  onClick={onRegisterClick}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Register Now
+                </button>
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
