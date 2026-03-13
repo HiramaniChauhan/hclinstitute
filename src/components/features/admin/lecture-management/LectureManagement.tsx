@@ -393,133 +393,154 @@ export const LectureManagement = () => {
                         </Button>
                       </div>
 
-                      {portion.chapters?.map((chapter: any) => (
-                        <Card key={chapter.id} className="border-none bg-slate-50/50 rounded-2xl">
-                          <CardHeader className="py-3 border-b border-slate-100">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="flex items-center gap-3 text-base font-bold text-slate-700">
-                                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                                  <BookOpen className="h-4 w-4 text-blue-600" />
+                      <Accordion type="multiple" className="w-full space-y-3">
+                        {portion.chapters?.map((chapter: any) => (
+                          <AccordionItem key={chapter.id} value={chapter.id.toString()} className="border-none bg-slate-50/50 rounded-2xl overflow-hidden">
+                            <div className="flex items-center justify-between pr-4 bg-white border-b border-slate-100">
+                              <AccordionTrigger className="py-3 px-4 hover:no-underline flex-1">
+                                <div className="flex items-center gap-3 text-base font-bold text-slate-700">
+                                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <BookOpen className="h-4 w-4 text-blue-600" />
+                                  </div>
+                                  <span className="text-left">{chapter.name}</span>
                                 </div>
-                                {chapter.name}
-                              </CardTitle>
+                              </AccordionTrigger>
                               <div className="flex gap-1">
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => { setSelectedPortionId(portion.id); setEditingChapter(chapter); setChapterName(chapter.name); setChapterDialogOpen(true); }}>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-blue-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPortionId(portion.id);
+                                    setEditingChapter(chapter);
+                                    setChapterName(chapter.name);
+                                    setChapterDialogOpen(true);
+                                  }}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => deleteChapter(portion.id, chapter.id)}>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-red-500"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteChapter(portion.id, chapter.id);
+                                  }}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
-                                    <Video className="h-3.5 w-3.5" />
-                                    Video Lectures
-                                  </h4>
-                                  <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 font-bold hover:bg-blue-50" onClick={() => { setSelectedPortionId(portion.id); setSelectedChapterId(chapter.id); setEditingLecture(null); setLectureForm({ title: "", videoUrl: "", duration: "" }); setLectureDialogOpen(true); }}>
-                                    <Plus className="h-3 w-3 mr-1" /> Add
-                                  </Button>
-                                </div>
-                                <div className="space-y-2">
-                                  {chapter.lectures?.map((lecture: any) => (
-                                    <div key={lecture.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-blue-200 transition-all">
-                                      <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500 transition-colors">
-                                          <Youtube className="h-5 w-5 text-red-600 group-hover:text-white transition-colors" />
-                                        </div>
-                                        <div className="truncate">
-                                          <div className="font-bold text-slate-700 truncate">{lecture.title}</div>
-                                          <div className="text-xs text-slate-400 flex items-center gap-3">
-                                            <span className="flex items-center gap-1"><Clock size={12} /> {lecture.duration}</span>
-                                            <span className="flex items-center gap-1 text-blue-500 font-medium">
-                                              <ExternalLink size={12} /> Link Added
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex gap-1">
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => { setSelectedPortionId(portion.id); setSelectedChapterId(chapter.id); setEditingLecture(lecture); setLectureForm({ title: lecture.title, videoUrl: lecture.videoUrl, duration: lecture.duration }); setLectureDialogOpen(true); }}><Edit className="h-3.5 w-3.5" /></Button>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => deleteLecture(portion.id, chapter.id, lecture.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {chapter.lectures.length === 0 && <div className="text-xs text-slate-400 font-medium italic py-4 text-center border-2 border-dashed rounded-xl border-slate-100">No lectures added</div>}
-                                </div>
-                              </div>
-
-                              {/* Tests */}
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
-                                    <FileText className="h-3.5 w-3.5" />
-                                    Chapter Practice Test
-                                  </h4>
-                                  <div className="flex gap-2">
-                                    <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 font-bold hover:bg-blue-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name }); setTestDialogOpen(true); }}>
-                                      <Plus className="h-3 w-3 mr-1" /> Add Chapter Test
+                            <AccordionContent className="pt-4 px-4 pb-4">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
+                                      <Video className="h-3.5 w-3.5" />
+                                      Video Lectures
+                                    </h4>
+                                    <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 font-bold hover:bg-blue-50" onClick={() => { setSelectedPortionId(portion.id); setSelectedChapterId(chapter.id); setEditingLecture(null); setLectureForm({ title: "", videoUrl: "", duration: "" }); setLectureDialogOpen(true); }}>
+                                      <Plus className="h-3 w-3 mr-1" /> Add
                                     </Button>
                                   </div>
+                                  <div className="space-y-2">
+                                    {chapter.lectures?.map((lecture: any) => (
+                                      <div key={lecture.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-blue-200 transition-all">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                          <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500 transition-colors">
+                                            <Youtube className="h-5 w-5 text-red-600 group-hover:text-white transition-colors" />
+                                          </div>
+                                          <div className="truncate">
+                                            <div className="font-bold text-slate-700 truncate">{lecture.title}</div>
+                                            <div className="text-xs text-slate-400 flex items-center gap-3">
+                                              <span className="flex items-center gap-1"><Clock size={12} /> {lecture.duration}</span>
+                                              <span className="flex items-center gap-1 text-blue-500 font-medium">
+                                                <ExternalLink size={12} /> Link Added
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600" onClick={() => { setSelectedPortionId(portion.id); setSelectedChapterId(chapter.id); setEditingLecture(lecture); setLectureForm({ title: lecture.title, videoUrl: lecture.videoUrl, duration: lecture.duration }); setLectureDialogOpen(true); }}><Edit className="h-3.5 w-3.5" /></Button>
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => deleteLecture(portion.id, chapter.id, lecture.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    {chapter.lectures.length === 0 && <div className="text-xs text-slate-400 font-medium italic py-4 text-center border-2 border-dashed rounded-xl border-slate-100">No lectures added</div>}
+                                  </div>
                                 </div>
-                                <div className="space-y-2">
-                                  {/* Support both legacy singular `chapterTestId` and the new `chapterTests` array */}
-                                  {chapter.chapterTestId && !chapter.chapterTests && (
-                                    <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-green-200 transition-all">
-                                      <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500 transition-colors">
-                                          <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
-                                        </div>
-                                        <div className="truncate">
-                                          <div className="font-bold text-slate-700 truncate">Chapter Practice Test</div>
-                                          <div className="text-xs text-slate-400 font-medium">
-                                            Dedicated Chapter Test • Unlimited Attempts
+
+                                {/* Tests */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-black flex items-center gap-2 text-slate-400 uppercase tracking-widest">
+                                      <FileText className="h-3.5 w-3.5" />
+                                      Chapter Practice Test
+                                    </h4>
+                                    <div className="flex gap-2">
+                                      <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 font-bold hover:bg-blue-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name }); setTestDialogOpen(true); }}>
+                                        <Plus className="h-3 w-3 mr-1" /> Add Chapter Test
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {/* Support both legacy singular `chapterTestId` and the new `chapterTests` array */}
+                                    {chapter.chapterTestId && !chapter.chapterTests && (
+                                      <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-green-200 transition-all">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                          <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500 transition-colors">
+                                            <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
+                                          </div>
+                                          <div className="truncate">
+                                            <div className="font-bold text-slate-700 truncate">Chapter Practice Test</div>
+                                            <div className="text-xs text-slate-400 font-medium">
+                                              Dedicated Chapter Test • Unlimited Attempts
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                      <div className="flex gap-1">
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name, testId: chapter.chapterTestId }); setTestDialogOpen(true); }}>
-                                          <Edit className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteTest(portion.id, chapter.id, chapter.chapterTestId)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                      </div>
-                                    </div>
-                                  )}
-                                  {chapter.chapterTests?.map((test: any, idx: number) => (
-                                    <div key={test.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-green-200 transition-all">
-                                      <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500 transition-colors">
-                                          <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
+                                        <div className="flex gap-1">
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name, testId: chapter.chapterTestId }); setTestDialogOpen(true); }}>
+                                            <Edit className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteTest(portion.id, chapter.id, chapter.chapterTestId)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                         </div>
-                                        <div className="truncate">
-                                          <div className="font-bold text-slate-700 truncate">Practice Test {idx + 1}</div>
-                                          <div className="text-xs text-slate-400 font-medium flex gap-2">
-                                            <span>{test.totalQuestions || 0} Questions</span>
-                                            <span>•</span>
-                                            <span>{test.duration || 0} min</span>
+                                      </div>
+                                    )}
+                                    {chapter.chapterTests?.map((test: any, idx: number) => (
+                                      <div key={test.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm text-sm flex justify-between items-center group hover:border-green-200 transition-all">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                          <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500 transition-colors">
+                                            <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
+                                          </div>
+                                          <div className="truncate">
+                                            <div className="font-bold text-slate-700 truncate">Practice Test {idx + 1}</div>
+                                            <div className="text-xs text-slate-400 font-medium flex gap-2">
+                                              <span>{test.totalQuestions || 0} Questions</span>
+                                              <span>•</span>
+                                              <span>{test.duration || 0} min</span>
+                                            </div>
                                           </div>
                                         </div>
+                                        <div className="flex gap-1">
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name, testId: test.id }); setTestDialogOpen(true); }}>
+                                            <Edit className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteTest(portion.id, chapter.id, test.id)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </div>
                                       </div>
-                                      <div className="flex gap-1">
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => { setActiveChapterForTest({ id: chapter.id, name: chapter.name, testId: test.id }); setTestDialogOpen(true); }}>
-                                          <Edit className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteTest(portion.id, chapter.id, test.id)}>
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {!chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && <div className="text-xs text-slate-400 font-medium italic py-4 text-center border-2 border-dashed rounded-xl border-slate-100">No chapter tests created</div>}
+                                    ))}
+                                    {!chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && <div className="text-xs text-slate-400 font-medium italic py-4 text-center border-2 border-dashed rounded-xl border-slate-100">No chapter tests created</div>}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
                     </AccordionContent>
                   </AccordionItem>
                 ))}
