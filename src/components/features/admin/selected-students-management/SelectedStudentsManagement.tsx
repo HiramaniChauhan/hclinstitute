@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Trophy, Plus, Trash2, Upload, Loader2, X, Linkedin, School, Search, Users, Star, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ImageCropDialog } from "../course-management/ImageCropDialog";
 
@@ -26,6 +27,7 @@ export const SelectedStudentsManagement = () => {
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState("");
+  const navigate = useNavigate();
 
   const filteredSearchItems = allStudents.filter(s =>
     (s.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -177,7 +179,6 @@ export const SelectedStudentsManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Trophy className="h-8 w-8 text-yellow-500" />
           Selected Students Management
         </h1>
         <div className="flex flex-wrap items-center gap-3">
@@ -304,11 +305,17 @@ export const SelectedStudentsManagement = () => {
           <>
             {/* Success Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+              <Card
+                className="bg-gradient-to-r from-blue-600 to-blue-800 text-white cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] group"
+                onClick={() => navigate('/selections')}
+              >
                 <CardContent className="p-6 text-center">
-                  <Users className="h-8 w-8 mx-auto mb-2" />
+                  <Users className="h-8 w-8 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                   <div className="text-2xl font-bold">{allStudents.length}</div>
                   <p className="text-sm">Overall Selected</p>
+                  <div className="mt-1 text-[10px] opacity-80 flex items-center justify-center gap-1">
+                    <Users size={10} /> Click to see all
+                  </div>
                 </CardContent>
               </Card>
 
@@ -349,10 +356,7 @@ export const SelectedStudentsManagement = () => {
                   <div className="space-y-4">
                     {[...displayedStudents]
                       .sort((a, b) => {
-                        if (searchTerm.trim()) {
-                          return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
-                        }
-                        return a.rank - b.rank;
+                        return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
                       })
                       .map((student) => (
                         <div key={student.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">

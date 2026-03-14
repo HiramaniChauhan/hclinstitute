@@ -54,7 +54,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [isVerified, setIsVerified] = useState(false);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -120,20 +119,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     toast({ title: "Google Sign-up Failed", description: "Google authentication failed", variant: "destructive" });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
-    const file = e.target.files?.[0];
-    if (file && field === 'tenthResult') {
-      const fileName = file.name.toLowerCase();
-      const fullName = `${formData.firstName} ${formData.lastName}`.toLowerCase().trim();
-      if (fullName && fileName.includes(fullName.split(' ')[0])) {
-        setIsVerified(true);
-        toast({ title: "Verified", description: "Name matched with the document!" });
-      } else {
-        setIsVerified(false);
-        toast({ title: "Manual Verification", description: "Name doesn't match the file exactly." });
-      }
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,8 +144,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
         ...formData,
         email,
         name: `${formData.firstName} ${formData.lastName}`,
-        isVerified,
-        tenthResultName: isVerified ? `${formData.firstName} ${formData.lastName}` : null
       };
 
       const result = await register(payload, 'student');
@@ -297,24 +280,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium flex items-center gap-2"><FileText className="w-4 h-4" /> 10th Marksheet *</label>
-              <Input
-                type="file"
-                onChange={(e) => handleFileChange(e, 'tenthResult')}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">First Name must match the document name exactly for auto-verification.</p>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-lg border flex items-center justify-between">
-              <span className="text-sm font-medium">Student Verification Status:</span>
-              {isVerified ? (
-                <span className="text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full border border-green-200">Verified</span>
-              ) : (
-                <span className="text-gray-400 font-medium italic">Pending (Manual)</span>
-              )}
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

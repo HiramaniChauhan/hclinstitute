@@ -383,7 +383,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
 // Auth Routes
 app.post("/api/auth/register", async (req, res) => {
     const {
-        firstName, lastName, email, password, role, aadharNumber, tenthResultName, adminSecret,
+        firstName, lastName, email, password, role, aadharNumber, adminSecret,
         phone, dateOfBirth, gender, address, city, state, pincode,
         qualification, institute, parentName, parentPhone, emergencyContact
     } = req.body;
@@ -406,8 +406,6 @@ app.post("/api/auth/register", async (req, res) => {
         const userId = Date.now().toString();
         const fullName = `${firstName} ${lastName}`;
 
-        // Auto-verify if name matches tenthResultName (simulated logic)
-        const isVerified = tenthResultName && tenthResultName.toLowerCase().includes(fullName.toLowerCase());
 
         const newUser = {
             id: userId,
@@ -430,7 +428,7 @@ app.post("/api/auth/register", async (req, res) => {
             parentName,
             parentPhone,
             emergencyContact,
-            isVerified: !!isVerified,
+            isVerified: false,
             provider: "local",
             createdAt: new Date().toISOString(),
         };
@@ -443,7 +441,7 @@ app.post("/api/auth/register", async (req, res) => {
         console.log(`[Register] Success: ${email} registered as ${role}`);
         res.status(201).json({
             message: "User registered successfully",
-            isVerified: !!isVerified
+            isVerified: false
         });
     } catch (error: any) {
         console.error("[Register] Error:", error);

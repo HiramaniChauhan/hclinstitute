@@ -27,9 +27,10 @@ interface HomePageProps {
   onRegister: () => void;
   onAdminLogin: () => void;
   onViewAllCourses: () => void;
+  onViewAllSelectedStudents: () => void;
 }
 
-export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }: HomePageProps) => {
+export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, onViewAllSelectedStudents }: HomePageProps) => {
   const featureCards = [
     {
       id: 1,
@@ -118,11 +119,16 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
         }
 
         if (studentsData && studentsData.length > 0) {
-          // Sort by rank ascending (1 is best) and take top 3
+          // Sort by rank ascending (top ranks first) across all years
+          // Use year descending as tie-breaker for same ranks
           const sortedStudents = [...studentsData].sort((a, b) => {
             const rankA = parseInt(a.rank) || 999999;
             const rankB = parseInt(b.rank) || 999999;
-            return rankA - rankB;
+            if (rankA !== rankB) return rankA - rankB;
+
+            const yearA = parseInt(a.year) || 0;
+            const yearB = parseInt(b.year) || 0;
+            return yearB - yearA;
           });
           setSelectedStudents(sortedStudents.slice(0, 3));
         }
@@ -405,9 +411,17 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
       {/* Success Stories */}
       <section className="py-24 relative bg-[#1A1A1D]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Wall of <span className="text-[#ef5350]">Fame</span></h2>
-            <p className="text-xl text-gray-400">Where our students are making us proud</p>
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="text-left">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Wall of <span className="text-[#ef5350]">Fame</span></h2>
+              <p className="text-xl text-gray-400">Where our students are making us proud</p>
+            </div>
+            <Button
+              onClick={onViewAllSelectedStudents}
+              className="bg-white text-black hover:bg-gray-200 border-none transition-all text-xs font-bold px-6 py-2 rounded shadow-lg flex items-center uppercase tracking-wider"
+            >
+              SEE ALL <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -454,52 +468,55 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses }
             <div className="text-center md:text-left">
               <h2 className="text-2xl font-bold text-white mb-2">{about.instituteName}</h2>
             </div>
-            <div className="flex gap-6">
-              {about.contactLinkedin && about.contactLinkedin !== "#" && (
-                <a href={about.contactLinkedin.startsWith('http') ? about.contactLinkedin : `https://${about.contactLinkedin}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
-                  <Linkedin className="w-5 h-5" />
-                </a>
-              )}
-              {about.contactInstagram && about.contactInstagram !== "#" && (
-                <a href={about.contactInstagram.startsWith('http') ? about.contactInstagram : `https://instagram.com/${about.contactInstagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-pink-600 hover:text-white transition-all">
-                  <Instagram className="w-5 h-5" />
-                </a>
-              )}
-              {about.contactEmail && (
-                <a href={`mailto:${about.contactEmail}`} className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all">
-                  <Mail className="w-5 h-5" />
-                </a>
-              )}
-              {about.additionalLinks && about.additionalLinks.map((link: any, index: number) => {
-                const isYoutube = link.title.toLowerCase().includes('youtube');
-                const isFacebook = link.title.toLowerCase().includes('facebook');
-                const isTwitter = link.title.toLowerCase().includes('twitter') || link.title.toLowerCase().includes('x');
-
-                return (
-                  <a key={index} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
-                    {isYoutube ? <span className="font-bold text-red-500 group-hover:text-white">YT</span> :
-                      isFacebook ? <span className="font-bold text-blue-500 group-hover:text-white font-serif">f</span> :
-                        isTwitter ? <span className="font-bold text-black group-hover:text-white">𝕏</span> :
-                          <Globe className="w-5 h-5" />}
+            <div className="flex items-center gap-6">
+              <span className="text-sm font-bold uppercase tracking-wider text-gray-500">Contact Us</span>
+              <div className="flex gap-6">
+                {about.contactLinkedin && about.contactLinkedin !== "#" && (
+                  <a href={about.contactLinkedin.startsWith('http') ? about.contactLinkedin : `https://${about.contactLinkedin}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
+                    <Linkedin className="w-5 h-5" />
                   </a>
-                );
-              })}
+                )}
+                {about.contactInstagram && about.contactInstagram !== "#" && (
+                  <a href={about.contactInstagram.startsWith('http') ? about.contactInstagram : `https://instagram.com/${about.contactInstagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-pink-600 hover:text-white transition-all">
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                )}
+                {about.contactEmail && (
+                  <a href={`mailto:${about.contactEmail}`} className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all">
+                    <Mail className="w-5 h-5" />
+                  </a>
+                )}
+                {about.additionalLinks && about.additionalLinks.map((link: any, index: number) => {
+                  const isYoutube = link.title.toLowerCase().includes('youtube');
+                  const isFacebook = link.title.toLowerCase().includes('facebook');
+                  const isTwitter = link.title.toLowerCase().includes('twitter') || link.title.toLowerCase().includes('x');
+
+                  return (
+                    <a key={index} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
+                      {isYoutube ? <span className="font-bold text-red-500 group-hover:text-white">YT</span> :
+                        isFacebook ? <span className="font-bold text-blue-500 group-hover:text-white font-serif">f</span> :
+                          isTwitter ? <span className="font-bold text-black group-hover:text-white">𝕏</span> :
+                            <Globe className="w-5 h-5" />}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} {about.instituteName}. All rights reserved.</p>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <Button variant="link" className="text-gray-500 hover:text-red-500 p-0 h-auto" onClick={onAdminLogin}>
-                Admin Access
-              </Button>
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <div className="flex gap-4">
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            </div>
+            <div className="flex items-center gap-4 mt-4 md:mt-0">
+              <p>&copy; {new Date().getFullYear()} HCL Institute. All rights reserved</p>
+              <Button variant="link" className="text-gray-500 hover:text-red-500 p-0 h-auto" onClick={onAdminLogin}>
+              .
+              </Button>
             </div>
           </div>
         </div>
       </footer>
-
     </div>
   );
 };

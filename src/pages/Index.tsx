@@ -35,6 +35,7 @@ const Index = () => {
         onRegister={() => setAuthView('student-register')}
         onAdminLogin={() => setAuthView('admin-login')}
         onViewAllCourses={() => setAuthView('student-login')}
+        onViewAllSelectedStudents={() => navigate('/selections')}
       />
     );
   }

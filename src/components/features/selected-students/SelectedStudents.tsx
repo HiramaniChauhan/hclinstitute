@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Trophy, Search, Star, Calendar, School, Linkedin, Loader2, Users, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export const SelectedStudents = () => {
@@ -20,6 +21,7 @@ export const SelectedStudents = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isHoldersOpen, setIsHoldersOpen] = useState(false);
+  const navigate = useNavigate();
 
   const availableYears = Array.from(
     new Set([
@@ -72,7 +74,6 @@ export const SelectedStudents = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Trophy className="h-8 w-8 text-yellow-500" />
           Selected Students
         </h1>
         <div className="flex gap-4">
@@ -113,11 +114,17 @@ export const SelectedStudents = () => {
         <>
           {/* Success Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
+            <Card
+              className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] group"
+              onClick={() => navigate('/selections')}
+            >
               <CardContent className="p-6 text-center">
-                <Trophy className="h-8 w-8 mx-auto mb-2" />
+                <Trophy className="h-8 w-8 mx-auto mb-2 group-hover:scale-110 transition-transform" />
                 <div className="text-2xl font-bold">{allStudents.length}</div>
                 <p className="text-sm">Total Selected All Time</p>
+                <div className="mt-1 text-[10px] opacity-80 flex items-center justify-center gap-1">
+                  <Users size={10} /> Click to see all
+                </div>
               </CardContent>
             </Card>
 
@@ -226,10 +233,7 @@ export const SelectedStudents = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredStudents
                       .sort((a, b) => {
-                        if (searchTerm.trim()) {
-                          return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
-                        }
-                        return a.rank - b.rank;
+                        return parseInt(b.year) - parseInt(a.year) || a.rank - b.rank;
                       })
                       .map((student) => (
                         <div key={student.id} className="p-4 border rounded-xl hover:bg-gray-50 flex items-center gap-4 transition-all">

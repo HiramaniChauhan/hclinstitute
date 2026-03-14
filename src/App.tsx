@@ -9,6 +9,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import Index from "./pages/Index";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import { AllSelectedStudents } from "./components/features/selected-students/AllSelectedStudents";
 
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/" element={<Index />} />
 
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/selections" element={<AllSelectedStudents />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -111,10 +111,6 @@ export const Courses = () => {
                     <Clock size={14} />
                     <span>{course.duration ? `${course.duration} months` : "—"}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={14} />
-                    <span>{course.enrolledStudents || 0} / {course.maxStudents || 100} students</span>
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t mt-4">

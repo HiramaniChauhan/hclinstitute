@@ -22,10 +22,23 @@ interface ImageCropDialogProps {
 
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string> {
     const image = await createImageBitmap(await fetch(imageSrc).then(r => r.blob()));
+
+    // Limit max resolution to 500px
+    const maxSize = 500;
+    let targetWidth = pixelCrop.width;
+    let targetHeight = pixelCrop.height;
+
+    if (targetWidth > maxSize || targetHeight > maxSize) {
+        const ratio = Math.min(maxSize / targetWidth, maxSize / targetHeight);
+        targetWidth = Math.round(targetWidth * ratio);
+        targetHeight = Math.round(targetHeight * ratio);
+    }
+
     const canvas = document.createElement("canvas");
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     const ctx = canvas.getContext("2d")!;
+
     ctx.drawImage(
         image,
         pixelCrop.x,
@@ -34,10 +47,10 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<string>
         pixelCrop.height,
         0,
         0,
-        pixelCrop.width,
-        pixelCrop.height
+        targetWidth,
+        targetHeight
     );
-    return canvas.toDataURL("image/jpeg", 0.9);
+    return canvas.toDataURL("image/jpeg", 0.85); // Slightly lower quality to ensure small size
 }
 
 export const ImageCropDialog = ({ open, imageSrc, onClose, onCropDone, aspectRatio = 16 / 9 }: ImageCropDialogProps) => {

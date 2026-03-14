@@ -391,10 +391,6 @@ export const CourseManagement = () => {
                           {Number(course.price).toLocaleString()}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users size={14} />
-                          {course.enrolledStudents || 0} / {course.maxStudents || 100} students
-                        </span>
-                        <span className="flex items-center gap-1">
                           <BookOpen size={14} />
                           {course.duration ? `${course.duration} months` : "—"}
                         </span>
