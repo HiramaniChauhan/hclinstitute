@@ -63,14 +63,15 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
 
   const [about, setAbout] = useState<any>({
     directorName: "Hiramani Chauhan",
-    directorBio: "Education is not just about learning facts, but about training the mind to think. At our institute, we don't just teach syllabus; we build careers, shape characters, and ignite the fire of curiosity in every student.",
-    directorDesignation: "Director & Founder",
-    instituteName: "Hiramani Chauhan Learning Institute",
-    instituteDescription: "The premier destination for Mathematics, Reasoning, and Computer Science. Where passion meets perfection under the guidance of experts.",
+    directorBio: "",
+    directorDesignation: "",
+    instituteName: "HCL Institute",
+    instituteLogo: "/public/logo.png",
+    instituteDescription: "",
     contactLinkedin: "#",
     contactInstagram: "#",
-    contactEmail: "director@hclinstitute.com",
-    establishedYear: "2008",
+    contactEmail: "hclinstitute.official@gmail.com",
+    establishedYear: "2025",
     additionalLinks: []
   });
 
@@ -84,8 +85,6 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
         ]);
 
         if (Object.keys(aboutData).length > 0) {
-          const updatedAbout = { ...about };
-
           // Map API fields to state fields
           const fieldMapping: Record<string, string> = {
             instituteName: 'instituteName',
@@ -101,17 +100,20 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             additionalLinks: 'additionalLinks',
           };
 
-          Object.keys(aboutData).forEach(key => {
-            const stateKey = fieldMapping[key] || key;
-            if (aboutData[key] !== undefined && aboutData[key] !== null) {
-              if (Array.isArray(aboutData[key])) {
-                updatedAbout[stateKey] = aboutData[key];
-              } else if (typeof aboutData[key] === 'string' && aboutData[key].trim() !== "") {
-                updatedAbout[stateKey] = aboutData[key];
+          setAbout(prevAbout => {
+            const updatedAbout = { ...prevAbout };
+            Object.keys(aboutData).forEach(key => {
+              const stateKey = fieldMapping[key] || key;
+              if (aboutData[key] !== undefined && aboutData[key] !== null) {
+                if (Array.isArray(aboutData[key])) {
+                  updatedAbout[stateKey] = aboutData[key];
+                } else if (typeof aboutData[key] === 'string' && aboutData[key].trim() !== "") {
+                  updatedAbout[stateKey] = aboutData[key];
+                }
               }
-            }
+            });
+            return updatedAbout;
           });
-          setAbout(updatedAbout);
         }
 
         if (coursesData && coursesData.length > 0) {
@@ -356,7 +358,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
               <div className="relative">
                 <div className="w-64 h-64 md:w-80 md:h-80 rounded-full border border-white/10 p-2 relative z-10 bg-[#1a1a1d] shadow-xl">
                   <img
-                    src={about.directorPhoto || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop&crop=face"}
+                    src={about.directorPhoto}
                     alt={about.directorName}
                     className="w-full h-full rounded-full object-cover transition-all duration-500"
                   />
@@ -511,7 +513,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             <div className="flex items-center gap-4 mt-4 md:mt-0">
               <p>&copy; {new Date().getFullYear()} HCL Institute. All rights reserved</p>
               <Button variant="link" className="text-gray-500 hover:text-red-500 p-0 h-auto" onClick={onAdminLogin}>
-              .
+                .
               </Button>
             </div>
           </div>

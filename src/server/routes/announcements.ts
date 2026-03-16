@@ -43,7 +43,10 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
                 a.targetCourseIds.includes("all") ||
                 a.targetCourseIds.some((id: string) => myCourseIds.has(id))
             )
-        );
+        ).map(a => ({
+            ...a,
+            isUnread: !a.readBy?.includes(req.user!.id)
+        }));
         visible.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         res.json(visible);
     } catch (error: any) {
@@ -68,6 +71,7 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
             category: category || "General",
             pinned: !!pinned,
             status: status || "published",
+            readBy: [], // Array of user IDs who have read this
             author: req.user.firstName || req.user.email || "Admin",
             createdAt: new Date().toISOString(),
             views: 0,
@@ -102,6 +106,30 @@ router.delete("/:id", verifyToken, requireAdmin, async (req, res: Response) => {
     try {
         await deleteItem(TABLES.ANNOUNCEMENTS, { id: req.params.id });
         res.json({ success: true });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST mark an announcement as read
+router.post("/:id/read", verifyToken, async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+
+        const all = await getAllItems<any>(TABLES.ANNOUNCEMENTS);
+        const existing = all.find(a => a.id === req.params.id);
+        if (!existing) return res.status(404).json({ error: "Announcement not found" });
+
+        // Add user ID to readBy array if not already there
+        const readBy = existing.readBy || [];
+        if (!readBy.includes(req.user.id)) {
+            readBy.push(req.user.id);
+            const updated = { ...existing, readBy };
+            await createItem(TABLES.ANNOUNCEMENTS, updated);
+            return res.json({ success: true, updated });
+        }
+
+        res.json({ success: true, alreadyRead: true });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

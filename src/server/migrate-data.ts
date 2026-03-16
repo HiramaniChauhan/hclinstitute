@@ -35,7 +35,7 @@ async function migrateData() {
 
         // Map frontend table names to DynamoDB table names if they differ
         // In our case, they should match the values in TABLES
-        let targetTable = tableName;
+        const targetTable = tableName;
 
         // Find the actual table name from TABLES mapping
         const tableKey = Object.keys(TABLES).find(k => (TABLES as any)[k] === tableName);

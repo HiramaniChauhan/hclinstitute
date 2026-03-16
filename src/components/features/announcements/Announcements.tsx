@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Calendar, Pin, Users, Loader2 } from "lucide-react";
+import { Megaphone, Calendar, Pin, Users, Loader2, Circle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { fetchMyAnnouncements, markAnnouncementRead } from "@/api/portalApi";
 
 export const Announcements = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -11,15 +12,8 @@ export const Announcements = () => {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const token = sessionStorage.getItem("token");
-        const res = await fetch("/api/announcements/my", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setAnnouncements(await res.json());
-        } else {
-          toast.error("Failed to load announcements");
-        }
+        const data = await fetchMyAnnouncements();
+        setAnnouncements(data);
       } catch {
         toast.error("Failed to load announcements");
       } finally {
@@ -76,45 +70,67 @@ export const Announcements = () => {
     );
   }
 
-  const AnnouncementCard = ({ a, highlighted = false }: { a: any; highlighted?: boolean }) => (
-    <div className={`p-4 rounded-lg border ${highlighted ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2 flex-1">
-          {a.pinned && <Pin className="h-4 w-4 text-blue-500 shrink-0" />}
-          <Megaphone className={`h-4 w-4 shrink-0 ${highlighted ? "text-blue-600" : "text-gray-500"}`} />
-          <h3 className="font-semibold text-base">{a.title}</h3>
-        </div>
-        <Badge className={`${getPriorityColor(a.priority)} ml-2 shrink-0`}>
-          {a.priority.toUpperCase()}
-        </Badge>
-      </div>
+  const AnnouncementCard = ({ a, highlighted = false }: { a: any; highlighted?: boolean }) => {
+    const handleRead = async () => {
+      if (!a.isUnread) return;
+      try {
+        await markAnnouncementRead(a.id);
+        setAnnouncements(prev => prev.map(ann => ann.id === a.id ? { ...ann, isUnread: false } : ann));
+      } catch (e) {
+        console.error("Failed to mark read", e);
+      }
+    };
 
-      <p className="text-gray-700 mb-3 text-sm leading-relaxed">{a.content}</p>
-
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <Calendar size={12} />
-            {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-          </span>
-          <span>by {a.author}</span>
+    return (
+      <div
+        onClick={handleRead}
+        className={`p-4 rounded-lg border cursor-pointer transition-colors ${highlighted ? "bg-blue-50 border-blue-200" : "hover:bg-gray-50"
+          } ${a.isUnread ? 'bg-indigo-50/50 border-indigo-200 shadow-sm' : ''}`}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2 flex-1">
+            {a.pinned && <Pin className="h-4 w-4 text-blue-500 shrink-0" />}
+            <Megaphone className={`h-4 w-4 shrink-0 ${highlighted ? "text-blue-600" : "text-gray-500"}`} />
+            <h3 className="font-semibold text-base flex items-center gap-2">
+              {a.title}
+              {a.isUnread && (
+                <Badge variant="destructive" className="h-5 px-1.5 text-[10px] leading-none ml-2 bg-red-500 hover:bg-red-600">
+                  <span className="flex items-center gap-1">New</span>
+                </Badge>
+              )}
+            </h3>
+          </div>
+          <Badge className={`${getPriorityColor(a.priority)} ml-2 shrink-0`}>
+            {a.priority.toUpperCase()}
+          </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          {a.category && (
-            <Badge variant="secondary" className={`${getCategoryColor(a.category)} text-white text-xs`}>
-              {a.category}
-            </Badge>
-          )}
-          {a.targetCourseIds && a.targetCourseIds.length > 0 && !a.targetCourseIds.includes("all") && (
-            <span className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-              <Users size={10} />
-              Course-specific
+
+        <p className="text-gray-700 mb-3 text-sm leading-relaxed">{a.content}</p>
+
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <Calendar size={12} />
+              {new Date(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
             </span>
-          )}
+          </div>
+          <div className="flex items-center gap-2">
+            {a.category && (
+              <Badge variant="secondary" className={`${getCategoryColor(a.category)} text-white text-xs`}>
+                {a.category}
+              </Badge>
+            )}
+            {a.targetCourseIds && a.targetCourseIds.length > 0 && !a.targetCourseIds.includes("all") && (
+              <span className="flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                <Users size={10} />
+                Course-specific
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Send, Search, MessageCircle, User, Shield, Paperclip, Mic, Image, Video, FileText, Pencil, Trash2, X, Check, CheckCheck, Download, Play, Music } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 
@@ -31,7 +31,7 @@ export const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (user?.role !== 'admin') return;
     try {
       const response = await fetch('/api/chat/conversations', {
@@ -44,9 +44,22 @@ export const Chat = () => {
     } catch (error) {
       console.error("Error fetching conversations:", error);
     }
-  };
+  }, [user?.role]);
 
-  const fetchMessages = async (studentId: string, silent = false) => {
+  const markAsRead = useCallback(async (studentId: string) => {
+    try {
+      await fetch(`/api/chat/read/${studentId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  }, []);
+
+  const fetchMessages = useCallback(async (studentId: string, silent = false) => {
     if (!silent) setLoading(true);
     try {
       const response = await fetch(`/api/chat/messages/${studentId}`, {
@@ -67,20 +80,7 @@ export const Chat = () => {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
-
-  const markAsRead = async (studentId: string) => {
-    try {
-      await fetch(`/api/chat/read/${studentId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-        }
-      });
-    } catch (error) {
-      console.error("Error marking messages as read:", error);
-    }
-  };
+  }, [user?.role, markAsRead]);
 
   useEffect(() => {
     console.log("[Chat] Auth User state changed:", user);
@@ -97,7 +97,7 @@ export const Chat = () => {
       setSelectedChat(user.id);
       fetchMessages(user.id);
     }
-  }, [user]);
+  }, [user, fetchConversations, fetchMessages]);
 
   // Polling for real-time updates
   useEffect(() => {
@@ -129,7 +129,7 @@ export const Chat = () => {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [selectedChat, user]); // Keep user in dependency array for admin conversation polling
+  }, [selectedChat, user?.role, fetchMessages, markAsRead, fetchConversations]); // Keep user in dependency array for admin conversation polling
 
   const handleSendMessage = async () => {
     if ((!message.trim() && !pendingAttachment) || !selectedChat) return;

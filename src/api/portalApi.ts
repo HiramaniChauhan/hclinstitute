@@ -248,6 +248,21 @@ export const fetchAboutInfo = async () => {
     return res.json();
 };
 
+export const fetchMyAnnouncements = async () => {
+    const res = await fetch(`${API_BASE}/announcements/my`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const markAnnouncementRead = async (id: string) => {
+    const res = await fetch(`${API_BASE}/announcements/${id}/read`, {
+        method: "POST",
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
 export const updateAboutInfo = async (data: any) => {
     const res = await fetch(`${API_BASE}/about`, {
         method: "PUT",
@@ -271,6 +286,38 @@ export const adminEnrollStudent = async (data: { userId: string, courseId: strin
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchCourseStudents = async (courseId: string) => {
+    const res = await fetch(`${API_BASE}/enrollments/course/${courseId}/students`, {
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchStudentResults = async (userId: string) => {
+    const res = await fetch(`${API_BASE}/results/student/${userId}`, {
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchTestById = async (testId: string) => {
+    const res = await fetch(`${API_BASE}/tests/${testId}`, {
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchMyResults = async () => {
+    const res = await fetch(`${API_BASE}/results/my-results`, {
+        headers: getHeaders(),
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();

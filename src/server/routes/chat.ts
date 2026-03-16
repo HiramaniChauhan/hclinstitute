@@ -67,8 +67,8 @@ router.get("/unread-count", async (req: any, res: any) => {
         // If student, find unread messages sent by admin to this student
         // If admin, find unread messages sent by ANY student
         let filterExpr = "#r = :unread";
-        let attrValues: any = { ":unread": false };
-        let attrNames: any = { "#r": "read" };
+        const attrValues: any = { ":unread": false };
+        const attrNames: any = { "#r": "read" };
 
         if (userRole === 'student') {
             filterExpr += " AND studentId = :studentId AND sender = :sender";

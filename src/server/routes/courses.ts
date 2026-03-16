@@ -7,8 +7,16 @@ const router = Router();
 // Get all courses
 router.get("/", async (req, res) => {
     try {
-        const rawResult = await getAllItems(TABLES.COURSES);
-        const courses = rawResult || [];
+        const [rawCourses, allEnrollments] = await Promise.all([
+            getAllItems<any>(TABLES.COURSES),
+            getAllItems<any>(TABLES.ENROLLMENTS)
+        ]);
+
+        const courses = (rawCourses || []).map(course => ({
+            ...course,
+            enrolledCount: allEnrollments.filter(e => e.courseId === course.id && e.status === "active").length
+        }));
+
         console.log(`[Courses Route] Found ${courses.length} courses in DB`);
         res.json(courses);
     } catch (error) {

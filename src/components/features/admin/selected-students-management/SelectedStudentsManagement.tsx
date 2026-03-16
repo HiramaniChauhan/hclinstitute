@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Trophy, Plus, Trash2, Upload, Loader2, X, Linkedin, School, Search, Users, Star, Pencil } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ImageCropDialog } from "../course-management/ImageCropDialog";
@@ -54,7 +54,7 @@ export const SelectedStudentsManagement = () => {
     ])
   ).sort((a, b) => parseInt(b) - parseInt(a));
 
-  const fetchStudents = async (year: string) => {
+  const fetchStudents = useCallback(async (year: string) => {
     setLoading(true);
     try {
       // Fetch yearly students
@@ -75,11 +75,11 @@ export const SelectedStudentsManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchStudents(selectedYear);
-  }, [selectedYear]);
+  }, [selectedYear, fetchStudents]);
 
   const handleAddStudent = async () => {
     if (!newStudent.name || !newStudent.rank || !newStudent.year || !newStudent.collegeAllotted) {

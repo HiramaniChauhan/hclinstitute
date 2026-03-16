@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { BookOpen, CheckCircle, Clock, XCircle } from "lucide-react";
 import { fetchMyEnrollments, fetchMyFees, payFee } from "@/api/portalApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ export const Fees = () => {
     const [paying, setPaying] = useState<string | null>(null);
     const { toast } = useToast();
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchMyFees();
@@ -49,9 +49,9 @@ export const Fees = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [toast]);
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => { load(); }, [load]);
 
     const handlePay = async (feeId: string) => {
         setPaying(feeId);

@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Megaphone, Plus, Trash2, Calendar, Users, Pin, BookOpen, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Megaphone, Plus, Trash2, Calendar, Users, Pin, BookOpen, Loader2, Edit } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+
 
 const CATEGORIES = ["General", "Admission", "Schedule", "Holiday", "Study Material", "Results", "Exam"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -19,6 +20,7 @@ export const AnnouncementsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -36,7 +38,7 @@ export const AnnouncementsManagement = () => {
     Authorization: `Bearer ${token()}`,
   });
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
       const [aRes, cRes] = await Promise.all([
         fetch("/api/announcements", { headers: headers() }),
@@ -49,16 +51,33 @@ export const AnnouncementsManagement = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData({
+      title: "", content: "", priority: "medium", category: "General",
+      targetCourseIds: [], pinned: false, status: "published",
+    });
   };
 
-  useEffect(() => { fetchAll(); }, []);
-
-  const resetForm = () => setFormData({
-    title: "", content: "", priority: "medium", category: "General",
-    targetCourseIds: [], pinned: false, status: "published",
-  });
-
   const handleOpen = () => { resetForm(); setOpen(true); };
+
+  const handleEdit = (a: any) => {
+    setEditingId(a.id);
+    setFormData({
+      title: a.title || "",
+      content: a.content || "",
+      priority: a.priority || "medium",
+      category: a.category || "General",
+      targetCourseIds: a.targetCourseIds || [],
+      pinned: !!a.pinned,
+      status: a.status || "published",
+    });
+    setOpen(true);
+  };
 
   const toggleCourse = (courseId: string) => {
     setFormData(prev => ({
@@ -76,17 +95,22 @@ export const AnnouncementsManagement = () => {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/announcements", {
-        method: "POST",
+      const isEditing = !!editingId;
+      const url = isEditing ? `/api/announcements/${editingId}` : "/api/announcements";
+      const method = isEditing ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: headers(),
         body: JSON.stringify(formData),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Announcement created!");
+      toast.success(isEditing ? "Announcement updated!" : "Announcement created!");
       setOpen(false);
+      resetForm();
       fetchAll();
     } catch (e: any) {
-      toast.error(e.message || "Failed to create announcement");
+      toast.error(e.message || "Failed to save announcement");
     } finally {
       setSaving(false);
     }
@@ -134,7 +158,7 @@ export const AnnouncementsManagement = () => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Announcement</DialogTitle>
+            <DialogTitle>{editingId ? "Edit Announcement" : "Create Announcement"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -246,7 +270,7 @@ export const AnnouncementsManagement = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-              {saving ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : "Publish"}
+              {saving ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : (editingId ? "Save Changes" : "Publish")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -288,14 +312,24 @@ export const AnnouncementsManagement = () => {
                         <span>by {a.author}</span>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-2"
-                      onClick={() => handleDelete(a.id)}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
+                    <div className="flex items-center gap-1 ml-4 justify-end">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                        onClick={() => handleEdit(a)}
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                        onClick={() => handleDelete(a.id)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

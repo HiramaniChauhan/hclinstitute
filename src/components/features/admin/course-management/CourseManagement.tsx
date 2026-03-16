@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Users, IndianRupee, Plus, Edit, Trash2, Upload, ImageIcon } from "lucide-react";
+import {
+  BookOpen, Users, IndianRupee, Plus, Edit, Trash2, Upload, ImageIcon, Loader2, Search
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -18,8 +20,10 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ImageCropDialog } from "./ImageCropDialog";
+import { fetchCourseStudents } from "@/api/portalApi";
+import { StudentDetail } from "../student-management/StudentDetail";
 
 export const CourseManagement = () => {
   const [courses, setCourses] = useState<any[]>([]);
@@ -29,6 +33,11 @@ export const CourseManagement = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState("");
+  const [viewStudentsCourse, setViewStudentsCourse] = useState<any | null>(null);
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentSearchTerm, setStudentSearchTerm] = useState("");
+  const [selectedStudentFromCourse, setSelectedStudentFromCourse] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -40,11 +49,7 @@ export const CourseManagement = () => {
     accessFeatures: [] as string[]
   });
 
-  useEffect(() => {
-    fetchCourses();
-  }, []);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       const token = sessionStorage.getItem('token');
       const response = await fetch('/api/courses', {
@@ -60,7 +65,11 @@ export const CourseManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const toggleAccess = (feature: string) => {
     setFormData(prev => ({
@@ -179,6 +188,31 @@ export const CourseManagement = () => {
       toast.error("Network error");
     }
   };
+
+  const handleViewStudents = async (course: any) => {
+    setViewStudentsCourse(course);
+    setLoadingStudents(true);
+    setStudentSearchTerm("");
+    try {
+      const students = await fetchCourseStudents(course.id);
+      setEnrolledStudents(students);
+    } catch (error) {
+      console.error("Fetch course students error", error);
+      toast.error("Failed to load enrolled students");
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // If a student is selected from the course dialog, show their detail page
+  if (selectedStudentFromCourse) {
+    return (
+      <StudentDetail
+        studentId={selectedStudentFromCourse}
+        onBack={() => setSelectedStudentFromCourse(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -380,6 +414,10 @@ export const CourseManagement = () => {
                               <Trash2 size={14} className="mr-1" />
                               Delete
                             </Button>
+                            <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => handleViewStudents(course)}>
+                              <Users size={14} className="mr-1" />
+                              Students
+                            </Button>
                           </div>
                         </div>
                         <p className="text-gray-600 text-sm mt-1 line-clamp-2">{course.description}</p>
@@ -393,6 +431,10 @@ export const CourseManagement = () => {
                         <span className="flex items-center gap-1">
                           <BookOpen size={14} />
                           {course.duration ? `${course.duration} months` : "—"}
+                        </span>
+                        <span className="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                          <Users size={14} />
+                          {course.enrolledCount || 0} enrolled
                         </span>
                       </div>
 
@@ -411,6 +453,91 @@ export const CourseManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* View Enrolled Students Dialog */}
+      <Dialog open={!!viewStudentsCourse} onOpenChange={(open) => !open && setViewStudentsCourse(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Enrolled Students: {viewStudentsCourse?.title}</DialogTitle>
+            <DialogDescription>
+              A list of all students currently enrolled in this course.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 px-1">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search students..."
+                className="pl-8"
+                value={studentSearchTerm}
+                onChange={(e) => setStudentSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            {loadingStudents ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+              </div>
+            ) : enrolledStudents.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+                <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No students enrolled in this course yet.</p>
+              </div>
+            ) : enrolledStudents.filter(s =>
+              s.name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+              s.email?.toLowerCase().includes(studentSearchTerm.toLowerCase())
+            ).length === 0 ? (
+              <div className="text-center py-12 text-gray-500 italic">
+                No students matching "{studentSearchTerm}"
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {enrolledStudents
+                  .filter(s =>
+                    s.name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                    s.email?.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => {
+                    const dateA = a.enrolledAt ? new Date(a.enrolledAt).getTime() : 0;
+                    const dateB = b.enrolledAt ? new Date(b.enrolledAt).getTime() : 0;
+                    return dateB - dateA; // Most recent first
+                  })
+                  .map((student) => (
+                    <div
+                      key={student.id}
+                      className="p-3 border rounded-lg bg-gray-50 flex items-center justify-between hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer transition-colors group"
+                      onClick={() => {
+                        setViewStudentsCourse(null);
+                        setSelectedStudentFromCourse(student.id);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                          {student.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm text-indigo-600 group-hover:underline">{student.name}</p>
+                          <p className="text-xs text-gray-500 italic">{student.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Enrolled On</p>
+                        <p className="text-xs font-medium">{student.enrolledAt ? new Date(student.enrolledAt).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewStudentsCourse(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

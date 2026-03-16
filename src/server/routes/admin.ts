@@ -53,7 +53,12 @@ router.get("/students", verifyToken, requireAdmin, async (req: AuthRequest, res:
         const users = await getAllItems<any>(TABLES.USERS);
         const students = users
             .filter((u: any) => u.role === "student")
-            .map(({ password, ...rest }: any) => rest);
+            .map(({ password, ...rest }: any) => rest)
+            .sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateB - dateA; // Newest first
+            });
         res.json(students);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

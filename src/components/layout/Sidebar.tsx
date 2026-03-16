@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { fetchUnreadChatCount, fetchAboutInfo } from "@/api/portalApi";
+import { useState, useEffect, useCallback } from "react";
+import { fetchUnreadChatCount, fetchAboutInfo, fetchMyAnnouncements } from "@/api/portalApi";
 import {
   Home,
   FileText,
@@ -42,10 +42,24 @@ const menuItems = [
 
 export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarProps) => {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadAnnouncementsCount, setUnreadAnnouncementsCount] = useState(0);
   const [aboutConfig, setAboutConfig] = useState<any>({
     instituteName: "HCL Institute",
     instituteLogo: ""
   });
+
+  const fetchNotificationCounts = useCallback(() => {
+    fetchUnreadChatCount()
+      .then(data => setUnreadCount(data.count))
+      .catch(err => console.error("Sidebar Unread Error:", err));
+
+    fetchMyAnnouncements()
+      .then(announcements => {
+        const unread = announcements.filter((a: any) => a.isUnread).length;
+        setUnreadAnnouncementsCount(unread);
+      })
+      .catch(err => console.error("Sidebar Announcements Error:", err));
+  }, []);
 
   useEffect(() => {
     fetchAboutInfo()
@@ -56,18 +70,14 @@ export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarP
       })
       .catch(err => console.error("Sidebar About Error:", err));
 
-    fetchUnreadChatCount()
-      .then(data => setUnreadCount(data.count))
-      .catch(err => console.error("Sidebar Unread Error:", err));
+    fetchNotificationCounts();
 
     const interval = setInterval(() => {
-      fetchUnreadChatCount()
-        .then(data => setUnreadCount(data.count))
-        .catch(err => console.error("Sidebar Unread Error:", err));
+      fetchNotificationCounts();
     }, 15000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotificationCounts]);
 
   return (
     <div className={cn(
@@ -115,7 +125,7 @@ export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarP
             >
               <div className="relative">
                 <Icon size={20} />
-                {item.id === 'chat' && unreadCount > 0 && (
+                {((item.id === 'chat' && unreadCount > 0) || (item.id === 'announcements' && unreadAnnouncementsCount > 0)) && (
                   <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                 )}
               </div>

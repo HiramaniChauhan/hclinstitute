@@ -66,6 +66,20 @@ router.get("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respons
     }
 });
 
+// GET results for a specific student (Admin only)
+router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const { userId } = req.params;
+        const all = await getAllItems<ResultData>(TABLES.RESULTS);
+        const results = all
+            .filter(r => r.userId === userId)
+            .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+        res.json(results);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // GET result by ID
 router.get("/:resultId", verifyToken, async (req: AuthRequest, res: Response) => {
     try {

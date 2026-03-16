@@ -78,7 +78,7 @@ export const StudentManagement = () => {
         }
     }, [toast]);
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => { load(); }, [load]);
 
     const filtered = students.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

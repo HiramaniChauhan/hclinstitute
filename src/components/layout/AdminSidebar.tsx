@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchUnreadChatCount, fetchAboutInfo } from "@/api/portalApi";
 import {
   LayoutDashboard,
@@ -62,17 +62,17 @@ export const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: Adm
       })
       .catch(err => console.error("Admin Sidebar About Error:", err));
 
-    // Initial fetch
-    fetchUnreadChatCount()
-      .then(data => setUnreadCount(data.count))
-      .catch(err => console.error("Admin Sidebar Unread Error:", err));
-
-    // Poll every 15 seconds
-    const interval = setInterval(() => {
+    const loadUnread = () => {
       fetchUnreadChatCount()
         .then(data => setUnreadCount(data.count))
         .catch(err => console.error("Admin Sidebar Unread Error:", err));
-    }, 15000);
+    };
+
+    // Initial fetch
+    loadUnread();
+
+    // Poll every 15 seconds
+    const interval = setInterval(loadUnread, 15000);
 
     return () => clearInterval(interval);
   }, []);

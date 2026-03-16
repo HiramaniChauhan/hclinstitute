@@ -360,7 +360,7 @@ export const TestCreation = () => {
       const isActuallyRescheduling = !!(editingTest && isRescheduling);
       const method = (editingTest && !isActuallyRescheduling) ? "PATCH" : "POST";
       const oldTestId = isActuallyRescheduling ? (editingTest.testId || editingTest.id) : null;
-      let url = (editingTest && !isActuallyRescheduling) ? `/api/tests/${editingTest.testId || editingTest.id}` : "/api/tests";
+      const url = (editingTest && !isActuallyRescheduling) ? `/api/tests/${editingTest.testId || editingTest.id}` : "/api/tests";
 
       const token = sessionStorage.getItem('token');
 

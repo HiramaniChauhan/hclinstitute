@@ -43,7 +43,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // Email Setup 
-let testAccountInfo: any = null;
+const testAccountInfo: any = null;
 export const sendOtpEmail = async (toEmail: string, otp: string, subject: string) => {
     try {
         const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'noreply@hclins.com';
@@ -548,7 +548,7 @@ app.post("/api/auth/google", async (req, res) => {
             ExpressionAttributeValues: { ":email": email },
         }));
 
-        let user = scanResult.Items?.[0];
+        const user = scanResult.Items?.[0];
 
         console.log(`[Google Auth] User lookup for ${email}: ${user ? 'found' : 'not found'} with role: ${user?.role}`);
 

@@ -240,6 +240,33 @@ router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthReques
     }
 });
 
+// GET — Students enrolled in a specific course (Admin)
+router.get("/course/:courseId/students", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const { courseId } = req.params;
+        const allEnrollments = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        const courseEnrollments = allEnrollments.filter(e => e.courseId === courseId);
+
+        if (courseEnrollments.length === 0) {
+            return res.json([]);
+        }
+
+        const userIds = courseEnrollments.map(e => e.userId);
+        const allUsers = await getAllItems<any>(TABLES.USERS);
+
+        const students = allUsers
+            .filter(u => userIds.includes(u.id))
+            .map(({ password, ...rest }) => ({
+                ...rest,
+                enrolledAt: courseEnrollments.find(e => e.userId === rest.id)?.enrolledAt
+            }));
+
+        res.json(students);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST — Admin enrolls a student in a course
 router.post("/admin/enroll", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {

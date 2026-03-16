@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Bell, CheckCheck, Info, ShieldAlert, BookOpen, DollarSign, Trophy } from "lucide-react";
 import { fetchMyNotifications, markAllNotificationsRead } from "@/api/portalApi";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export const Notifications = () => {
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchMyNotifications();
@@ -54,9 +54,9 @@ export const Notifications = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [toast]);
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => { load(); }, [load]);
 
     const handleMarkAllRead = async () => {
         try {
@@ -107,8 +107,8 @@ export const Notifications = () => {
                         <Card
                             key={n.notificationId}
                             className={`transition-all border-l-4 ${n.isRead
-                                    ? "border-l-gray-200 opacity-70"
-                                    : "border-l-indigo-500 shadow-md"
+                                ? "border-l-gray-200 opacity-70"
+                                : "border-l-indigo-500 shadow-md"
                                 }`}
                         >
                             <CardContent className="p-4">
