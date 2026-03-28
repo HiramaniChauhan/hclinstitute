@@ -9,7 +9,6 @@ const router = Router();
 router.get("/progress", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const studentId = req.user.id;
-        console.log(`[Backend] Fetching progress for student: ${studentId}`);
         const result = await docClient.send(new ScanCommand({
             TableName: TABLES.LECTURE_PROGRESS,
             FilterExpression: "studentId = :studentId",
@@ -17,7 +16,6 @@ router.get("/progress", verifyToken, async (req: AuthRequest, res: Response) => 
         }));
 
         const completedIds = result.Items?.map((item: any) => item.lectureId) || [];
-        console.log(`[Backend] Found ${completedIds.length} completed lectures`);
         res.json(completedIds);
     } catch (error) {
         console.error("[Backend] Error fetching lecture progress:", error);
@@ -30,7 +28,6 @@ router.post("/progress", verifyToken, async (req: AuthRequest, res: Response) =>
     try {
         const { lectureId, completed } = req.body;
         const studentId = req.user.id;
-        console.log(`[Backend] Toggle progress: lecture=${lectureId}, student=${studentId}, completed=${completed}`);
 
         if (!lectureId) {
             console.error("[Backend] Missing lectureId");
@@ -40,7 +37,6 @@ router.post("/progress", verifyToken, async (req: AuthRequest, res: Response) =>
         const progressId = `progress_${studentId}_${lectureId}`;
 
         if (completed) {
-            console.log(`[Backend] Marking as completed: ${progressId}`);
             await docClient.send(new PutCommand({
                 TableName: TABLES.LECTURE_PROGRESS,
                 Item: {
@@ -51,7 +47,6 @@ router.post("/progress", verifyToken, async (req: AuthRequest, res: Response) =>
                 },
             }));
         } else {
-            console.log(`[Backend] Removing completion: ${progressId}`);
             await docClient.send(new DeleteCommand({
                 TableName: TABLES.LECTURE_PROGRESS,
                 Key: { id: progressId }

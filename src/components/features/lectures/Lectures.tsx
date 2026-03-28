@@ -96,18 +96,24 @@ export const Lectures = () => {
   };
 
   const getYoutubeEmbedUrl = (url: string) => {
-    try {
-      let videoId = "";
-      if (url.includes("v=")) {
-        videoId = url.split("v=")[1].split("&")[0];
-      } else if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1].split("?")[0];
-      }
-      return `https://www.youtube.com/embed/${videoId}`;
-    } catch (e) {
-      return "";
+  try {
+    let videoId = "";
+
+    if (url.includes("watch?v=")) {
+      videoId = url.split("watch?v=")[1].split("&")[0];
+    } 
+    else if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1].split("?")[0];
+    } 
+    else if (url.includes("/live/")) {
+      videoId = url.split("/live/")[1].split("?")[0];
     }
-  };
+
+    return `https://www.youtube.com/embed/${videoId}`;
+  } catch (e) {
+    return "";
+  }
+};
 
   const handleStartTest = async (testId: string | number) => {
     try {

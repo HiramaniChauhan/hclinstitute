@@ -31,16 +31,7 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
         const secretToUse = JWT_SECRET;
         const envSecret = process.env.JWT_SECRET || "FALLBACK";
 
-        console.log(`[Auth] VERIFY Check:
-            Secret Length: ${secretToUse.length}
-            Env Secret Length: ${envSecret.length}
-            Secret Match: ${secretToUse === envSecret}
-            Server Time: ${new Date().toISOString()}
-            Token Start: ${token.substring(0, 10)}...
-        `);
-
         const decoded = jwt.verify(token, secretToUse) as any;
-        console.log("[Auth] Token Decoded Successfully:", { id: decoded.id, role: decoded.role, exp: new Date(decoded.exp * 1000).toISOString() });
 
         // Database sanity check: verify the user still exists and hasn't been deleted
         const dbResult = await docClient.send(new GetCommand({

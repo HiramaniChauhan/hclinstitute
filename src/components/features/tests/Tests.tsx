@@ -282,7 +282,7 @@ export const Tests = () => {
                               setReviewMode(true);
                             }}
                           >
-                            Review Retake
+                            Review Retaken
                           </Button>
                         )}
                         {/* Start / Retake / Disabled button */}
@@ -412,7 +412,7 @@ export const Tests = () => {
                                   setReviewMode(true);
                                 }}
                               >
-                                Review Retake
+                                Review Retaken
                               </Button>
                             )}
                           </>

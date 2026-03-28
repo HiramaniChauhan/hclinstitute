@@ -356,7 +356,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                         </div>
                     )}
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         {!reviewMode ? (
                             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
                                 <Clock size={20} />
@@ -439,9 +439,9 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                     {/* Main Question Area */}
                     <div className="flex-1 w-full space-y-6">
                         <Card className="min-h-[500px] shadow-2xl border-none bg-white overflow-hidden rounded-2xl ring-1 ring-slate-200">
-                            <div className="bg-slate-50 p-6 flex flex-row items-center justify-between border-b">
+                            <div className="bg-slate-50 p-2 flex flex-row items-center justify-between border-b">
                                 <div className="flex items-center gap-3">
-                                    <Badge className="bg-slate-800 px-4 py-1 text-base">Question {activeQuestionIdx + 1}</Badge>
+                                    <Badge className="bg-slate-800 px-2 py-1 text-base">Question {activeQuestionIdx + 1}</Badge>
                                     <Badge variant="outline" className="text-slate-500 border-slate-300">{activeSection.name}</Badge>
                                 </div>
                                 {hasDraftChange && (
@@ -451,7 +451,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 )}
                             </div>
                             <CardContent className="p-8 space-y-8">
-                                <div className="text-3xl font-semibold leading-relaxed text-slate-800">
+                                <div className="text-1xl font-semibold leading-relaxed text-slate-800">
                                     <Latex content={activeQuestion.question} />
                                 </div>
 
@@ -473,19 +473,19 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                                 key={idx}
                                                 disabled={reviewMode}
                                                 onClick={() => handleOptionSelect(idx)}
-                                                className={`flex items-center gap-5 p-6 rounded-2xl border-[3px] text-left transition-all duration-300 group ${isCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
+                                                className={`flex items-center gap-3 p-2 rounded-2xl border-[2px] text-left transition-all duration-300 group ${isCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
                                                     isUserWrong ? 'border-red-500 bg-red-100 shadow-md' :
                                                         isDraftSelected ? 'border-blue-600 bg-blue-50 shadow-lg translate-x-3' :
                                                             'border-slate-100 hover:border-blue-300 hover:bg-slate-50'
                                                     }`}
                                             >
-                                                <span className={`w-12 h-12 text-xl rounded-xl flex items-center justify-center font-bold border-2 transition-colors ${isCorrect ? 'bg-green-500 text-white border-green-600' :
+                                                <span className={`w-6 h-6 text-lg rounded-lg flex items-center justify-center font-bold border-2 transition-colors ${isCorrect ? 'bg-green-500 text-white border-green-600' :
                                                     isUserWrong ? 'bg-red-500 text-white border-red-600' :
                                                         isDraftSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 group-hover:bg-blue-50'
                                                     }`}>
                                                     {String.fromCharCode(65 + idx)}
                                                 </span>
-                                                <span className="flex-1 text-xl font-medium text-slate-700">
+                                                <span className="flex-1 text-lg font-medium text-slate-700">
                                                     <Latex content={option} />
                                                 </span>
                                                 {isCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
@@ -499,7 +499,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 </div>
 
                                 {reviewMode && activeQuestion.explanation && (
-                                    <div className="mt-8 p-6 bg-slate-900 text-white rounded-2xl space-y-2 border-l-8 border-l-blue-500">
+                                    <div className="mt-8 p-4 bg-slate-900 text-white rounded-2xl space-y-2 border-l-8 border-l-blue-500">
                                         <div className="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-wider text-sm">
                                             <Award size={18} />
                                             Explanation
@@ -512,12 +512,12 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                             </CardContent>
                         </Card>
 
-                        <div className="flex items-center justify-between p-6 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200">
+                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200">
                             <div className="flex gap-4">
                                 <Button
                                     variant="ghost"
                                     size="lg"
-                                    className="hover:bg-slate-100 font-bold px-6"
+                                    className="hover:bg-slate-100 font-bold px-2"
                                     onClick={() => {
                                         if (activeQuestionIdx > 0) setActiveQuestionIdx(prev => prev - 1);
                                         else if (activeSectionIdx > 0) {
@@ -534,7 +534,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
 
                             <div className="flex gap-4">
                                 {!reviewMode && (
-                                    <Button variant="outline" size="lg" onClick={handleClearResponse} className="text-slate-500 font-bold px-6 hover:bg-slate-50">
+                                    <Button variant="outline" size="lg" onClick={handleClearResponse} className="text-slate-500 font-bold px-4 hover:bg-slate-50">
                                         Clear Response
                                     </Button>
                                 )}
@@ -547,14 +547,14 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                             variant="outline"
                                             size="lg"
                                             onClick={handleMarkForReviewAndNext}
-                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-6"
+                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-4"
                                         >
                                             Mark for Review & Next
                                         </Button>
                                         <Button
                                             size="lg"
                                             onClick={handleSaveAndMarkForReview}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4"
                                         >
                                             Save & Mark For Review
                                         </Button>
@@ -563,7 +563,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 <Button
                                     size="lg"
                                     onClick={handleSaveAndNext}
-                                    className="bg-blue-600 hover:bg-blue-700 px-10 text-xl font-bold rounded-2xl shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95"
+                                    className="bg-blue-600 hover:bg-blue-700 px-6 text-xl font-bold rounded-2xl shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95"
                                 >
                                     {reviewMode ? "Next" : "Save & Next"}
                                     <ChevronRight size={20} className="ml-2" />
@@ -618,7 +618,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                                                     setActiveSectionIdx(sIdx);
                                                                     setActiveQuestionIdx(qIdx);
                                                                 }}
-                                                                className={`h-10 w-10 text-sm font-bold rounded-lg flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
+                                                                className={`h-8 w-8 text-sm font-bold rounded-lg flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
                                                             >
                                                                 {qIdx + 1}
                                                             </button>

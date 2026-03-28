@@ -456,12 +456,9 @@ app.post("/api/auth/login", async (req, res) => {
         return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
-    console.log(`[Login] Attempt: ${email} as ${role}`);
-
     if (role === 'admin') {
         const isValid = await verifyAdminSecret(adminSecret);
         if (!isValid) {
-            console.log(`[Login] Failure: Admin Secret mismatch for ${email}`);
             return res.status(401).json({ error: "Invalid Admin Secret Code" });
         }
     }
@@ -477,30 +474,21 @@ app.post("/api/auth/login", async (req, res) => {
         const user = scanResult.Items?.[0];
 
         if (!user) {
-            console.log(`[Login] Failure: User not found for ${email} with role ${role}`);
             return res.status(401).json({ error: "Invalid credentials" });
         }
 
         if (user.provider === "local") {
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
-                console.log(`[Login] Failure: Password mismatch for ${email}`);
                 return res.status(401).json({ error: "Invalid credentials" });
             }
         }
-
-        console.log(`[Login] Sign Check:
-            Secret Length: ${JWT_SECRET.length}
-            Signing with payload: ${{ id: user.id, role: user.role }}
-            Time: ${new Date().toISOString()}
-        `);
 
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             JWT_SECRET,
             { expiresIn: "24h" }
         );
-        console.log("[Login] Token Signed. Start:", token.substring(0, 10));
 
         res.json({
             token,
