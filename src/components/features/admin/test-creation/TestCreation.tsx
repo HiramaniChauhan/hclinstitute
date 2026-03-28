@@ -373,11 +373,6 @@ export const TestCreation = () => {
         subject: "General"
       };
 
-      console.log(`[TestCreation] Saving Test:
-        Method: ${method}
-        URL: ${url}
-        Rescheduling: ${isActuallyRescheduling}
-      `);
 
       const resp = await fetch(url, {
         method,
@@ -392,7 +387,6 @@ export const TestCreation = () => {
         toast.success(isActuallyRescheduling ? "Test rescheduled successfully (New Copy created)!" : (editingTest ? "Test updated" : "Test created"));
 
         if (isActuallyRescheduling && oldTestId) {
-          console.log(`[TestCreation] Deleting old test ${oldTestId} after reschedule.`);
           await handleDeleteTest(oldTestId, true);
         }
 

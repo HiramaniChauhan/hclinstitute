@@ -83,17 +83,14 @@ export const Chat = () => {
   }, [user?.role, markAsRead]);
 
   useEffect(() => {
-    console.log("[Chat] Auth User state changed:", user);
     if (!user) {
       console.warn("[Chat] No user found in context");
       return;
     }
 
     if (user.role === 'admin') {
-      console.log("[Chat] Admin detected, fetching conversations...");
       fetchConversations();
     } else if (user.role === 'student') {
-      console.log("[Chat] Student detected, setting selectedChat to:", user.id);
       setSelectedChat(user.id);
       fetchMessages(user.id);
     }
@@ -117,7 +114,6 @@ export const Chat = () => {
     };
     fetchLogo();
 
-    console.log("[Chat] Selected chat changed:", selectedChat, "Fetching messages...");
     fetchMessages(selectedChat);
     markAsRead(selectedChat);
 

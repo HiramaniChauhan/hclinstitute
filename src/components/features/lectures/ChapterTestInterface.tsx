@@ -420,7 +420,6 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                             <AlertDialogCancel>Review Answers</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={(e) => {
-                                                    console.log("[ChapterTestInterface] Confirm Submission clicked");
                                                     handleSubmit(e as any);
                                                 }}
                                                 className="bg-red-600 hover:bg-red-700"

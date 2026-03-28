@@ -36,10 +36,8 @@ export const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      console.log("[Profile] Fetching profile...");
       try {
         const data = await getProfile();
-        console.log("[Profile] Received data:", data);
         if (data) {
           setStudentData(data);
           setEditForm(data);
@@ -93,7 +91,6 @@ export const Profile = () => {
   }, [getProfile]);
 
   const handleSave = async () => {
-    console.log("[Profile] Saving changes:", editForm);
     const success = await updateProfile(editForm);
     if (success) {
       setStudentData(editForm);

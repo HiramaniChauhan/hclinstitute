@@ -57,14 +57,11 @@ export const Lectures = () => {
   const fetchProgress = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      console.log("[Lectures] fetchProgress starting, token:", token ? "FOUND" : "MISSING");
       const resp = await fetch("/api/lectures/progress", {
         headers: { "Authorization": `Bearer ${token}` }
       });
-      console.log("[Lectures] fetchProgress status:", resp.status);
       if (resp.ok) {
         const data = await resp.json();
-        console.log("[Lectures] fetchProgress data:", data);
         // Normalize to strings to avoid type mismatch
         setCompletedLectures(Array.isArray(data) ? data.map(String) : []);
       } else {
@@ -201,11 +198,9 @@ export const Lectures = () => {
   };
 
   const toggleLectureCompletion = async (lectureId: string, shouldComplete: boolean) => {
-    console.log("[Lectures] toggleLectureCompletion:", lectureId, "shouldComplete:", shouldComplete);
 
     try {
       const token = sessionStorage.getItem('token');
-      console.log("[Lectures] Using token:", token ? "FOUND" : "MISSING");
 
       const resp = await fetch("/api/lectures/progress", {
         method: "POST",
@@ -216,7 +211,6 @@ export const Lectures = () => {
         body: JSON.stringify({ lectureId: String(lectureId), completed: shouldComplete })
       });
 
-      console.log("[Lectures] API response status:", resp.status);
       if (resp.ok) {
         setCompletedLectures(prev =>
           shouldComplete

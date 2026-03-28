@@ -83,13 +83,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
 
     useEffect(() => {
         if (reviewMode) {
-            console.log("[TestInterface] Review Mode initialized:", {
-                testId: test.testId || test.id,
-                totalMarks: test.totalMarks,
-                attemptsCount: allAttempts.length,
-                initialIdx: initialAttemptIdx,
-                selectedIdx: selectedAttemptIdx
-            });
         }
     }, [reviewMode, test.testId, test.id, test.totalMarks, allAttempts.length, initialAttemptIdx, selectedAttemptIdx]);
 
@@ -98,7 +91,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
         if (reviewMode) {
             const currentAttempt = allAttempts[selectedAttemptIdx] || { userAnswers: answers };
             if (currentAttempt && currentAttempt.userAnswers) {
-                console.log("[TestInterface] Populating answers for review (Attempt index:", selectedAttemptIdx, "):", currentAttempt.userAnswers);
                 setSavedAnswers(currentAttempt.userAnswers);
                 setDraftAnswers(currentAttempt.userAnswers);
             }
@@ -128,7 +120,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
 
         if (isSubmitting) return;
 
-        console.log("[TestInterface] handleSubmit triggered", { tabSwitchCount });
         setIsSubmitting(true);
         try {
             const currentToken = sessionStorage.getItem('token');
@@ -144,7 +135,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
             let correctCount = 0;
             let incorrectCount = 0;
 
-            console.log("[TestInterface] Calculating scores...");
             test.sections.forEach(section => {
                 const marks = Number(section.marksPerQuestion) || 1;
                 const negMarks = Number(section.negativeMarks) || 0;
@@ -179,7 +169,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                 userAnswers: savedAnswers
             };
 
-            console.log("[TestInterface] Submitting results:", results);
             const resp = await fetch("/api/results", {
                 method: "POST",
                 headers: {
@@ -191,7 +180,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
 
             if (resp.ok) {
                 const savedResult = await resp.json();
-                console.log("[TestInterface] Result saved successfully:", savedResult);
                 toast.success("Test submitted successfully!");
                 onComplete(results);
             } else {
@@ -591,7 +579,6 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                             <AlertDialogCancel>Review Answers</AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => {
-                                                    console.log("[TestInterface] Confirm Submission clicked");
                                                     handleSubmit();
                                                 }}
                                                 className="bg-red-600 hover:bg-red-700"
