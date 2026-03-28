@@ -82,6 +82,24 @@ export const deleteStudent = async (id: string) => {
     return res.json();
 };
 
+export const permanentlyDeleteStudent = async (id: string) => {
+    const res = await fetch(`${API_BASE}/admin/students/${id}/permanent`, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const restoreStudent = async (id: string) => {
+    const res = await fetch(`${API_BASE}/admin/students/${id}/restore`, {
+        method: "PUT",
+        headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
 export const assignStudentToBatch = async (id: string, batchId: string, batchName: string) => {
     const res = await fetch(`${API_BASE}/admin/students/${id}/batch`, {
         method: "PUT",
@@ -318,6 +336,26 @@ export const fetchTestById = async (testId: string) => {
 export const fetchMyResults = async () => {
     const res = await fetch(`${API_BASE}/results/my-results`, {
         headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const requestDeleteAccountOtp = async (email: string) => {
+    const res = await fetch(`${API_BASE}/auth/send-otp`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ email, purpose: "Account Deletion" }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const confirmDeleteAccount = async (otp: string) => {
+    const res = await fetch(`${API_BASE}/profile/delete-account`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ otp }),
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();

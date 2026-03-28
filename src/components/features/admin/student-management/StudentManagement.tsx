@@ -15,7 +15,7 @@ import {
 import { StudentDetail } from "./StudentDetail";
 import {
     fetchAllStudents, verifyStudent, unverifyStudent, suspendStudent, unsuspendStudent,
-    deleteStudent, broadcastNotification, fetchStudentEnrollments, adminEnrollStudent, unenroll, fetchCourses
+    deleteStudent, broadcastNotification, fetchStudentEnrollments, adminEnrollStudent, unenroll, fetchCourses, restoreStudent, permanentlyDeleteStudent
 } from "@/api/portalApi";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +46,8 @@ interface Student {
     aadharNumber?: string;
     aadharPhoto?: string;
     marksheet10th?: string;
+    isDeleted?: boolean;
+    deletedAt?: string;
 }
 
 export const StudentManagement = () => {
@@ -57,6 +59,7 @@ export const StudentManagement = () => {
     const [suspendDialog, setSuspendDialog] = useState<Student | null>(null);
     const [suspendReason, setSuspendReason] = useState("");
     const [deleteDialog, setDeleteDialog] = useState<Student | null>(null);
+    const [permanentDeleteDialog, setPermanentDeleteDialog] = useState<Student | null>(null);
     const [broadcastDialog, setBroadcastDialog] = useState(false);
     const [photoDialog, setPhotoDialog] = useState<{ title: string, url: string } | null>(null);
     const [broadcast, setBroadcast] = useState({ title: "", message: "" });
@@ -64,6 +67,7 @@ export const StudentManagement = () => {
     const [studentEnrollments, setStudentEnrollments] = useState<Enrollment[]>([]);
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [enrollLoading, setEnrollLoading] = useState(false);
+    const [viewMode, setViewMode] = useState<"active" | "deleted">("active");
     const { toast } = useToast();
 
     const load = useCallback(async () => {
@@ -80,10 +84,11 @@ export const StudentManagement = () => {
 
     useEffect(() => { load(); }, [load]);
 
-    const filtered = students.filter(s =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = students.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesView = viewMode === "active" ? !s.isDeleted : !!s.isDeleted;
+        return matchesSearch && matchesView;
+    });
 
     const doVerify = async (student: Student) => {
         setActionLoading(student.id);
@@ -145,8 +150,36 @@ export const StudentManagement = () => {
         setActionLoading(deleteDialog.id);
         try {
             await deleteStudent(deleteDialog.id);
-            toast({ title: `${deleteDialog.name} removed` });
+            toast({ title: `${deleteDialog.name} moved to deleted accounts` });
             setDeleteDialog(null);
+            load();
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const doPermanentDelete = async () => {
+        if (!permanentDeleteDialog) return;
+        setActionLoading(permanentDeleteDialog.id);
+        try {
+            await permanentlyDeleteStudent(permanentDeleteDialog.id);
+            toast({ title: `${permanentDeleteDialog.name} permanently deleted` });
+            setPermanentDeleteDialog(null);
+            load();
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" });
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const doRestore = async (student: Student) => {
+        setActionLoading(student.id);
+        try {
+            await restoreStudent(student.id);
+            toast({ title: `${student.name} restored` });
             load();
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -220,8 +253,8 @@ export const StudentManagement = () => {
         }
     };
 
-    const verified = students.filter(s => s.isVerified).length;
-    const suspended = students.filter(s => s.isSuspended).length;
+    const verified = students.filter(s => s.isVerified && !s.isDeleted).length;
+    const suspended = students.filter(s => s.isSuspended && !s.isDeleted).length;
 
     const handleBack = useCallback(() => {
         setSelectedStudentId(null);
@@ -276,7 +309,27 @@ export const StudentManagement = () => {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <CardTitle>All Students</CardTitle>
+                        <div className="flex items-center gap-4">
+                            <CardTitle>Students</CardTitle>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                <Button
+                                    size="sm"
+                                    variant={viewMode === "active" ? "default" : "ghost"}
+                                    onClick={() => setViewMode("active")}
+                                    className={viewMode === "active" ? "bg-white text-black shadow-sm" : "text-gray-500"}
+                                >
+                                    Active Students
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={viewMode === "deleted" ? "default" : "ghost"}
+                                    onClick={() => setViewMode("deleted")}
+                                    className={viewMode === "deleted" ? "bg-white text-black shadow-sm" : "text-gray-500"}
+                                >
+                                    Deleted Accounts
+                                </Button>
+                            </div>
+                        </div>
                         <div className="relative w-64">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -367,7 +420,7 @@ export const StudentManagement = () => {
                                                     View 10th Result
                                                 </Button>
                                             )}
-                                            {!student.isVerified && (
+                                            {!student.isDeleted && !student.isVerified && (
                                                 <Button
                                                     size="sm"
                                                     onClick={() => doVerify(student)}
@@ -378,7 +431,7 @@ export const StudentManagement = () => {
                                                     {actionLoading === student.id ? "..." : "Verify"}
                                                 </Button>
                                             )}
-                                            {student.isVerified && (
+                                            {!student.isDeleted && student.isVerified && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -389,7 +442,7 @@ export const StudentManagement = () => {
                                                     <ShieldOff className="h-4 w-4 mr-1" /> Unverify
                                                 </Button>
                                             )}
-                                            {!student.isSuspended ? (
+                                            {!student.isDeleted && !student.isSuspended && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -399,7 +452,8 @@ export const StudentManagement = () => {
                                                 >
                                                     <ShieldOff className="h-4 w-4 mr-1" /> Suspend
                                                 </Button>
-                                            ) : (
+                                            )}
+                                            {!student.isDeleted && student.isSuspended && (
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -410,14 +464,36 @@ export const StudentManagement = () => {
                                                     <ShieldCheck className="h-4 w-4 mr-1" /> Reinstate
                                                 </Button>
                                             )}
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                onClick={() => setDeleteDialog(student)}
-                                                disabled={actionLoading === student.id}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-1" /> Remove
-                                            </Button>
+                                            {student.isDeleted ? (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => doRestore(student)}
+                                                        disabled={actionLoading === student.id}
+                                                        className="border-green-200 text-green-600 hover:bg-green-50"
+                                                    >
+                                                        <RefreshCw className="h-4 w-4 mr-1" /> Restore
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => setPermanentDeleteDialog(student)}
+                                                        disabled={actionLoading === student.id}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" /> Delete Permanently
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => setDeleteDialog(student)}
+                                                    disabled={actionLoading === student.id}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -452,10 +528,24 @@ export const StudentManagement = () => {
                     <DialogHeader>
                         <DialogTitle>Remove {deleteDialog?.name}?</DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-gray-500">This will permanently delete the student's account. This cannot be undone.</p>
+                    <p className="text-sm text-gray-500">This will move the student's account to the Deleted Accounts list.</p>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteDialog(null)}>Cancel</Button>
                         <Button variant="destructive" onClick={doDelete}>Yes, Remove</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Permanent Delete Dialog */}
+            <Dialog open={!!permanentDeleteDialog} onOpenChange={(open) => !open && setPermanentDeleteDialog(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Permanently Delete {permanentDeleteDialog?.name}?</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-red-600 font-semibold">Warning: This action is irreversible. It will permanently remove the student and all associated data from the database.</p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPermanentDeleteDialog(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={doPermanentDelete}>Yes, Delete Permanently</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -525,29 +615,31 @@ export const StudentManagement = () => {
                             </h3>
                             {enrollLoading ? (
                                 <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
-                            ) : studentEnrollments.length === 0 ? (
+                            ) : studentEnrollments.filter(en => allCourses.some(c => c.id === en.courseId)).length === 0 ? (
                                 <p className="text-sm text-gray-500 italic py-2">No active enrollments found.</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {studentEnrollments.map(en => {
-                                        const course = allCourses.find(c => c.id === en.courseId);
-                                        return (
-                                            <div key={en.enrollmentId} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
-                                                <div>
-                                                    <p className="font-medium text-sm">{course?.title || "Unknown Course"}</p>
-                                                    <p className="text-xs text-gray-500">Enrolled: {new Date(en.enrolledAt).toLocaleDateString()}</p>
+                                    {studentEnrollments
+                                        .filter(en => allCourses.some(c => c.id === en.courseId))
+                                        .map(en => {
+                                            const course = allCourses.find(c => c.id === en.courseId);
+                                            return (
+                                                <div key={en.enrollmentId} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                                                    <div>
+                                                        <p className="font-medium text-sm">{course?.title || "Unknown Course"}</p>
+                                                        <p className="text-xs text-gray-500">Enrolled: {new Date(en.enrolledAt).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={() => doUnenroll(en.enrollmentId)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                    onClick={() => doUnenroll(en.enrollmentId)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
-                                                </Button>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
                                 </div>
                             )}
                         </div>

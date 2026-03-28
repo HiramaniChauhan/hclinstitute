@@ -262,15 +262,52 @@ router.put("/students/:id/batch", verifyToken, requireAdmin, async (req: AuthReq
     }
 });
 
-// DELETE remove a student
+// DELETE soft remove a student
 router.delete("/students/:id", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
         const user = await getItem<any>(TABLES.USERS, { id: req.params.id });
         if (!user || user.role !== "student") {
             return res.status(404).json({ error: "Student not found" });
         }
+        const updated = { ...user, isDeleted: true, deletedAt: new Date().toISOString() };
+        await createItem(TABLES.USERS, updated);
+
+        // Remove all course/batch enrollments for this student
+        const allEnrollments = await getAllItems<any>(TABLES.ENROLLMENTS);
+        const userEnrollments = allEnrollments.filter((e: any) => e.userId === user.id);
+        await Promise.all(userEnrollments.map((e: any) => deleteItem(TABLES.ENROLLMENTS, { enrollmentId: e.enrollmentId })));
+
+        res.json({ message: "Student moved to deleted accounts successfully" });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE permanently remove a student
+router.delete("/students/:id/permanent", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await getItem<any>(TABLES.USERS, { id: req.params.id });
+        if (!user || user.role !== "student") {
+            return res.status(404).json({ error: "Student not found" });
+        }
         await deleteItem(TABLES.USERS, { id: req.params.id });
-        res.json({ message: "Student removed successfully" });
+        res.json({ message: "Student permanently deleted" });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT restore a deleted student
+router.put("/students/:id/restore", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const user = await getItem<any>(TABLES.USERS, { id: req.params.id });
+        if (!user || user.role !== "student") {
+            return res.status(404).json({ error: "Student not found" });
+        }
+        const updated = { ...user, isDeleted: false };
+        delete updated.deletedAt;
+        await createItem(TABLES.USERS, updated);
+        res.json({ message: "Student restored successfully" });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

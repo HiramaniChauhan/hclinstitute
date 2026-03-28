@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, CheckCircle, User, MapPin, GraduationCap, Loader2, Camera, Upload, BarChart2, BookOpen, XCircle, ChevronRight, Clock } from "lucide-react";
+import { FileText, CheckCircle, User, MapPin, GraduationCap, Loader2, Camera, Upload, BarChart2, BookOpen, XCircle, ChevronRight, Clock, Trash2 } from "lucide-react";
 import { ImageCropDialog } from "../admin/course-management/ImageCropDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { fetchMyResults, fetchTestById } from "@/api/portalApi";
 import { TestInterface } from "../tests/TestInterface";
+import { requestDeleteAccountOtp, confirmDeleteAccount } from "@/api/portalApi";
+import { useToast } from "@/hooks/use-toast";
 
 export const Profile = () => {
-  const { getProfile, updateProfile } = useAuth();
+  const { getProfile, updateProfile, logout } = useAuth();
   const [studentData, setStudentData] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -25,6 +27,12 @@ export const Profile = () => {
   const [reviewData, setReviewData] = useState<{ result: any; test: any; allAttempts: any[]; initialAttemptIdx: number } | null>(null);
   const [loadingReview, setLoadingReview] = useState(false);
   const [testNames, setTestNames] = useState<Record<string, string>>({});
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteOtpSent, setDeleteOtpSent] = useState(false);
+  const [deleteOtp, setDeleteOtp] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,21 +61,27 @@ export const Profile = () => {
         const sorted = (results || []).sort((a: any, b: any) =>
           new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
         );
-        setTestResults(sorted);
-
         // Fetch test titles for display
         const uniqueIds = [...new Set(sorted.map((r: any) => r.testId))] as string[];
         const names: Record<string, string> = {};
+        const validTestIds = new Set<string>();
+
         await Promise.all(
           uniqueIds.map(async (id) => {
             try {
               const test = await fetchTestById(id);
-              if (test?.title) names[id] = test.title;
+              if (test?.title) {
+                names[id] = test.title;
+                validTestIds.add(String(id));
+              }
             } catch {
-              // keep raw id as fallback
+              // assume deleted or inaccessible
             }
           })
         );
+
+        const activeResults = sorted.filter((r: any) => validTestIds.has(String(r.testId)));
+        setTestResults(activeResults);
         setTestNames(names);
       } catch {
         // silently fail
@@ -109,6 +123,37 @@ export const Profile = () => {
       // silently fail if test details unavailable
     } finally {
       setLoadingReview(false);
+    }
+  };
+
+  const handleRequestDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await requestDeleteAccountOtp(studentData.email);
+      setDeleteOtpSent(true);
+      toast?.({ title: "OTP Sent", description: "Please check your email for the deletion OTP." });
+    } catch (e: any) {
+      toast?.({ title: "Error", description: e.message || "Failed to send OTP", variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteOtp || deleteOtp.length !== 6) {
+      toast?.({ title: "Invalid OTP", variant: "destructive" });
+      return;
+    }
+    setDeleteLoading(true);
+    try {
+      await confirmDeleteAccount(deleteOtp);
+      toast?.({ title: "Account Deleted", description: "Your account has been deleted successfully." });
+      setDeleteDialogOpen(false);
+      logout(); // redirect to login window
+    } catch (e: any) {
+      toast?.({ title: "Error", description: e.message || "Failed to delete account", variant: "destructive" });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -463,6 +508,83 @@ export const Profile = () => {
         onClose={() => setCropDialogOpen(false)}
         onCropDone={(cropped) => setEditForm({ ...editForm, profileImage: cropped })}
       />
+
+      {/* Danger Zone */}
+      <Card className="border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600">
+            <Trash2 className="w-5 h-5" /> Danger Zone
+          </CardTitle>
+          <CardDescription>
+            Permanently removing or disabling your account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100 flex-wrap gap-4">
+            <div>
+              <h3 className="font-semibold text-red-800">Delete Account</h3>
+              <p className="text-sm text-red-600 max-w-xl">
+                Your account will be deleted. You will be logged out and unable to log in until you restore it.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setDeleteDialogOpen(true);
+                setDeleteOtpSent(false);
+                setDeleteOtp("");
+              }}
+            >
+              Delete Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Account</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete your account? You will receive an OTP to confirm this action.
+            </DialogDescription>
+          </DialogHeader>
+          {!deleteOtpSent ? (
+            <div className="space-y-4 pt-4">
+              <Button
+                onClick={handleRequestDelete}
+                disabled={deleteLoading}
+                className="w-full bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Send Deletion OTP to {studentData.email}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Enter 6-digit OTP</Label>
+                <Input
+                  type="text"
+                  maxLength={6}
+                  value={deleteOtp}
+                  onChange={e => setDeleteOtp(e.target.value)}
+                  placeholder="6 digit OTP"
+                />
+              </div>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading || deleteOtp.length !== 6}
+                variant="destructive"
+                className="w-full"
+              >
+                {deleteLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Confirm Deletion
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

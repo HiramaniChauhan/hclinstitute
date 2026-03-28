@@ -63,21 +63,27 @@ export const StudentDetail = ({ studentId, onBack }: StudentDetailProps) => {
                 const sorted = (results || []).sort((a: any, b: any) =>
                     new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
                 );
-                setTestResults(sorted);
-
                 // Fetch test titles for display
                 const uniqueIds = [...new Set(sorted.map((r: any) => r.testId))] as string[];
                 const names: Record<string, string> = {};
+                const validTestIds = new Set<string>();
+
                 await Promise.all(
                     uniqueIds.map(async (id) => {
                         try {
                             const test = await fetchTestById(id);
-                            if (test?.title) names[id] = test.title;
+                            if (test?.title) {
+                                names[id] = test.title;
+                                validTestIds.add(String(id));
+                            }
                         } catch {
-                            // keep raw id as fallback
+                            // assume deleted or inaccessible
                         }
                     })
                 );
+
+                const activeResults = sorted.filter((r: any) => validTestIds.has(String(r.testId)));
+                setTestResults(activeResults);
                 setTestNames(names);
             } catch {
                 // silently fail — test history is supplementary

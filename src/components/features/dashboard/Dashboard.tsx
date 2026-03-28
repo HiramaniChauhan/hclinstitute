@@ -53,10 +53,16 @@ export const Dashboard = () => {
           setActiveLiveClasses(live);
         }
 
-        if (Array.isArray(resultsData)) {
-          setUserResults(resultsData);
+        let validResults = resultsData || [];
+        if (Array.isArray(resultsData) && Array.isArray(testsData)) {
+          const validTestIds = new Set(testsData.map((t: any) => String(t.testId || t.id)));
+          validResults = resultsData.filter((r: any) => validTestIds.has(String(r.testId)));
+        }
+
+        if (Array.isArray(validResults)) {
+          setUserResults(validResults);
           // Best rank from last 20 tests
-          const last20 = [...resultsData]
+          const last20 = [...validResults]
             .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
             .slice(0, 20);
           const ranks = last20.map((r: any) => r.rank).filter((r: any) => typeof r === 'number');

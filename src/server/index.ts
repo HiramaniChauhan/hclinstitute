@@ -39,6 +39,9 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+import fs from 'fs';
+import path from 'path';
+
 // Helper for OTP generation
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -49,9 +52,91 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
         const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'noreply@hclins.com';
         const senderName = 'HCL Institute';
 
+        let logoBase64 = "";
+        try {
+            const logoPath = path.join(process.cwd(), "public", "logo.png");
+            if (fs.existsSync(logoPath)) {
+                logoBase64 = fs.readFileSync(logoPath, "base64");
+            }
+        } catch (e) {
+            console.warn("Could not load logo.png for email");
+        }
+
+        const htmlTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; max-width: 600px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                    <tr>
+                        <td align="center" style="background-color: #000000; padding: 25px 0 20px 0; border-bottom: 4px solid #e6873c;">
+                            <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                <tr>
+                                    ${logoBase64 ? '<td valign="middle" style="padding-right: 15px;"><img src="cid:logo.png" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; display: block;"></td>' : ''}
+                                    <td valign="middle">
+                                        <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0.5px;">HCL Institute</h1>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding: 40px 30px;">
+                            <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 22px;">Here is your OTP</h2>
+                            <p style="color: #4b5563; font-size: 16px; line-height: 1.5; margin: 0 0 30px 0;">
+                                You recently requested a One-Time Password to securely access or modify your HCL Institute account. Please use the verification code below:
+                            </p>
+                            <div style="background-color: #f4f8fb; border: 2px dashed #225675; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 30px;">
+                                <h1 style="color: #225675; margin: 0; font-size: 42px; letter-spacing: 8px; font-weight: bold;">${otp}</h1>
+                            </div>
+                            <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+                                Note: This code is valid for <strong>10 minutes</strong>.<br/>
+                                Please do not share this OTP with anyone. If you didn't request this code, you can safely ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="background-color: #f1f5f9; padding: 20px; border-top: 1px solid #e2e8f0;">
+                            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                                &copy; ${(new Date()).getFullYear()} HCL Institute. All rights reserved.
+                            </p>
+                            <p style="color: #94a3b8; font-size: 12px; margin: 10px 0 0 0;">
+                                This is an automated message, please do not reply.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+
         // 1. Try Brevo REST API (Preferred - bypasses SMTP blocking)
         if (process.env.BREVO_API_KEY) {
             console.log(`[Email] Attempting Brevo REST API to ${toEmail}`);
+
+            const reqBody: any = {
+                sender: { email: senderEmail, name: senderName },
+                to: [{ email: toEmail }],
+                subject,
+                htmlContent: htmlTemplate
+            };
+
+            if (logoBase64) {
+                reqBody.attachment = [{
+                    content: logoBase64,
+                    name: "logo.png"
+                }];
+            }
+
             const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                 method: 'POST',
                 headers: {
@@ -59,17 +144,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
                     'Content-Type': 'application/json',
                     'api-key': process.env.BREVO_API_KEY
                 },
-                body: JSON.stringify({
-                    sender: { email: senderEmail, name: senderName },
-                    to: [{ email: toEmail }],
-                    subject,
-                    htmlContent: `<div style="font-family: Arial, sans-serif; padding: 20px;">
-                            <h2>HCL Institute Secure Access</h2>
-                            <p>Your One-Time Password (OTP) is:</p>
-                            <h1 style="color: #4f46e5; letter-spacing: 2px;">${otp}</h1>
-                            <p>It is valid for 10 minutes. Please do not share this code.</p>
-                           </div>`
-                })
+                body: JSON.stringify(reqBody)
             });
 
             if (response.ok) {
@@ -94,27 +169,33 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
             };
 
             const transporter = nodemailer.createTransport({ host, port, secure, auth } as any);
-            await transporter.sendMail({
+            const mailOptions: any = {
                 from: `"${senderName}" <${senderEmail}>`,
                 to: toEmail,
                 subject,
                 text: `Your One-Time Password (OTP) is: ${otp}\n\nIt is valid for 10 minutes.`,
-                html: `<div style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>HCL Institute Secure Access</h2>
-                        <p>Your One-Time Password (OTP) is:</p>
-                        <h1 style="color: #4f46e5; letter-spacing: 2px;">${otp}</h1>
-                        <p>It is valid for 10 minutes. Please do not share this code.</p>
-                       </div>`
-            });
-            console.log(`[Email Sent] SMTP: ${toEmail}`);
+                html: htmlTemplate
+            };
+
+            if (logoBase64) {
+                mailOptions.attachments = [{
+                    filename: 'logo.png',
+                    content: logoBase64,
+                    encoding: 'base64',
+                    cid: 'logo.png'
+                }];
+            }
+
+            await transporter.sendMail(mailOptions);
+            console.log(`[Email Sent]SMTP: ${toEmail}`);
             return true;
         }
 
         // 3. Last resort: Mock logging
         console.log("-----------------------------------------");
         console.log("No Email Config found, showing Mock OTP");
-        console.log(`[Mock Email] To: ${toEmail} | Subject: ${subject}`);
-        console.log(`[Mock Email] OTP: ${otp}`);
+        console.log(`[Mock Email]To: ${toEmail} | Subject: ${subject} `);
+        console.log(`[Mock Email]OTP: ${otp} `);
         console.log("-----------------------------------------");
         return true;
     } catch (error) {
@@ -234,7 +315,7 @@ app.post("/api/auth/forgot-password/reset", async (req, res) => {
 });
 
 app.post("/api/auth/send-otp", async (req, res) => {
-    const { email } = req.body;
+    const { email, purpose } = req.body;
 
     try {
         const otp = generateOTP();
@@ -247,7 +328,8 @@ app.post("/api/auth/send-otp", async (req, res) => {
             },
         }));
 
-        const isSent = await sendOtpEmail(email, otp, "Registration OTP - HCL Institute");
+        const subject = purpose ? `${purpose} OTP - HCL Institute` : "Registration OTP - HCL Institute";
+        const isSent = await sendOtpEmail(email, otp, subject);
         if (isSent) {
             res.json({ message: "OTP sent successfully" });
         } else {
@@ -371,7 +453,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
 
         const isValid = providedSecret === expectedSecret;
         if (!isValid) {
-            console.warn(`[Admin Auth] Secret mismatch. Provided: ${providedSecret}, Expected: ${expectedSecret}`);
+            console.warn(`[Admin Auth] Secret mismatch.Provided: ${providedSecret}, Expected: ${expectedSecret} `);
         }
         return isValid;
     } catch (error) {
@@ -402,12 +484,34 @@ app.post("/api/auth/register", async (req, res) => {
 
     try {
         console.log(`[Register] Request for ${email} as ${role}`);
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const userId = Date.now().toString();
-        const fullName = `${firstName} ${lastName}`;
 
+        // Check for existing user first
+        const scanResult = await docClient.send(new ScanCommand({
+            TableName: TABLES.USERS,
+            FilterExpression: "email = :email AND #r = :role",
+            ExpressionAttributeValues: { ":email": email, ":role": role || "student" },
+            ExpressionAttributeNames: { "#r": "role" }
+        }));
+        const existingUser = scanResult.Items?.[0];
+
+        let userId = Date.now().toString();
+        let createdAt = new Date().toISOString();
+
+        if (existingUser) {
+            if (!existingUser.isDeleted) {
+                return res.status(409).json({ error: "Email already in use" });
+            }
+            // For a deleted user, restore their account (keep their ID)
+            userId = existingUser.id;
+            createdAt = existingUser.createdAt || createdAt;
+            console.log(`[Register] Restoring deleted account for ${email}`);
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const fullName = `${firstName} ${lastName} `;
 
         const newUser = {
+            ...existingUser,
             id: userId,
             name: fullName,
             firstName,
@@ -430,15 +534,18 @@ app.post("/api/auth/register", async (req, res) => {
             emergencyContact,
             isVerified: false,
             provider: "local",
-            createdAt: new Date().toISOString(),
+            isDeleted: false,
+            createdAt,
+            updatedAt: new Date().toISOString()
         };
+        delete newUser.deletedAt;
 
         await docClient.send(new PutCommand({
             TableName: TABLES.USERS,
             Item: newUser,
         }));
 
-        console.log(`[Register] Success: ${email} registered as ${role}`);
+        console.log(`[Register] Success: ${email} registered as ${role} `);
         res.status(201).json({
             message: "User registered successfully",
             isVerified: false
@@ -475,6 +582,10 @@ app.post("/api/auth/login", async (req, res) => {
 
         if (!user) {
             return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        if (user.isDeleted) {
+            return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });
         }
 
         if (user.provider === "local") {
@@ -528,7 +639,7 @@ app.post("/api/auth/google", async (req, res) => {
         }
 
         const { email, name, sub } = payload;
-        console.log(`[Google Auth] Verified: ${email} as ${role} (isSignup: ${isSignup})`);
+        console.log(`[Google Auth]Verified: ${email} as ${role} (isSignup: ${isSignup})`);
 
         const scanResult = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
@@ -538,10 +649,14 @@ app.post("/api/auth/google", async (req, res) => {
 
         const user = scanResult.Items?.[0];
 
-        console.log(`[Google Auth] User lookup for ${email}: ${user ? 'found' : 'not found'} with role: ${user?.role}`);
+        console.log(`[Google Auth] User lookup for ${email}: ${user ? 'found' : 'not found'} with role: ${user?.role} `);
+
+        if (user && user.isDeleted) {
+            return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });
+        }
 
         if (user && user.role && user.role.toLowerCase() === 'admin') {
-            console.warn(`[Google Auth] SECURITY BLOCK: Admin user ${email} attempted login via Google OAuth (Requested Role: ${role})`);
+            console.warn(`[Google Auth] SECURITY BLOCK: Admin user ${email} attempted login via Google OAuth(Requested Role: ${role})`);
             return res.status(403).json({ error: "Google login is strictly prohibited for administrator accounts for security reasons." });
         }
 
@@ -550,7 +665,7 @@ app.post("/api/auth/google", async (req, res) => {
         if (!user) {
             // If user doesn't exist and it's a signup request, return the info to pre-fill the form
             if (isSignup) {
-                console.log(`[Google Auth] User not found, returning profile for signup: ${email}`);
+                console.log(`[Google Auth] User not found, returning profile for signup: ${email} `);
                 return res.json({
                     user: { email, name, sub: sub, role: requestedRole }
                 });
@@ -558,12 +673,12 @@ app.post("/api/auth/google", async (req, res) => {
 
             // For students logging in without an account, we still require registration
             if (requestedRole === "student") {
-                console.log(`[Google Auth] Student account not found: ${email}`);
+                console.log(`[Google Auth] Student account not found: ${email} `);
                 return res.status(404).json({ error: "No student account found. Please register first." });
             }
         }
 
-        console.log(`[Google Auth] Success: ${email} authenticated as ${user.role}`);
+        console.log(`[Google Auth]Success: ${email} authenticated as ${user.role} `);
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             JWT_SECRET,
