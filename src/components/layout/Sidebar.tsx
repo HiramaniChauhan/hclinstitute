@@ -81,8 +81,8 @@ export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }: SidebarP
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 h-full bg-[#24252a] text-gray-300 border-r border-gray-700 transition-all duration-300 z-40",
-      isOpen ? "w-64" : "w-16"
+      "fixed left-0 top-0 h-full bg-[#24252a] text-gray-300 border-r border-gray-700 transition-all duration-300 z-40 overflow-hidden",
+      isOpen ? "w-64 translate-x-0" : "w-64 md:w-16 -translate-x-full md:translate-x-0"
     )}>
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">

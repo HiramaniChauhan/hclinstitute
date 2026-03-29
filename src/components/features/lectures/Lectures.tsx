@@ -93,24 +93,24 @@ export const Lectures = () => {
   };
 
   const getYoutubeEmbedUrl = (url: string) => {
-  try {
-    let videoId = "";
+    try {
+      let videoId = "";
 
-    if (url.includes("watch?v=")) {
-      videoId = url.split("watch?v=")[1].split("&")[0];
-    } 
-    else if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1].split("?")[0];
-    } 
-    else if (url.includes("/live/")) {
-      videoId = url.split("/live/")[1].split("?")[0];
+      if (url.includes("watch?v=")) {
+        videoId = url.split("watch?v=")[1].split("&")[0];
+      }
+      else if (url.includes("youtu.be/")) {
+        videoId = url.split("youtu.be/")[1].split("?")[0];
+      }
+      else if (url.includes("/live/")) {
+        videoId = url.split("/live/")[1].split("?")[0];
+      }
+
+      return `https://www.youtube.com/embed/${videoId}`;
+    } catch (e) {
+      return "";
     }
-
-    return `https://www.youtube.com/embed/${videoId}`;
-  } catch (e) {
-    return "";
-  }
-};
+  };
 
   const handleStartTest = async (testId: string | number) => {
     try {
@@ -597,7 +597,13 @@ export const Lectures = () => {
                 </div>
 
                 <Button
-                  onClick={() => setShowInstructions(false)}
+                  onClick={() => {
+                    setShowInstructions(false);
+                    const element = document.documentElement;
+                    if (element.requestFullscreen) {
+                      element.requestFullscreen().catch(e => console.error("Fullscreen error:", e));
+                    }
+                  }}
                   className="w-full h-20 text-2xl font-black bg-blue-600 hover:bg-blue-700 text-white rounded-[28px] shadow-2xl shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98] group flex items-center justify-center gap-4 mt-4"
                 >
                   I AM READY TO BEGIN

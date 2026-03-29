@@ -68,8 +68,8 @@ export const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
         <p className="text-gray-600">Welcome back, Admin!</p>
       </div>
 

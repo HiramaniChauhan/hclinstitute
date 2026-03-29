@@ -167,9 +167,9 @@ export const Tests = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Tests</h1>
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Tests</h1>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               <Input

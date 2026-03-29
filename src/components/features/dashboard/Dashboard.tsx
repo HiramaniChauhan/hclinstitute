@@ -117,8 +117,8 @@ export const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Welcome back, {user?.name?.split(' ')[0] || 'Student'}!</h1>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Welcome back, {user?.name?.split(' ')[0] || 'Student'}!</h1>
       </div>
 
       {/* Stats Grid */}

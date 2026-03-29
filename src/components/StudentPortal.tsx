@@ -26,8 +26,17 @@ export const StudentPortal = () => {
     const hash = window.location.hash.replace('#', '');
     return (hash as ActiveTab) || 'dashboard';
   });
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [accessFeatures, setAccessFeatures] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) setSidebarOpen(false);
+      else setSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const restrictedTabs = ['tests', 'lectures', 'live-classes', 'notes'];
 
   const fetchAccessFeatures = async () => {
@@ -153,14 +162,24 @@ export const StudentPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex relative overflow-x-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[35] md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
+        setActiveTab={(tab) => {
+          handleTabChange(tab);
+          if (window.innerWidth < 768) setSidebarOpen(false);
+        }}
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
       />
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`flex-1 transition-all duration-300 w-full min-w-0 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
         <Header
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           onProfileClick={() => setActiveTab('profile')}

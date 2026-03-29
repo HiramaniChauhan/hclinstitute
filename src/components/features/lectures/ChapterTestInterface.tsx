@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,34 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     );
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            if (window.innerWidth < 1024) setIsPanelOpen(false);
+            else setIsPanelOpen(true);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        // Measure scrollbar width to prevent layout shift
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+        // Prevent background scrolling while test is active (iOS Safari requires html overflow lock too)
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        if (scrollbarWidth > 0) {
+            document.body.style.paddingRight = `${scrollbarWidth}px`;
+        }
+
+        return () => {
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+            document.body.style.paddingRight = "";
+        };
+    }, []);
 
     // CBT State Tracking
     const [visitedQuestions, setVisitedQuestions] = useState<Set<string>>(getInitialState('visitedQuestions', new Set()));
@@ -245,7 +274,6 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                 next.delete(questionKey);
                 return next;
             });
-            toast.success("Answer saved", { duration: 1000 });
         }
         moveToNextQuestion();
     };
@@ -259,7 +287,6 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                 next.add(questionKey);
                 return next;
             });
-            toast.success("Answer saved & marked for review", { duration: 1000 });
         }
         moveToNextQuestion();
     };
@@ -270,7 +297,6 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
             next.add(questionKey);
             return next;
         });
-        toast.info("Marked for review", { duration: 1000 });
         moveToNextQuestion();
     };
 
@@ -328,13 +354,13 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
         return { sections: stats, totalCorrect, totalWrong, totalUnanswered, totalPossible, calculatedScore };
     }, [reviewMode, currentAttempt, savedAnswers, test.sections]);
 
-    return (
-        <div className="fixed inset-0 bg-white z-[200] overflow-y-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-md z-10 p-4 border-b rounded-t-xl mb-4">
+    return createPortal(
+        <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[200] overflow-hidden flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
+            <div className="max-w-7xl w-full mx-auto h-full flex flex-col space-y-3 md:space-y-6">
+                <div className="flex-shrink-0 flex items-center justify-between bg-white z-10 p-3 md:p-4 border-b rounded-xl shadow-sm mb-2 lg:mb-4">
                     <div>
-                        <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">{test.title}</h2>
-                        <div className="flex items-center gap-2 mt-1">
+                        <h2 className="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 truncate max-w-[150px] md:max-w-md">{test.title}</h2>
+                        <div className="flex items-center gap-2 mt-1 hidden sm:flex">
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{activeSection.name}</Badge>
                             <span className="text-sm text-gray-500 font-medium">Section {activeSectionIdx + 1} of {test.sections.length}</span>
                         </div>
@@ -356,59 +382,59 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                         </div>
                     )}
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
                         {!reviewMode ? (
-                            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
-                                <Clock size={20} />
-                                <span className="text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
+                                <Clock size={16} className="md:w-5 md:h-5" />
+                                <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 md:gap-2">
                                 {currentAttempt && sectionStats && (
                                     <>
-                                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl shadow-inner">
+                                        <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-xl shadow-inner">
                                             <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200 px-2.5 py-1 text-xs">{sectionStats.totalCorrect} Correct</Badge>
                                             <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200 px-2.5 py-1 text-xs">{sectionStats.totalWrong} Wrong</Badge>
                                         </div>
 
-                                        <div className="flex items-center gap-3 bg-white border border-blue-100 p-1.5 rounded-xl shadow-sm px-3">
+                                        <div className="flex items-center gap-1 md:gap-3 bg-white border border-blue-100 p-1 md:p-1.5 rounded-lg md:rounded-xl shadow-sm px-2 md:px-3">
                                             <div className={`p-1 rounded-lg ${selectedAttemptIdx === 0 ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                                                <Award size={16} />
+                                                <Award size={14} className="w-3 h-3 md:w-4 md:h-4" />
                                             </div>
                                             <div className="flex flex-col justify-center">
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
+                                                <p className="hidden md:block text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
                                                     Total Score
                                                 </p>
-                                                <div className="flex items-baseline gap-1 leading-none">
-                                                    <span className="text-sm font-black text-blue-600 tabular-nums leading-none">{sectionStats.calculatedScore}</span>
-                                                    <span className="text-[10px] text-gray-400 font-bold">/ {sectionStats.totalPossible}</span>
+                                                <div className="flex items-baseline gap-0.5 md:gap-1 leading-none">
+                                                    <span className="text-xs md:text-sm font-black text-blue-600 tabular-nums leading-none">{sectionStats.calculatedScore}</span>
+                                                    <span className="text-[9px] md:text-[10px] text-gray-400 font-bold">/{sectionStats.totalPossible}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </>
                                 )}
-                                <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1.5 text-xs whitespace-nowrap ml-1">Review</Badge>
+                                <Badge className="hidden md:inline-flex bg-green-100 text-green-700 border-green-200 px-3 py-1.5 text-xs whitespace-nowrap ml-1">Review</Badge>
                             </div>
                         )}
 
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" onClick={() => setIsPanelOpen(!isPanelOpen)} className="mr-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-slate-200">
-                                {isPanelOpen ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                        <div className="flex items-center gap-1 md:gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsPanelOpen(!isPanelOpen)} className="mr-1 md:mr-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-slate-200 h-9 w-9 md:h-10 md:w-10 p-0">
+                                {isPanelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                             </Button>
                             {reviewMode ? (
-                                <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50" onClick={onCancel}>
-                                    <X size={18} className="mr-2" />
-                                    Exit Review
+                                <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-xs md:text-sm h-9 md:h-10 px-2 md:px-4" onClick={onCancel}>
+                                    <X size={16} className="md:mr-2" />
+                                    <span className="hidden md:inline">Exit Review</span>
                                 </Button>
                             ) : (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button size="lg" className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 font-bold shadow-lg shadow-red-200">
-                                            <Send size={18} className="mr-2" />
-                                            Submit Test
+                                        <Button className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 font-bold shadow-lg shadow-red-200 h-9 md:h-10 px-3 md:px-6 text-xs md:text-sm">
+                                            <Send size={16} className="md:mr-2" />
+                                            <span className="hidden md:inline">Submit Test</span><span className="md:hidden ml-1">Submit</span>
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="z-[250]">
+                                    <AlertDialogContent className="z-[250] w-[95vw] md:w-full">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Submit Test?</AlertDialogTitle>
                                             <AlertDialogDescription>
@@ -434,14 +460,14 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start flex-1 min-h-0 w-full lg:overflow-hidden relative">
                     {/* Main Question Area */}
-                    <div className="flex-1 w-full space-y-6">
-                        <Card className="min-h-[500px] shadow-2xl border-none bg-white overflow-hidden rounded-2xl ring-1 ring-slate-200">
-                            <div className="bg-slate-50 p-2 flex flex-row items-center justify-between border-b">
-                                <div className="flex items-center gap-3">
-                                    <Badge className="bg-slate-800 px-2 py-1 text-base">Question {activeQuestionIdx + 1}</Badge>
-                                    <Badge variant="outline" className="text-slate-500 border-slate-300">{activeSection.name}</Badge>
+                    <div className="flex-1 w-full h-full flex flex-col min-h-0 space-y-4 lg:space-y-6">
+                        <Card className="flex-1 shadow-2xl border-none bg-white flex flex-col overflow-hidden rounded-2xl ring-1 ring-slate-200">
+                            <div className="bg-slate-50 p-2 md:p-3 flex flex-row items-center justify-between border-b flex-shrink-0">
+                                <div className="flex items-center gap-2 md:gap-3">
+                                    <Badge className="bg-slate-800 px-2 md:px-3 py-1 text-sm md:text-base">Q {activeQuestionIdx + 1}</Badge>
+                                    <Badge variant="outline" className="text-slate-500 border-slate-300 hidden sm:inline-flex">{activeSection.name}</Badge>
                                 </div>
                                 {hasDraftChange && (
                                     <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-2 px-3 py-1 font-bold animate-pulse">
@@ -449,7 +475,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                     </Badge>
                                 )}
                             </div>
-                            <CardContent className="p-8 space-y-8">
+                            <CardContent className="p-8 space-y-8 flex-1 overflow-y-auto">
                                 <div className="text-1xl font-semibold leading-relaxed text-slate-800">
                                     <Latex content={activeQuestion.question} />
                                 </div>
@@ -466,28 +492,33 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                         const isSavedSelected = savedAnswers[questionKey] !== undefined && Number(savedAnswers[questionKey]) === idx;
                                         const isCorrect = reviewMode && Number(activeQuestion.correctAnswer) === idx;
                                         const isUserWrong = reviewMode && isSavedSelected && !isCorrect;
+                                        const isUnansweredCorrect = reviewMode && isCorrect && savedAnswers[questionKey] === undefined;
+                                        const isAnsweredCorrect = isCorrect && !isUnansweredCorrect;
 
                                         return (
                                             <button
                                                 key={idx}
                                                 disabled={reviewMode}
                                                 onClick={() => handleOptionSelect(idx)}
-                                                className={`flex items-center gap-3 p-2 rounded-2xl border-[2px] text-left transition-all duration-300 group ${isCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
-                                                    isUserWrong ? 'border-red-500 bg-red-100 shadow-md' :
-                                                        isDraftSelected ? 'border-blue-600 bg-blue-50 shadow-lg translate-x-3' :
-                                                            'border-slate-100 hover:border-blue-300 hover:bg-slate-50'
+                                                className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-2xl border-[2px] text-left transition-all duration-300 group ${isAnsweredCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
+                                                    isUnansweredCorrect ? 'border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-100' :
+                                                        isUserWrong ? 'border-red-500 bg-red-100 shadow-md' :
+                                                            isDraftSelected ? 'border-blue-600 bg-blue-50 shadow-lg translate-x-1 md:translate-x-3' :
+                                                                'border-slate-100 hover:border-blue-300 hover:bg-slate-50'
                                                     }`}
                                             >
-                                                <span className={`w-6 h-6 text-lg rounded-lg flex items-center justify-center font-bold border-2 transition-colors ${isCorrect ? 'bg-green-500 text-white border-green-600' :
-                                                    isUserWrong ? 'bg-red-500 text-white border-red-600' :
-                                                        isDraftSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 group-hover:bg-blue-50'
+                                                <span className={`w-6 h-6 md:w-8 md:h-8 text-sm md:text-lg rounded-lg flex items-center justify-center font-bold border-2 transition-colors ${isAnsweredCorrect ? 'bg-green-500 text-white border-green-600' :
+                                                    isUnansweredCorrect ? 'bg-amber-500 text-white border-amber-600' :
+                                                        isUserWrong ? 'bg-red-500 text-white border-red-600' :
+                                                            isDraftSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 group-hover:bg-blue-50'
                                                     }`}>
                                                     {String.fromCharCode(65 + idx)}
                                                 </span>
-                                                <span className="flex-1 text-lg font-medium text-slate-700">
+                                                <span className="flex-1 text-base md:text-lg font-medium text-slate-700 break-words overflow-x-hidden">
                                                     <Latex content={option} />
                                                 </span>
-                                                {isCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
+                                                {isAnsweredCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
+                                                {isUnansweredCorrect && <Badge className="bg-amber-500 text-white font-bold ml-auto px-2 md:px-4 py-1 text-[10px] md:text-sm whitespace-nowrap">Missed</Badge>}
                                                 {isUserWrong && <Badge className="bg-red-600 text-white font-bold ml-auto px-4 py-1 text-sm">Your Answer</Badge>}
                                                 {isSavedSelected && !reviewMode && isDraftSelected && (
                                                     <Badge className="bg-blue-600 text-white ml-auto px-4 py-1 text-sm">Saved</Badge>
@@ -511,12 +542,11 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                             </CardContent>
                         </Card>
 
-                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200">
-                            <div className="flex gap-4">
+                        <div className="flex-shrink-0 flex flex-wrap items-center justify-between p-2 md:p-4 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 gap-2">
+                            <div className="flex gap-2">
                                 <Button
                                     variant="ghost"
-                                    size="lg"
-                                    className="hover:bg-slate-100 font-bold px-2"
+                                    className="hover:bg-slate-100 font-bold px-2 md:px-4 h-9 md:h-12"
                                     onClick={() => {
                                         if (activeQuestionIdx > 0) setActiveQuestionIdx(prev => prev - 1);
                                         else if (activeSectionIdx > 0) {
@@ -527,45 +557,44 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                     }}
                                     disabled={activeSectionIdx === 0 && activeQuestionIdx === 0}
                                 >
-                                    <ChevronLeft size={24} className="mr-2" /> Previous
+                                    <ChevronLeft size={18} className="md:mr-2" /> <span className="hidden sm:inline">Previous</span>
                                 </Button>
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-2 ml-auto lg:hidden" />
+
+                            <div className="flex gap-2">
                                 {!reviewMode && (
-                                    <Button variant="outline" size="lg" onClick={handleClearResponse} className="text-slate-500 font-bold px-4 hover:bg-slate-50">
-                                        Clear Response
+                                    <Button variant="outline" onClick={handleClearResponse} className="text-slate-500 font-bold px-3 h-9 md:h-12 hover:bg-slate-50 text-xs md:text-sm">
+                                        <span className="hidden sm:inline">Clear Response</span><span className="sm:hidden">Clear</span>
                                     </Button>
                                 )}
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex flex-wrap gap-2 justify-end mt-1 lg:mt-0 ml-auto w-full lg:w-auto">
                                 {!reviewMode && (
                                     <>
                                         <Button
                                             variant="outline"
-                                            size="lg"
                                             onClick={handleMarkForReviewAndNext}
-                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-4"
+                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-3 text-xs md:text-sm h-9 md:h-12 flex-1 sm:flex-none whitespace-nowrap"
                                         >
-                                            Mark for Review & Next
+                                            <span className="hidden sm:inline">Mark for Review & Next</span><span className="sm:hidden">Mark & Next</span>
                                         </Button>
                                         <Button
-                                            size="lg"
                                             onClick={handleSaveAndMarkForReview}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 text-xs md:text-sm h-9 md:h-12 flex-1 sm:flex-none whitespace-nowrap"
                                         >
-                                            Save & Mark For Review
+                                            <span className="hidden sm:inline">Save & Mark For Review</span><span className="sm:hidden">Save & Review</span>
                                         </Button>
                                     </>
                                 )}
                                 <Button
-                                    size="lg"
                                     onClick={handleSaveAndNext}
-                                    className="bg-blue-600 hover:bg-blue-700 px-6 text-xl font-bold rounded-2xl shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95"
+                                    className="bg-blue-600 hover:bg-blue-700 px-4 md:px-6 text-sm md:text-xl font-bold rounded-xl shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95 h-9 md:h-12 flex-1 sm:flex-none min-w-[100px]"
                                 >
                                     {reviewMode ? "Next" : "Save & Next"}
-                                    <ChevronRight size={20} className="ml-2" />
+                                    <ChevronRight size={18} className="ml-1 md:ml-2" />
                                 </Button>
                             </div>
                         </div>
@@ -573,112 +602,122 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
 
                     {/* Sidebar Navigation */}
                     {isPanelOpen && (
-                        <div className="w-full lg:w-80 flex-shrink-0 lg:sticky lg:top-24 max-h-[calc(100vh-120px)] overflow-y-auto space-y-6 pb-20">
-                            <Card className="border-none shadow-xl bg-slate-50/50">
-                                <CardHeader className="p-4 border-b">
-                                    <CardTitle className="text-sm uppercase tracking-wider text-slate-500">Question Palette</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4">
-                                    <div className="space-y-6">
-                                        {test.sections.map((section, sIdx) => (
-                                            <div key={section.id} className="space-y-3">
-                                                <p className="text-xs font-bold text-slate-400 uppercase">{section.name}</p>
-                                                <div className="grid grid-cols-5 gap-2">
-                                                    {section.questions.map((q, qIdx) => {
-                                                        const key = `${section.id}_${q.id}`;
-                                                        const isAnswered = savedAnswers[key] !== undefined;
-                                                        const isVisited = visitedQuestions.has(key);
-                                                        const isReview = reviewQuestions.has(key);
-                                                        const isCurrent = activeSectionIdx === sIdx && activeQuestionIdx === qIdx;
+                        <>
+                            <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[210] animate-in fade-in" onClick={() => setIsPanelOpen(false)} />
+                            <div className="w-[85vw] sm:w-[320px] lg:w-80 flex-shrink-0 flex flex-col h-[100dvh] lg:h-full space-y-4 lg:space-y-6 pb-4 fixed right-0 top-0 lg:static z-[220] lg:z-auto bg-slate-50 lg:bg-transparent shadow-2xl lg:shadow-none animate-in slide-in-from-right lg:animate-none p-3 lg:p-0">
+                                <div className="flex justify-between items-center lg:hidden bg-white p-3 rounded-xl shadow-sm -mt-1 mx-1 border border-slate-100">
+                                    <h3 className="font-bold text-slate-700">Question Palette</h3>
+                                    <Button variant="ghost" size="sm" onClick={() => setIsPanelOpen(false)} className="h-8 w-8 p-0">
+                                        <X size={18} />
+                                    </Button>
+                                </div>
+                                <Card className="border-none shadow-sm lg:shadow-xl bg-white lg:bg-slate-50/50 flex flex-col flex-1 min-h-0">
+                                    <CardHeader className="p-3 lg:p-4 border-b flex-shrink-0 hidden lg:block">
+                                        <CardTitle className="text-sm uppercase tracking-wider text-slate-500">Question Palette</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-3 lg:p-4 overflow-y-auto flex-1">
+                                        <div className="space-y-6">
+                                            {test.sections.map((section, sIdx) => (
+                                                <div key={section.id} className="space-y-3">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase">{section.name}</p>
+                                                    <div className="grid grid-cols-5 gap-2">
+                                                        {section.questions.map((q, qIdx) => {
+                                                            const key = `${section.id}_${q.id}`;
+                                                            const isAnswered = savedAnswers[key] !== undefined;
+                                                            const isVisited = visitedQuestions.has(key);
+                                                            const isReview = reviewQuestions.has(key);
+                                                            const isCurrent = activeSectionIdx === sIdx && activeQuestionIdx === qIdx;
 
-                                                        // For Review mode, show correct/incorrect
-                                                        const isCorrect = reviewMode && savedAnswers[key] !== undefined && savedAnswers[key] === q.correctAnswer;
-                                                        const isWrong = reviewMode && isAnswered && savedAnswers[key] !== q.correctAnswer;
+                                                            // For Review mode, show correct/incorrect
+                                                            const isCorrect = reviewMode && savedAnswers[key] !== undefined && savedAnswers[key] === q.correctAnswer;
+                                                            const isWrong = reviewMode && isAnswered && savedAnswers[key] !== q.correctAnswer;
 
-                                                        // CBT Color Mapping
-                                                        let btnClass = 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'; // Not Visited
+                                                            // CBT Color Mapping
+                                                            let btnClass = 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'; // Not Visited
 
-                                                        if (reviewMode) {
-                                                            if (isCorrect) btnClass = 'bg-green-500 text-white border-green-600';
-                                                            else if (isWrong) btnClass = 'bg-red-500 text-white border-red-600';
-                                                            else btnClass = 'bg-slate-50 text-slate-400 border-slate-200';
-                                                        } else {
-                                                            if (isCurrent) btnClass = 'bg-blue-600 text-white border-blue-700 ring-4 ring-blue-100 scale-110 shadow-lg';
-                                                            else if (isAnswered && isReview) btnClass = 'bg-purple-600 text-white border-purple-700 relative after:content-[""] after:w-2.5 after:h-2.5 after:bg-green-400 after:rounded-full after:absolute after:-bottom-1 after:-right-1 after:border-2 after:border-white after:z-10'; // Answered + Marked rules
-                                                            else if (isReview) btnClass = 'bg-purple-600 text-white border-purple-700 shadow-md'; // Marked for Review
-                                                            else if (isAnswered) btnClass = 'bg-green-500 text-white border-green-600 shadow-md'; // Answered
-                                                            else if (isVisited) btnClass = 'bg-red-500 text-white border-red-600 shadow-sm'; // Visited but no answer
-                                                        }
+                                                            if (reviewMode) {
+                                                                if (isCorrect) btnClass = 'bg-green-500 text-white border-green-600';
+                                                                else if (isWrong) btnClass = 'bg-red-500 text-white border-red-600';
+                                                                else btnClass = 'bg-slate-50 text-slate-400 border-slate-200';
+                                                            } else {
+                                                                if (isCurrent) btnClass = 'bg-blue-600 text-white border-blue-700 ring-4 ring-blue-100 scale-110 shadow-lg';
+                                                                else if (isAnswered && isReview) btnClass = 'bg-purple-600 text-white border-purple-700 relative after:content-[""] after:w-2.5 after:h-2.5 after:bg-green-400 after:rounded-full after:absolute after:-bottom-1 after:-right-1 after:border-2 after:border-white after:z-10'; // Answered + Marked rules
+                                                                else if (isReview) btnClass = 'bg-purple-600 text-white border-purple-700 shadow-md'; // Marked for Review
+                                                                else if (isAnswered) btnClass = 'bg-green-500 text-white border-green-600 shadow-md'; // Answered
+                                                                else if (isVisited) btnClass = 'bg-red-500 text-white border-red-600 shadow-sm'; // Visited but no answer
+                                                            }
 
-                                                        return (
-                                                            <button
-                                                                key={qIdx}
-                                                                onClick={() => {
-                                                                    setActiveSectionIdx(sIdx);
-                                                                    setActiveQuestionIdx(qIdx);
-                                                                }}
-                                                                className={`h-8 w-8 text-sm font-bold rounded-lg flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
-                                                            >
-                                                                {qIdx + 1}
-                                                            </button>
-                                                        );
-                                                    })}
+                                                            return (
+                                                                <button
+                                                                    key={qIdx}
+                                                                    onClick={() => {
+                                                                        setActiveSectionIdx(sIdx);
+                                                                        setActiveQuestionIdx(qIdx);
+                                                                    }}
+                                                                    className={`h-8 w-8 text-sm font-bold rounded-lg flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
+                                                                >
+                                                                    {qIdx + 1}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                            <Card className="bg-slate-900 text-white border-none shadow-xl">
-                                <CardContent className="p-4 text-xs space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-4 h-4 rounded bg-blue-600"></div>
-                                        <span>Current Question</span>
-                                    </div>
-                                    {!reviewMode ? (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-green-500 border border-green-600"></div>
-                                                <span>Answered</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-red-500 border border-red-600"></div>
-                                                <span>Not Answered</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-white border border-slate-300"></div>
-                                                <span>Not Visited</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-purple-600 border border-purple-700"></div>
-                                                <span>Marked for Review</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-purple-600 border border-purple-700 relative flex items-center justify-center">
-                                                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full absolute -bottom-0.5 -right-0.5 border border-white"></div>
+                                <Card className="bg-slate-900 text-white border-none shadow-xl flex-shrink-0">
+                                    <CardContent className="p-4 text-xs space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-4 h-4 rounded bg-blue-600"></div>
+                                            <span>Current Question</span>
+                                        </div>
+                                        {!reviewMode ? (
+                                            <>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-green-500 border border-green-600"></div>
+                                                    <span>Answered</span>
                                                 </div>
-                                                <span className="leading-tight">Answered & Marked<br /><span className="text-[9px] text-gray-400">(Will be considered for evaluation)</span></span>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-green-500"></div>
-                                                <span>Correct Answer</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-4 h-4 rounded bg-red-500"></div>
-                                                <span>Incorrect Answer</span>
-                                            </div>
-                                        </>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-red-500 border border-red-600"></div>
+                                                    <span>Not Answered</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-white border border-slate-300"></div>
+                                                    <span>Not Visited</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-purple-600 border border-purple-700"></div>
+                                                    <span>Marked for Review</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-purple-600 border border-purple-700 relative flex items-center justify-center">
+                                                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full absolute -bottom-0.5 -right-0.5 border border-white"></div>
+                                                    </div>
+                                                    <span className="leading-tight">Answered & Marked<br /><span className="text-[9px] text-gray-400">(Will be considered for evaluation)</span></span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-green-500"></div>
+                                                    <span>Correct Answer</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-4 h-4 rounded bg-red-500"></div>
+                                                    <span>Incorrect Answer</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
-        </div>
+        </div >,
+        document.body
     );
 };

@@ -52,10 +52,10 @@ export const Courses = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Available Courses</h1>
-        <div className="flex gap-4">
-          <div className="relative">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">Available Courses</h1>
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <Input
               placeholder="Search courses..."
