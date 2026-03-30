@@ -125,5 +125,7 @@ export const TABLES = {
     CHAPTER_RESULTS: "ChapterResults",
     CHAPTER_TEST_LAST_RESULTS: "ChapterTestLastResults",
     VIDEOS: "Videos",
-    LECTURE_PROGRESS: "LectureProgress"
+    LECTURE_PROGRESS: "LectureProgress",
+    REVIEW_QUESTIONS: "ReviewQuestions",
+    REVIEWS: "Reviews"
 };

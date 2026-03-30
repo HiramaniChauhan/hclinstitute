@@ -7,7 +7,8 @@ import { AdminRegisterForm } from "@/components/auth/AdminRegisterForm";
 import { StudentPortal } from "@/components/StudentPortal";
 import { HomePage } from "@/components/home/HomePage";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 
 type AuthView = 'none' | 'student-login' | 'student-register' | 'admin-login' | 'admin-register';
 
@@ -15,8 +16,17 @@ const Index = () => {
   const { user, isAuthenticated } = useAuth();
   const [authView, setAuthView] = useState<AuthView>('none');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const onBack = () => setAuthView('none');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("session_expired") === "true") {
+      toast.error("Secure Logout: You have been logged out because your account was just accessed from another device.", { duration: 8000 });
+      navigate("/", { replace: true });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'admin') {

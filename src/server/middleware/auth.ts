@@ -23,13 +23,11 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     const token = authHeader?.split(" ")[1];
 
     if (!token) {
-        console.warn("[Auth] No token provided in header:", authHeader);
         return res.status(401).json({ error: "No token provided" });
     }
 
     try {
         const secretToUse = JWT_SECRET;
-        const envSecret = process.env.JWT_SECRET || "FALLBACK";
 
         const decoded = jwt.verify(token, secretToUse) as any;
 
@@ -40,23 +38,17 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
         }));
 
         if (!dbResult.Item) {
-            console.warn("[Auth] Token valid, but user no longer exists in DB. Logging out.");
             return res.status(401).json({ error: "User account no longer exists." });
+        }
+
+        // Single-Device Login Security: Verify the token's sessionId matches the user's active sessionId
+        if (dbResult.Item.sessionId && decoded.sessionId !== dbResult.Item.sessionId) {
+            return res.status(401).json({ error: "SESSION_EXPIRED" });
         }
 
         req.user = decoded;
         next();
     } catch (error: any) {
-        console.error("[Auth] Token verification failed!", {
-            message: error.message,
-            name: error.name,
-            secretLength: JWT_SECRET.length,
-            time: new Date().toISOString()
-        });
-
-        if (error.name === 'TokenExpiredError') {
-            console.error("[Auth] Token expired at:", new Date(error.expiredAt).toISOString());
-        }
         return res.status(401).json({ error: "Invalid or expired token" });
     }
 };

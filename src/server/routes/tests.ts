@@ -2,7 +2,8 @@ import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { validateInput, testSchema } from "../utils/validators";
 import { createItem, getAllItems, getItem, deleteItem, generateId } from "../utils/db-helpers";
-import { TABLES } from "../db-wrapper";
+import { TABLES, docClient } from "../db-wrapper";
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { Response } from "express";
 
 const router = Router();
@@ -37,9 +38,48 @@ interface TestData {
 }
 
 // GET all tests
-router.get("/", async (req: AuthRequest, res: Response) => {
+router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
-        const tests = await getAllItems<TestData>(TABLES.TESTS);
+        let tests = await getAllItems<TestData>(TABLES.TESTS);
+
+        if (req.user && req.user.role !== 'admin') {
+            const enrollmentsResult = await docClient.send(new ScanCommand({
+                TableName: TABLES.ENROLLMENTS,
+                FilterExpression: "userId = :userId",
+                ExpressionAttributeValues: { ":userId": req.user.id }
+            }));
+
+            const enrollments = enrollmentsResult.Items || [];
+            const enrolledCourses = new Map();
+            let earliestEnrollment = new Date();
+
+            for (const enr of enrollments) {
+                const enrDate = new Date(enr.enrolledAt || enr.createdAt || 0);
+                enrolledCourses.set(enr.courseId, enrDate);
+                if (enrDate < earliestEnrollment) earliestEnrollment = enrDate;
+            }
+
+            tests = tests.filter(test => {
+                // Course Access Check
+                if (test.courseId && test.courseId !== "default-course" && !enrolledCourses.has(test.courseId)) {
+                    return false;
+                }
+
+                // Time Travel Check
+                const enrollmentDate = test.courseId && enrolledCourses.has(test.courseId)
+                    ? enrolledCourses.get(test.courseId)
+                    : earliestEnrollment;
+
+                if (test.endDate) {
+                    const testEndDate = new Date(`${test.endDate}T${test.endTime || '23:59'}`);
+                    if (testEndDate < enrollmentDate) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+
         res.json(tests);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

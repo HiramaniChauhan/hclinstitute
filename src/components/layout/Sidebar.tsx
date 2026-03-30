@@ -14,8 +14,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  Megaphone,
   StickyNote,
-  Megaphone
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const menuItems = [
   { id: 'live-classes', label: 'Live Classes', icon: Video },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
+  { id: 'give-review', label: 'Give Review', icon: Star },
   { id: 'selected-students', label: 'Selected Students', icon: Trophy },
   { id: 'chat', label: 'Support Chat', icon: MessageCircle },
   { id: 'profile', label: 'Profile', icon: User },

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchAboutInfo, fetchCourses, fetchSelectedStudents } from "@/api/portalApi";
+import { HomePageReviews } from "@/components/features/reviews/HomePageReviews";
 
 interface HomePageProps {
   onLogin: () => void;
@@ -278,6 +279,59 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
 
 
 
+      {/* Success Stories */}
+      <section className="py-24 relative bg-[#1A1A1D]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div className="text-left">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Wall of <span className="text-[#ef5350]">Fame</span></h2>
+              <p className="text-xl text-gray-400">Where our students are making us proud</p>
+            </div>
+            <Button
+              onClick={onViewAllSelectedStudents}
+              className="bg-white text-black hover:bg-gray-200 border-none transition-all text-xs font-bold px-6 py-2 rounded shadow-lg flex items-center uppercase tracking-wider"
+            >
+              SEE ALL <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {selectedStudents.length > 0 ? selectedStudents.map((student, index) => (
+              <div key={index} className={`bg-[#242428] border-none p-8 rounded-xl text-center shadow-xl group hover:-translate-y-2 transition-transform duration-300`}>
+                <div className="mx-auto w-52 h-52 mb-6 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/10 bg-[#1a1a1d] shadow-lg">
+                  {student.photo ? (
+                    <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Trophy className="w-20 h-20 text-yellow-500 opacity-50" />
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{student.name}</h3>
+                <div className="text-gray-400 font-medium text-sm mb-6 line-clamp-2">{student.collegeAllotted || "Selected Student"}</div>
+                <div className="flex justify-center items-center gap-2 mt-2">
+                  <Badge variant="outline" className="text-yellow-400 border-yellow-400/30 bg-yellow-400/10 px-3 py-1">
+                    Rank {student.rank || "-"}
+                  </Badge>
+                  {student.year && (
+                    <Badge variant="outline" className="text-white border-white/20 bg-white/10 px-3 py-1">
+                      {student.year}
+                    </Badge>
+                  )}
+                  {student.linkedinId && (
+                    <a href={student.linkedinId.startsWith('http') ? student.linkedinId : `https://${student.linkedinId}`} target="_blank" rel="noopener noreferrer" className="ml-2 w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 hover:bg-blue-600 hover:text-white transition-all">
+                      <Linkedin className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-3 text-center text-gray-500 py-12">
+                No success stories available yet.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Courses Section */}
       <section className="py-24 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -348,6 +402,9 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
         </div>
       </section>
 
+      {/* Student Reviews */}
+      <HomePageReviews />
+
       {/* About Director */}
       <section className="py-24 relative overflow-hidden bg-[#1A1A1D]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -410,58 +467,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
         </div>
       </section>
 
-      {/* Success Stories */}
-      <section className="py-24 relative bg-[#1A1A1D]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div className="text-left">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Wall of <span className="text-[#ef5350]">Fame</span></h2>
-              <p className="text-xl text-gray-400">Where our students are making us proud</p>
-            </div>
-            <Button
-              onClick={onViewAllSelectedStudents}
-              className="bg-white text-black hover:bg-gray-200 border-none transition-all text-xs font-bold px-6 py-2 rounded shadow-lg flex items-center uppercase tracking-wider"
-            >
-              SEE ALL <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {selectedStudents.length > 0 ? selectedStudents.map((student, index) => (
-              <div key={index} className={`bg-[#242428] border-none p-8 rounded-xl text-center shadow-xl group hover:-translate-y-2 transition-transform duration-300`}>
-                <div className="mx-auto w-52 h-52 mb-6 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/10 bg-[#1a1a1d] shadow-lg">
-                  {student.photo ? (
-                    <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Trophy className="w-20 h-20 text-yellow-500 opacity-50" />
-                  )}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">{student.name}</h3>
-                <div className="text-gray-400 font-medium text-sm mb-6 line-clamp-2">{student.collegeAllotted || "Selected Student"}</div>
-                <div className="flex justify-center items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-yellow-400 border-yellow-400/30 bg-yellow-400/10 px-3 py-1">
-                    Rank {student.rank || "-"}
-                  </Badge>
-                  {student.year && (
-                    <Badge variant="outline" className="text-white border-white/20 bg-white/10 px-3 py-1">
-                      {student.year}
-                    </Badge>
-                  )}
-                  {student.linkedinId && (
-                    <a href={student.linkedinId.startsWith('http') ? student.linkedinId : `https://${student.linkedinId}`} target="_blank" rel="noopener noreferrer" className="ml-2 w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 hover:bg-blue-600 hover:text-white transition-all">
-                      <Linkedin className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            )) : (
-              <div className="col-span-3 text-center text-gray-500 py-12">
-                No success stories available yet.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="bg-[#141416] pt-20 pb-10 border-t border-white/5">

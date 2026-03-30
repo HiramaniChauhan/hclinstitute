@@ -17,7 +17,8 @@ import {
   Megaphone,
   Trophy,
   Info,
-  User
+  User,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const menuItems = [
   { id: 'student-management', label: 'Student Management', icon: Users },
   { id: 'selected-students', label: 'Selected Students', icon: Trophy },
   { id: 'about-management', label: 'About Management', icon: Info },
+  { id: 'review-management', label: 'Review Management', icon: Star },
   { id: 'chat', label: 'Student Chat', icon: MessageCircle },
 ];
 

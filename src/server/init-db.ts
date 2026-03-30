@@ -36,7 +36,9 @@ const tableConfigs = [
     { name: TABLES.CHAPTER_RESULTS, pk: "resultId" },
     { name: TABLES.CHAPTER_TEST_LAST_RESULTS, pk: "id" },
     { name: TABLES.VIDEOS, pk: "id" },
-    { name: TABLES.LECTURE_PROGRESS, pk: "id" }
+    { name: TABLES.LECTURE_PROGRESS, pk: "id" },
+    { name: TABLES.REVIEW_QUESTIONS, pk: "id" },
+    { name: TABLES.REVIEWS, pk: "id" }
 ];
 
 async function initTables() {

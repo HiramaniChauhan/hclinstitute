@@ -31,6 +31,7 @@ import chapterTestsRouter from "./routes/chapter-tests";
 import videosRouter from "./routes/videos";
 import paymentsRouter from "./routes/payments";
 import aboutRouter from "./routes/about";
+import reviewsRouter from "./routes/reviews";
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -595,8 +596,15 @@ app.post("/api/auth/login", async (req, res) => {
             }
         }
 
+        const sessionId = Date.now().toString();
+        const updatedUser = { ...user, sessionId };
+        await docClient.send(new PutCommand({
+            TableName: TABLES.USERS,
+            Item: updatedUser
+        }));
+
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
+            { id: user.id, email: user.email, role: user.role, sessionId },
             JWT_SECRET,
             { expiresIn: "24h" }
         );
@@ -679,8 +687,16 @@ app.post("/api/auth/google", async (req, res) => {
         }
 
         console.log(`[Google Auth]Success: ${email} authenticated as ${user.role} `);
+
+        const sessionId = Date.now().toString();
+        const updatedUser = { ...user, sessionId };
+        await docClient.send(new PutCommand({
+            TableName: TABLES.USERS,
+            Item: updatedUser
+        }));
+
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
+            { id: user.id, email: user.email, role: user.role, sessionId },
             JWT_SECRET,
             { expiresIn: "24h" }
         );
@@ -711,6 +727,7 @@ app.use("/api/chat", verifyToken, chatRouter);
 app.use("/api/selected-students", selectedStudentsRouter);
 app.use("/api/chapter-tests", chapterTestsRouter);
 app.use("/api/videos", videosRouter);
+app.use("/api/reviews", reviewsRouter);
 
 app.get("/api/auth/debug-secret", (req, res) => {
     res.json({

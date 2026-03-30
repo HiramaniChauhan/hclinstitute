@@ -17,9 +17,10 @@ import { SelectedStudentsManagement } from "@/components/features/admin/selected
 import { AboutManagement } from "@/components/features/admin/about-management/AboutManagement";
 import { AdminProfile } from "@/components/features/admin/profile/AdminProfile";
 import { StudentManagement } from "@/components/features/admin/student-management/StudentManagement";
+import { ReviewManagement } from "@/components/features/admin/review-management/ReviewManagement";
 // import { FeesManagement } from "@/components/features/admin/fees-management/FeesManagement";
 
-type AdminActiveTab = 'dashboard' | 'profile' | 'test-creation' | 'video-management' | 'performance-tracker' | 'analytics' | 'real-time-monitoring' | 'course-management' | 'batch-management' | 'chat' | 'lecture-management' | 'notes-management' | 'announcements' | 'selected-students' | 'student-management' | 'about-management' | 'fees-management';
+type AdminActiveTab = 'dashboard' | 'profile' | 'test-creation' | 'video-management' | 'performance-tracker' | 'analytics' | 'real-time-monitoring' | 'course-management' | 'batch-management' | 'chat' | 'lecture-management' | 'notes-management' | 'announcements' | 'selected-students' | 'student-management' | 'about-management' | 'fees-management' | 'review-management';
 
 export const AdminPortal = () => {
   const [activeTab, setActiveTab] = useState<AdminActiveTab>(() => {
@@ -85,6 +86,8 @@ export const AdminPortal = () => {
         return <SelectedStudentsManagement />;
       case 'about-management':
         return <AboutManagement />;
+      case 'review-management':
+        return <ReviewManagement />;
       case 'fees-management':
         return <div>Fees management not available</div>;
       default:

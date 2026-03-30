@@ -18,8 +18,9 @@ import { SelectedStudents } from "@/components/features/selected-students/Select
 import { Notifications } from "@/components/features/notifications/Notifications";
 import { Fees } from "@/components/features/fees/Fees";
 import { AttendanceView } from "@/components/features/attendance/AttendanceView";
+import { GiveReview } from "@/components/features/reviews/GiveReview";
 
-type ActiveTab = 'dashboard' | 'tests' | 'lectures' | 'results' | 'chat' | 'leaderboard' | 'profile' | 'forum' | 'live-classes' | 'courses' | 'batches' | 'notes' | 'announcements' | 'selected-students' | 'notifications' | 'fees' | 'attendance';
+type ActiveTab = 'dashboard' | 'tests' | 'lectures' | 'results' | 'chat' | 'leaderboard' | 'profile' | 'forum' | 'live-classes' | 'courses' | 'batches' | 'notes' | 'announcements' | 'selected-students' | 'notifications' | 'fees' | 'attendance' | 'give-review';
 
 export const StudentPortal = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
@@ -154,6 +155,8 @@ export const StudentPortal = () => {
         return <Notifications />;
       case 'fees':
         return <Fees />;
+      case 'give-review':
+        return <GiveReview />;
       case 'attendance':
         return <AttendanceView />;
       default:

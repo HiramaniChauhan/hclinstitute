@@ -16,12 +16,13 @@ import { toast } from "sonner";
 
 export const SelectedStudents = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [students, setStudents] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isHoldersOpen, setIsHoldersOpen] = useState(false);
   const navigate = useNavigate();
+
+  const students = allStudents.filter(s => s.year === selectedYear);
 
   const availableYears = Array.from(
     new Set([
@@ -30,18 +31,10 @@ export const SelectedStudents = () => {
     ])
   ).sort((a, b) => parseInt(b) - parseInt(a));
 
-  const fetchSelectedStudents = async (year: string) => {
+  const fetchAllStudents = async () => {
     setLoading(true);
     try {
-      // Fetch yearly students
-      const yearlyResponse = await fetch(`/api/selected-students?year=${year}`);
-      if (yearlyResponse.ok) {
-        const data = await yearlyResponse.json();
-        setStudents(data);
-      }
-
-      // Fetch all students for top rank calculation
-      const allResponse = await fetch(`/api/selected-students`);
+      const allResponse = await fetch('/api/selected-students');
       if (allResponse.ok) {
         const allData = await allResponse.json();
         setAllStudents(allData);
@@ -55,8 +48,8 @@ export const SelectedStudents = () => {
   };
 
   useEffect(() => {
-    fetchSelectedStudents(selectedYear);
-  }, [selectedYear]);
+    fetchAllStudents();
+  }, []);
 
   const filteredStudents = (searchTerm.trim() ? allStudents : students).filter(s =>
     (s.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
