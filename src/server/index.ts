@@ -525,7 +525,7 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
     }
 
     if (role === "admin") {
-        console.log(`[Register] Verifying Admin Secret for ${email}`);
+        // Verify Admin Secret if role is admin
         const isValidAdmin = await verifyAdminSecret(adminSecret);
         if (!isValidAdmin) {
             return res.status(401).json({ error: "Invalid Admin Secret Code" });
@@ -533,7 +533,7 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
     }
 
     try {
-        console.log(`[Register] Request for ${email} as ${role}`);
+        // Check for existing user first
 
         // Check for existing user first
         const scanResult = await docClient.send(new ScanCommand({
@@ -554,7 +554,6 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
             // For a deleted user, restore their account (keep their ID)
             userId = existingUser.id;
             createdAt = existingUser.createdAt || createdAt;
-            console.log(`[Register] Restoring deleted account for ${email}`);
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -595,7 +594,6 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
             Item: newUser,
         }));
 
-        console.log(`[Register] Success: ${email} registered as ${role} `);
         res.status(201).json({
             message: "User registered successfully",
             isVerified: false
@@ -697,7 +695,6 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
         }
 
         const { email, name, sub } = payload;
-        console.log(`[Google Auth]Verified: ${email} as ${role} (isSignup: ${isSignup})`);
 
         const scanResult = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
@@ -706,8 +703,6 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
         }));
 
         const user = scanResult.Items?.[0];
-
-        console.log(`[Google Auth] User lookup for ${email}: ${user ? 'found' : 'not found'} with role: ${user?.role} `);
 
         if (user && user.isDeleted) {
             return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });
@@ -723,7 +718,6 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
         if (!user) {
             // If user doesn't exist and it's a signup request, return the info to pre-fill the form
             if (isSignup) {
-                console.log(`[Google Auth] User not found, returning profile for signup: ${email} `);
                 return res.json({
                     user: { email, name, sub: sub, role: requestedRole }
                 });
@@ -731,12 +725,9 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
 
             // For students logging in without an account, we still require registration
             if (requestedRole === "student") {
-                console.log(`[Google Auth] Student account not found: ${email} `);
                 return res.status(404).json({ error: "No student account found. Please register first." });
             }
         }
-
-        console.log(`[Google Auth]Success: ${email} authenticated as ${user.role} `);
 
         const sessionId = Date.now().toString();
         const updatedUser = { ...user, sessionId };

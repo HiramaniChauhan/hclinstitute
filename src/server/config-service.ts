@@ -24,7 +24,6 @@ export async function getJwtSecret(): Promise<string> {
         }));
 
         if (result.Item?.value) {
-            console.log("[Config] JWT_SECRET loaded from database.");
             cachedJwtSecret = result.Item.value;
             return cachedJwtSecret;
         }

@@ -99,7 +99,7 @@ router.post("/results", verifyToken, async (req: AuthRequest, res: Response) => 
             submittedAt: submittedAt || new Date().toISOString()
         };
 
-        console.log(`[ChapterTests] Saving result for user=${userId} chapterId=${chapterId} resultId=${resultId}`);
+
         await createItem(TABLES.CHAPTER_RESULTS, resultItem);
 
         // Save into Last Results table using the specific ID passed from frontend
@@ -133,13 +133,11 @@ router.get("/results/latest/:chapterId", verifyToken, async (req: AuthRequest, r
         const chapterId = String(rawChapterId);
         const userId = req.user?.id;
 
-        console.log(`[ChapterTests] Fetching latest for user=${userId} chapterId=${chapterId} from Last Results table`);
-
         let lastResult = await getItem(TABLES.CHAPTER_TEST_LAST_RESULTS, { id: `${userId}_${chapterId}` });
 
         // Fallback backward compatibility for results that were saved before the LastResults table existed
         if (!lastResult) {
-            console.log(`[ChapterTests] Not found in Last Results table, checking ChapterResults fallback`);
+        // Fallback backward compatibility for results that were saved before the LastResults table existed
             const allResults = await getAllItems<any>(TABLES.CHAPTER_RESULTS, "chapterId = :chapterId AND userId = :userId", {
                 ":chapterId": chapterId,
                 ":userId": userId
