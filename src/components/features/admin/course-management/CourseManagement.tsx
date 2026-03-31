@@ -181,11 +181,14 @@ export const CourseManagement = () => {
         setOpen(false);
         fetchCourses();
       } else {
-        toast.error("Failed to save course");
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData?.error || errData?.message || `Server error ${response.status}`;
+        console.error("Save course error response:", response.status, errData);
+        toast.error(`Failed to save course: ${errMsg}`);
       }
     } catch (error) {
       console.error("Save course error", error);
-      toast.error("Network error");
+      toast.error("Network error — check if server is running");
     }
   };
 

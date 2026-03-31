@@ -303,7 +303,6 @@ export const NotesManagement = () => {
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <Badge variant="outline">{note.subject}</Badge>
                           <Badge variant="secondary">{note.chapter}</Badge>
-                          <span className="text-sm text-gray-600">by {note.uploadedBy}</span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                           <span className="flex items-center gap-1">

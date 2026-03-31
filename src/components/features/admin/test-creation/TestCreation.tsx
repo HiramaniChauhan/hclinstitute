@@ -14,12 +14,13 @@ import { Badge } from "@/components/ui/badge"; import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, FileText, Clock, Users, Calendar, Target, Award, Edit, Trash2, Image as ImageIcon, X, Copy, Search } from "lucide-react";
+import { Plus, FileText, Clock, Users, Calendar, Target, Award, Edit, Trash2, Image as ImageIcon, X, Copy, Search, Trophy, Medal, ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Test, Question, TestSection } from "@/data/testData";
 import { useEffect } from "react";
 import { Latex } from "@/components/ui/latex";
+import { StudentDetail } from "../student-management/StudentDetail";
 
 
 
@@ -28,6 +29,13 @@ export const TestCreation = () => {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
+  // ── Leaderboard ──────────────────────────────────────────────────────────────
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboardTest, setLeaderboardTest] = useState<Test | null>(null);
+  const [leaderboardData, setLeaderboardData] = useState<any>(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardStudentId, setLeaderboardStudentId] = useState<string | null>(null);
+  const [leaderboardFilter, setLeaderboardFilter] = useState<'all' | 'top10' | 'passed' | 'failed'>('all');
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [viewingTestQuestions, setViewingTestQuestions] = useState<Test | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -278,6 +286,29 @@ export const TestCreation = () => {
     setQuestionDialogOpen(true);
     setIsAddingQuestion(false);
     setEditingQuestion(null);
+  };
+
+  const handleViewResults = async (test: Test) => {
+    setLeaderboardTest(test);
+    setLeaderboardOpen(true);
+    setLeaderboardData(null);
+    setLeaderboardLoading(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const testId = test.testId || (test as any).id;
+      const res = await fetch(`/api/results/leaderboard/${testId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setLeaderboardData(await res.json());
+      } else {
+        toast.error('Failed to load results');
+      }
+    } catch {
+      toast.error('Network error');
+    } finally {
+      setLeaderboardLoading(false);
+    }
   };
 
   const handleEditQuestion = (question: Question, sectionId?: string) => {
@@ -1090,9 +1121,169 @@ export const TestCreation = () => {
         </Dialog>
       </div>
 
+      {/* ── Leaderboard / Results Dialog ──────────────────────────────── */}
+      {leaderboardStudentId ? (
+        <div className="fixed inset-0 z-[9999] bg-white overflow-auto">
+          <div className="p-4">
+            <Button variant="outline" size="sm" onClick={() => setLeaderboardStudentId(null)} className="mb-4">
+              ← Back to Results
+            </Button>
+            <StudentDetail studentId={leaderboardStudentId} onBack={() => setLeaderboardStudentId(null)} />
+          </div>
+        </div>
+      ) : (
+        <Dialog open={leaderboardOpen} onOpenChange={(o) => { setLeaderboardOpen(o); setLeaderboardFilter('all'); }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Trophy size={18} className="text-amber-500" />
+                Results — {leaderboardTest?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {leaderboardData
+                  ? `${leaderboardData.totalParticipants} student${leaderboardData.totalParticipants !== 1 ? 's' : ''} attempted this test`
+                  : 'Loading results...'}
+              </DialogDescription>
+            </DialogHeader>
+
+            {leaderboardLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 size={32} className="animate-spin text-amber-500" />
+              </div>
+            ) : !leaderboardData || leaderboardData.totalParticipants === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Users size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No students have attempted this test yet.</p>
+              </div>
+            ) : (() => {
+              const all: any[] = leaderboardData.leaderboard;
+              const passed = all.filter((e: any) => e.percentage >= 40);
+              const failed = all.filter((e: any) => e.percentage < 40);
+              const top10 = all.slice(0, 10);
+
+              // Which list to display
+              const listToShow: any[] =
+                leaderboardFilter === 'passed' ? passed :
+                leaderboardFilter === 'failed' ? failed :
+                leaderboardFilter === 'top10'  ? top10  : all;
+
+              const filterLabel: Record<string, string> = {
+                all:    `All Attempts (${all.length})`,
+                passed: `Passed (${passed.length})`,
+                failed: `Failed (${failed.length})`,
+                top10:  `Leaderboard — Top 10`,
+              };
+
+              return (
+                <div className="space-y-4 py-2">
+                  {/* ── Clickable stat cards ── */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {/* Total Attempts */}
+                    <button
+                      onClick={() => setLeaderboardFilter(f => f === 'all' ? 'top10' : 'all')}
+                      className={`text-center p-3 rounded-xl border transition-all ${leaderboardFilter === 'all' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'border-amber-100 hover:bg-amber-50'}`}
+                    >
+                      <p className="text-2xl font-bold text-amber-600">{all.length}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 font-medium">All Attempts</p>
+                    </button>
+
+                    {/* Top 10 */}
+                    <button
+                      onClick={() => setLeaderboardFilter(f => f === 'top10' ? 'all' : 'top10')}
+                      className={`text-center p-3 rounded-xl border transition-all ${leaderboardFilter === 'top10' ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200' : 'border-indigo-100 hover:bg-indigo-50'}`}
+                    >
+                      <p className="text-2xl font-bold text-indigo-600">🏆</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 font-medium">Top 10</p>
+                    </button>
+
+                    {/* Passed */}
+                    <button
+                      onClick={() => setLeaderboardFilter(f => f === 'passed' ? 'all' : 'passed')}
+                      className={`text-center p-3 rounded-xl border transition-all ${leaderboardFilter === 'passed' ? 'bg-green-50 border-green-300 ring-2 ring-green-200' : 'border-green-100 hover:bg-green-50'}`}
+                    >
+                      <p className="text-2xl font-bold text-green-600">{passed.length}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 font-medium">Passed</p>
+                    </button>
+
+                    {/* Failed */}
+                    <button
+                      onClick={() => setLeaderboardFilter(f => f === 'failed' ? 'all' : 'failed')}
+                      className={`text-center p-3 rounded-xl border transition-all ${leaderboardFilter === 'failed' ? 'bg-red-50 border-red-300 ring-2 ring-red-200' : 'border-red-100 hover:bg-red-50'}`}
+                    >
+                      <p className="text-2xl font-bold text-red-500">{failed.length}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 font-medium">Failed</p>
+                    </button>
+                  </div>
+
+                  {/* ── Student list ── */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase text-gray-400 tracking-widest px-1">
+                      {filterLabel[leaderboardFilter]}
+                    </p>
+
+                    {listToShow.length === 0 ? (
+                      <p className="text-center text-gray-400 py-6">No students in this category.</p>
+                    ) : (
+                      listToShow.map((entry: any, idx: number) => {
+                        const isPassed = entry.percentage >= 40;
+                        const rank = entry.rank;
+                        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
+                        const mins = Math.floor((entry.duration || 0) / 60);
+                        const secs = (entry.duration || 0) % 60;
+                        return (
+                          <button
+                            key={`${entry.userId}-${idx}`}
+                            onClick={() => setLeaderboardStudentId(entry.userId)}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl border hover:bg-blue-50 hover:border-blue-200 transition-all group text-left"
+                          >
+                            {/* Rank */}
+                            <div className="w-9 text-center shrink-0">
+                              {medal
+                                ? <span className="text-xl">{medal}</span>
+                                : <span className="text-sm font-bold text-gray-400">#{rank}</span>}
+                            </div>
+
+                            {/* Avatar */}
+                            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0 text-sm">
+                              {entry.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+
+                            {/* Name + score */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm text-indigo-700 group-hover:underline truncate">{entry.name}</p>
+                              <p className="text-xs text-gray-400">
+                                Score: <span className="font-medium text-gray-700">{entry.score}</span>
+                                {entry.duration > 0 && <> · {mins}m {secs}s</>}
+                              </p>
+                            </div>
+
+                            {/* % + badge + arrow */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-sm font-bold ${isPassed ? 'text-green-600' : 'text-red-500'}`}>
+                                {entry.percentage?.toFixed(1)}%
+                              </span>
+                              <Badge className={`text-[10px] px-1.5 py-0 border ${isPassed ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-600 border-red-200'}`}>
+                                {isPassed ? 'Pass' : 'Fail'}
+                              </Badge>
+                              <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-400" />
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
 
-      {/* Existing Tests Management */}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLeaderboardOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Existing Tests</CardTitle>
@@ -1178,17 +1369,21 @@ export const TestCreation = () => {
                             </Button>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewQuestions(test)}>
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewQuestions(test)}>
                               <FileText size={14} className="mr-1" />
                               Questions
                             </Button>
-                            {isEnded && (
-                              <Button variant="secondary" size="sm" className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200" onClick={() => handleEditTest(test, true)}>
-                                <Calendar size={14} className="mr-1" />
-                                Reschedule
-                              </Button>
-                            )}
+                            <Button variant="outline" size="sm" className="flex-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleViewResults(test)}>
+                              <Trophy size={14} className="mr-1" />
+                              Results
+                            </Button>
                           </div>
+                          {isEnded && (
+                            <Button variant="secondary" size="sm" className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200" onClick={() => handleEditTest(test, true)}>
+                              <Calendar size={14} className="mr-1" />
+                              Reschedule
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

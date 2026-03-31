@@ -2,11 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { docClient, TABLES } from "../db-wrapper";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-export const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey123";
+import { getJwtSecret } from "../config-service";
 
 export interface AuthRequest extends Request {
     user?: {
@@ -27,9 +23,10 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     try {
-        const secretToUse = JWT_SECRET;
+        // Always fetch from DB — cached in memory after first call
+        const secret = await getJwtSecret();
 
-        const decoded = jwt.verify(token, secretToUse) as any;
+        const decoded = jwt.verify(token, secret) as any;
 
         // Database sanity check: verify the user still exists and hasn't been deleted
         const dbResult = await docClient.send(new GetCommand({

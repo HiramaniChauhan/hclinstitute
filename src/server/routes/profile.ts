@@ -54,10 +54,20 @@ router.get("/me", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
-// GET user profile by ID
-router.get("/:userId", async (req: AuthRequest, res: Response) => {
+// GET user profile by ID (own profile or admin only)
+router.get("/:userId", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
         const { userId } = req.params;
+
+        // Only allow users to view their own profile, or admins to view anyone
+        if (req.user.id !== userId && req.user.role !== "admin") {
+            return res.status(403).json({ error: "Access denied" });
+        }
+
         const user = await getItem<UserProfileData>(TABLES.USERS, { id: userId });
 
         if (!user) {

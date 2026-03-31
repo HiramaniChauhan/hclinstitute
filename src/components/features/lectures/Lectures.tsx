@@ -76,7 +76,10 @@ export const Lectures = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/api/config/lecture-structure");
+      const token = sessionStorage.getItem('token');
+      const resp = await fetch("/api/config/lecture-structure", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       const data = await resp.json();
       setLectureStructure(data);
       if (data && Object.keys(data).length > 0) {
@@ -480,7 +483,15 @@ export const Lectures = () => {
         />
       )}
 
-      <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
+      <Dialog open={showInstructions} onOpenChange={(open) => {
+        if (!open) {
+          setShowInstructions(false);
+          setActiveTest(null);
+          setReviewMode(false);
+        } else {
+          setShowInstructions(true);
+        }
+      }}>
         <DialogContent className="max-w-[100vw] w-screen h-screen m-0 rounded-none border-none shadow-none p-0 overflow-y-auto bg-white z-[120]">
           <div className="max-w-5xl mx-auto p-4 md:p-12 space-y-10">
             <div className="flex items-center justify-between border-b border-slate-100 pb-8">

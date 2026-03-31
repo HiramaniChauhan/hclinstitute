@@ -1,24 +1,27 @@
 import { Router } from "express";
-import { generateId, createItem, getAllItems, deleteItem, updateItem } from "../utils/db-helpers";
+import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
+import { generateId, createItem, getAllItems, deleteItem } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 
 const router = Router();
 
-// Get all notes
-router.get("/", async (req, res) => {
+// GET all notes — any logged-in user can read notes
+router.get("/", verifyToken, async (req, res) => {
     try {
         const notes = await getAllItems(TABLES.NOTES || 'Notes');
-        res.json(notes);
+        // Strip uploadedBy so student portal never sees uploader ID
+        const sanitized = (notes as any[]).map(({ uploadedBy, ...rest }) => rest);
+        res.json(sanitized);
     } catch (error) {
         console.error("Error fetching notes:", error);
         res.status(500).json({ error: "Failed to fetch notes" });
     }
 });
 
-// Create a new note
-router.post("/", async (req, res) => {
+// Create a new note — Admin only
+router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
-        const { title, subject, chapter, uploadedBy, fileType, fileSize, fileData } = req.body;
+        const { title, subject, chapter, fileType, fileSize, fileData } = req.body;
 
         if (!title || !subject || !chapter || !fileData) {
             return res.status(400).json({ error: "Missing required fields" });
@@ -29,7 +32,7 @@ router.post("/", async (req, res) => {
             title,
             subject,
             chapter,
-            uploadedBy: uploadedBy || "Admin",
+            uploadedBy: req.user?.id || "Admin",
             uploadDate: new Date().toISOString().split('T')[0],
             fileType: fileType || "PDF",
             fileSize: fileSize || "Unknown",
@@ -45,12 +48,11 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Update a note (e.g. increase downloads)
-router.put("/:id", async (req, res) => {
+// Update a note (e.g. increase downloads) — Admin only for edits
+router.put("/:id", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const { downloads, title, subject, chapter } = req.body;
 
-        // simple replacement logic for local mocked db
         const notes: any[] = await getAllItems(TABLES.NOTES || 'Notes');
         const existingNote = notes.find(n => n.id === req.params.id);
 
@@ -74,8 +76,25 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-// Delete a note
-router.delete("/:id", async (req, res) => {
+// Increment download count — any logged-in student can call this
+router.post("/:id/download", verifyToken, async (req, res) => {
+    try {
+        const notes: any[] = await getAllItems(TABLES.NOTES || 'Notes');
+        const note = notes.find(n => n.id === req.params.id);
+        if (!note) return res.status(404).json({ error: "Note not found" });
+
+        await createItem(TABLES.NOTES || 'Notes', {
+            ...note,
+            downloads: (note.downloads || 0) + 1
+        });
+        res.json({ message: "Download counted" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update download count" });
+    }
+});
+
+// Delete a note — Admin only
+router.delete("/:id", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         await deleteItem(TABLES.NOTES || 'Notes', { id: req.params.id });
         res.json({ message: "Note deleted successfully" });

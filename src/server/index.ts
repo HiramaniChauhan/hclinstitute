@@ -1,9 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { ADMIN_SECRET } from "./constants";
+import { getJwtSecret } from "./config-service";
 
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcryptjs";
@@ -11,7 +13,7 @@ import nodemailer from "nodemailer";
 import { docClient, TABLES, isMemory } from "./db-wrapper";
 import { PutCommand, ScanCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { errorHandler } from "./middleware/errorHandler";
-import { verifyToken, requireAdmin, JWT_SECRET } from "./middleware/auth";
+import { verifyToken, requireAdmin } from "./middleware/auth";
 import coursesRouter from "./routes/courses";
 import batchesRouter from "./routes/batches";
 import announcementsRouter from "./routes/announcements";
@@ -36,9 +38,49 @@ import reviewsRouter from "./routes/reviews";
 const app = express();
 const port = process.env.PORT || 5001;
 
-app.use(cors());
+// ── Security Headers (helmet) ────────────────────────────────────────────────
+app.use(helmet());
+
+// ── CORS — allow localhost in dev, locked to production domain in prod ────────
+const productionOrigin = process.env.ALLOWED_ORIGIN || "";
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow server-to-server (no origin header) — e.g. curl, mobile apps
+        if (!origin) return callback(null, true);
+        // Allow any localhost port in development
+        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+            return callback(null, true);
+        }
+        // Allow the configured production origin
+        if (productionOrigin && origin === productionOrigin) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS: origin '${origin}' is not allowed`));
+    },
+    credentials: true,
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// ── Rate Limiters ─────────────────────────────────────────────────────────────
+// Login: max 10 attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "Too many login attempts. Please try again in 15 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// OTP / Registration: max 5 per 10 minutes per IP
+const otpLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+    message: { error: "Too many requests. Please try again in 10 minutes." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 import fs from 'fs';
 import path from 'path';
@@ -195,8 +237,8 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
         // 3. Last resort: Mock logging
         console.log("-----------------------------------------");
         console.log("No Email Config found, showing Mock OTP");
-        console.log(`[Mock Email]To: ${toEmail} | Subject: ${subject} `);
-        console.log(`[Mock Email]OTP: ${otp} `);
+        console.log(`[Mock Email] To: ${toEmail} | Subject: ${subject}`);
+        console.log("[Mock Email] OTP has been sent (not logged for security).");
         console.log("-----------------------------------------");
         return true;
     } catch (error) {
@@ -207,7 +249,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
 
 // OTP Endpoints
 // Forgot Password Endpoints
-app.post("/api/auth/forgot-password/request", async (req, res) => {
+app.post("/api/auth/forgot-password/request", otpLimiter, async (req, res) => {
     const { email, role } = req.body;
 
     try {
@@ -240,7 +282,7 @@ app.post("/api/auth/forgot-password/request", async (req, res) => {
     }
 });
 
-app.post("/api/auth/forgot-password/verify", async (req, res) => {
+app.post("/api/auth/forgot-password/verify", otpLimiter, async (req, res) => {
     const { email, otp } = req.body;
 
     try {
@@ -260,7 +302,7 @@ app.post("/api/auth/forgot-password/verify", async (req, res) => {
     }
 });
 
-app.post("/api/auth/forgot-password/reset", async (req, res) => {
+app.post("/api/auth/forgot-password/reset", otpLimiter, async (req, res) => {
     const { email, otp, newPassword, role } = req.body;
 
     if (!newPassword || newPassword.length < 6) {
@@ -315,7 +357,7 @@ app.post("/api/auth/forgot-password/reset", async (req, res) => {
     }
 });
 
-app.post("/api/auth/send-otp", async (req, res) => {
+app.post("/api/auth/send-otp", otpLimiter, async (req, res) => {
     const { email, purpose } = req.body;
 
     try {
@@ -342,7 +384,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
     }
 });
 
-app.post("/api/auth/verify-otp", async (req, res) => {
+app.post("/api/auth/verify-otp", otpLimiter, async (req, res) => {
     const { email, otp } = req.body;
 
     try {
@@ -370,7 +412,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
 // Admin Secret Key Endpoints
 const ADMIN_AUTHORIZED_EMAIL = "hiramanichauhan2399@gmail.com";
 
-app.post("/api/auth/admin-secret-otp", async (req, res) => {
+app.post("/api/auth/admin-secret-otp", otpLimiter, async (req, res) => {
     const { email } = req.body;
     if (email !== ADMIN_AUTHORIZED_EMAIL) {
         return res.status(403).json({ error: "Unauthorized email for admin operations" });
@@ -396,7 +438,7 @@ app.post("/api/auth/admin-secret-otp", async (req, res) => {
     }
 });
 
-app.post("/api/auth/update-admin-secret", async (req, res) => {
+app.post("/api/auth/update-admin-secret", otpLimiter, async (req, res) => {
     const { email, otp, newSecret } = req.body;
     if (email !== ADMIN_AUTHORIZED_EMAIL) {
         return res.status(403).json({ error: "Unauthorized email" });
@@ -437,24 +479,23 @@ app.post("/api/auth/update-admin-secret", async (req, res) => {
     }
 });
 
-// Helper to check Admin Secret
+// Helper to check Admin Secret — always reads from DB, no hardcoded fallback
 async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
     try {
         const result = await docClient.send(new GetCommand({
             TableName: TABLES.CONFIG,
             Key: { id: "ADMIN_SECRET" }
         }));
-        const storedSecret = result.Item?.value;
-        const expectedSecret = storedSecret || ADMIN_SECRET;
+        const expectedSecret = result.Item?.value;
 
         if (!expectedSecret) {
-            console.warn("[Admin Auth] CRITICAL: No ADMIN_SECRET configured in DB or .env!");
+            console.warn("[Admin Auth] CRITICAL: No ADMIN_SECRET found in DB. Please seed it via init-db.");
             return false;
         }
 
         const isValid = providedSecret === expectedSecret;
         if (!isValid) {
-            console.warn(`[Admin Auth] Secret mismatch.Provided: ${providedSecret}, Expected: ${expectedSecret} `);
+            console.warn("[Admin Auth] Secret mismatch — invalid admin secret provided.");
         }
         return isValid;
     } catch (error) {
@@ -464,7 +505,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
 }
 
 // Auth Routes
-app.post("/api/auth/register", async (req, res) => {
+app.post("/api/auth/register", otpLimiter, async (req, res) => {
     const {
         firstName, lastName, email, password, role, aadharNumber, adminSecret,
         phone, dateOfBirth, gender, address, city, state, pincode,
@@ -557,7 +598,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 });
 
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", loginLimiter, async (req, res) => {
     const { email, password, role, adminSecret } = req.body;
 
     if (!password || password.length < 6) {
@@ -603,9 +644,10 @@ app.post("/api/auth/login", async (req, res) => {
             Item: updatedUser
         }));
 
+        const jwtSecret = await getJwtSecret();
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role, sessionId },
-            JWT_SECRET,
+            jwtSecret,
             { expiresIn: "24h" }
         );
 
@@ -628,7 +670,7 @@ app.post("/api/auth/login", async (req, res) => {
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Google Login Secure Verification
-app.post("/api/auth/google", async (req, res) => {
+app.post("/api/auth/google", loginLimiter, async (req, res) => {
     const { credential, role, isSignup } = req.body;
 
     if (role === 'admin') {
@@ -695,13 +737,15 @@ app.post("/api/auth/google", async (req, res) => {
             Item: updatedUser
         }));
 
+        const jwtSecret = await getJwtSecret();
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role, sessionId },
-            JWT_SECRET,
+            jwtSecret,
             { expiresIn: "24h" }
         );
 
-        res.json({ token, user });
+        const { password: _, sessionId: __, ...safeUser } = updatedUser;
+        res.json({ token, user: safeUser });
     } catch (error) {
         console.error("[Google Auth] Error:", error);
         res.status(500).json({ error: "Google auth failed" });
@@ -729,16 +773,10 @@ app.use("/api/chapter-tests", chapterTestsRouter);
 app.use("/api/videos", videosRouter);
 app.use("/api/reviews", reviewsRouter);
 
-app.get("/api/auth/debug-secret", (req, res) => {
-    res.json({
-        secretStart: JWT_SECRET.substring(0, 4),
-        envSecretStart: process.env.JWT_SECRET?.substring(0, 4) || "MISSING",
-        nodeEnv: process.env.NODE_ENV || "not set"
-    });
-});
+// debug-secret endpoint removed for security
 
 // Lecture Structure Config Endpoints
-app.get("/api/config/lecture-structure", async (req, res) => {
+app.get("/api/config/lecture-structure", verifyToken, async (req, res) => {
     try {
         const result = await docClient.send(new GetCommand({
             TableName: TABLES.CONFIG,

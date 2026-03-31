@@ -86,8 +86,8 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
-// GET tests by course
-router.get("/course/:courseId", async (req: AuthRequest, res: Response) => {
+// GET tests by course — requires login; students only see question count, not actual questions
+router.get("/course/:courseId", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const { courseId } = req.params;
         const tests = await getAllItems<TestData>(
@@ -95,20 +95,38 @@ router.get("/course/:courseId", async (req: AuthRequest, res: Response) => {
             "courseId = :courseId",
             { ":courseId": courseId }
         );
-        res.json(tests);
+
+        // Strip questions from non-admin responses to prevent answer leaking
+        const safeTests = req.user?.role === "admin"
+            ? tests
+            : tests.map(t => ({ ...t, sections: t.sections?.map(s => ({ ...s, questions: undefined, questionCount: s.questions?.length })) }));
+
+        res.json(safeTests);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// GET test by ID
-router.get("/:testId", async (req: AuthRequest, res: Response) => {
+// GET test by ID — requires login; students get questions without correct answers
+router.get("/:testId", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const { testId } = req.params;
         const test = await getItem<TestData>(TABLES.TESTS, { testId });
 
         if (!test) {
             return res.status(404).json({ error: "Test not found" });
+        }
+
+        // Strip correct answers for students to prevent cheating
+        if (req.user?.role !== "admin") {
+            const safeTest = {
+                ...test,
+                sections: test.sections?.map(s => ({
+                    ...s,
+                    questions: s.questions?.map(({ correctAnswer, ...q }: any) => q)
+                }))
+            };
+            return res.json(safeTest);
         }
 
         res.json(test);

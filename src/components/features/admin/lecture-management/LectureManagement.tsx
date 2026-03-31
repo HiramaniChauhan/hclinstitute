@@ -50,7 +50,10 @@ export const LectureManagement = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/api/config/lecture-structure");
+      const token = sessionStorage.getItem('token');
+      const resp = await fetch("/api/config/lecture-structure", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       const data = await resp.json();
       setLectureStructure(data);
       if (data && Object.keys(data).length > 0) {

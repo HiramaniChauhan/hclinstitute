@@ -15,7 +15,7 @@ const isAdmin = (req: any, res: any, next: any) => {
 };
 
 // GET /conversations - List all student conversations (Admin only)
-router.get("/conversations", async (req: any, res: any) => {
+router.get("/conversations", isAdmin, async (req: any, res: any) => {
     try {
         const result = await docClient.send(new ScanCommand({
             TableName: TABLES.USERS,
@@ -96,6 +96,11 @@ router.get("/unread-count", async (req: any, res: any) => {
 // GET /messages/:studentId - Get messages for a conversation
 router.get("/messages/:studentId", async (req: any, res: any) => {
     const { studentId } = req.params;
+
+    // Students can only access their own messages
+    if (req.user.role !== 'admin' && req.user.id !== studentId) {
+        return res.status(403).json({ error: "Access denied" });
+    }
     try {
         const result = await docClient.send(new ScanCommand({
             TableName: TABLES.CHAT_MESSAGES,
@@ -219,6 +224,11 @@ router.delete("/:messageId", isAdmin, async (req: any, res: any) => {
 router.put("/read/:studentId", async (req: any, res: any) => {
     const { studentId } = req.params;
     const readerRole = req.user.role; // 'admin' or 'student'
+
+    // Students can only mark their own conversation as read
+    if (readerRole !== 'admin' && req.user.id !== studentId) {
+        return res.status(403).json({ error: "Access denied" });
+    }
 
     try {
         // Find all messages in this conversation where recipient is the current user

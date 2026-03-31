@@ -77,9 +77,8 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
-// POST — Direct course enrollment (for testing / free course bypass)
-// TODO: Remove or restrict this endpoint before going to production
-router.post("/enroll-course", verifyToken, async (req: AuthRequest, res: Response) => {
+// POST — Direct course enrollment (Admin only — students must pay via /api/payments)
+router.post("/enroll-course", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 

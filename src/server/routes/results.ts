@@ -254,7 +254,7 @@ router.get("/leaderboard/:testId", verifyToken, async (req: AuthRequest, res: Re
         const userRankEntry = leaderboard.find(entry => entry.userId === req.user?.id);
 
         res.json({
-            leaderboard: leaderboard.slice(0, 10), // Top 10 unique students
+            leaderboard,           // all participants, ranked
             userRank: userRankEntry ? userRankEntry.rank : null,
             totalParticipants: leaderboard.length,
             userScore: userRankEntry ? userRankEntry.score : null

@@ -83,29 +83,38 @@ router.post("/create-order", verifyToken, async (req: AuthRequest, res: Response
             return res.status(503).json({ error: "Payment gateway not configured. Please add Razorpay API keys to your .env file." });
         }
 
+        // Fetch user details before creating the order
+        const user = await getItem<any>(TABLES.USERS, { id: req.user.id });
+        const purchaseDate = new Date().toISOString();
+
         const receipt = `rcpt_${Date.now().toString(36)}`.substring(0, 40);
         const order = await razorpay.orders.create({
             amount: priceInPaise,
             currency: "INR",
             receipt: receipt,
             notes: {
+                // Student details
+                studentName: user?.name || user?.firstName || req.user.email,
+                studentEmail: user?.email || req.user.email,
+                studentPhone: user?.phone || "N/A",
+                // Course details
                 courseId,
-                userId: req.user.id,
                 courseName: course.title,
+                coursePrice: `₹${course.price}`,
+                // Purchase details
+                purchaseDate,
+                userId: req.user.id,
             },
         });
-
-        // Fetch user details to pass to Razorpay
-        const user = await getItem<any>(TABLES.USERS, { id: req.user.id });
 
         res.json({
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
-            keyId: process.env.RAZORPAY_KEY_ID,
             courseName: course.title,
             userName: user?.name || "",
             userEmail: user?.email || req.user.email || "",
+            userPhone: user?.phone || "",
         });
     } catch (error: any) {
         console.error("Create order error:", error);
@@ -172,6 +181,30 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
             dueDate: enrolledAt,
         };
         await createItem(TABLES.FEES, paymentRecord);
+
+        // ── Update Razorpay payment notes with full purchase details ──────────
+        try {
+            const razorpay = getRazorpay();
+            const student = await getItem<any>(TABLES.USERS, { id: req.user.id });
+            if (razorpay && student) {
+                await (razorpay.payments as any).edit(razorpay_payment_id, {
+                    notes: {
+                        studentName:  student.name || student.firstName || req.user.email,
+                        studentEmail: student.email || req.user.email,
+                        studentPhone: student.phone || "N/A",
+                        courseName:   enrolledCourse?.title || "Unknown Course",
+                        amountPaid:   `₹${amountInRupees}`,
+                        purchaseDate: enrolledAt,
+                        orderId:      razorpay_order_id,
+                        paymentId:    razorpay_payment_id,
+                    }
+                });
+                console.log(`[Payment] Razorpay notes updated for payment ${razorpay_payment_id}`);
+            }
+        } catch (noteErr: any) {
+            // Non-fatal — enrollment already saved, just log the warning
+            console.warn(`[Payment] Could not update Razorpay notes: ${noteErr.message}`);
+        }
 
         res.json({ success: true, enrollment });
     } catch (error: any) {

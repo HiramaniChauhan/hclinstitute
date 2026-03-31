@@ -109,8 +109,9 @@ router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthReques
     }
 });
 
-// PUT — Student pays a fee (or Admin marks as paid)
-router.put("/:feeId/pay", verifyToken, async (req: AuthRequest, res: Response) => {
+// PUT — Admin marks a fee as paid (e.g. cash payment, DD, etc.)
+// NOTE: Students pay via Razorpay (/api/payments) — this endpoint is admin-only
+router.put("/:feeId/pay", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 

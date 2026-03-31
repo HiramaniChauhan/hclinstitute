@@ -6,12 +6,11 @@ import { Response } from "express";
 
 const router = Router();
 
-// GET all tests for a chapter
-router.get('/:chapterId', async (req: AuthRequest, res: Response) => {
+// GET all tests for a chapter — requires login
+router.get('/:chapterId', verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const { chapterId } = req.params;
         const cid = String(chapterId);
-        // Find all tests that belong to this chapterId (normalize to string)
         const tests = await getAllItems(TABLES.CHAPTER_TESTS, "chapterId = :chapterId", { ":chapterId": cid });
         res.json(tests || []);
     } catch (error: any) {
@@ -19,15 +18,12 @@ router.get('/:chapterId', async (req: AuthRequest, res: Response) => {
     }
 });
 
-// GET specific test by ID
-router.get("/test/:testId", async (req: AuthRequest, res: Response) => {
+// GET specific test by ID — requires login
+router.get("/test/:testId", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const { testId } = req.params;
-        // For backwards compatibility, some old tests might just use chapterId as their id.
-        // We scan for the specific test. Ideally we would use getItem if testId is the primary key.
         const test = await getItem(TABLES.CHAPTER_TESTS, { id: testId });
         if (!test) {
-            // Fallback for older tests where id might not be explicitly set, fallback to searching by chapterId as id
             const oldTests = await getAllItems(TABLES.CHAPTER_TESTS, "chapterId = :chapterId", { ":chapterId": testId });
             if (oldTests && oldTests.length > 0) return res.json(oldTests[0]);
             return res.status(404).json({ error: "Test not found" });

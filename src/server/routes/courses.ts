@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { generateId, createItem, getAllItems, deleteItem, updateItem } from "../utils/db-helpers";
+import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
+import { generateId, createItem, getAllItems, deleteItem } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 
 const router = Router();
 
-// Get all courses
+// GET all courses — public read (anyone can view courses for the landing page)
 router.get("/", async (req, res) => {
     try {
         const [rawCourses, allEnrollments] = await Promise.all([
@@ -22,12 +23,13 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Create a new course
-router.post("/", async (req, res) => {
+// Create a new course — Admin only
+router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const newCourse = {
             id: generateId(),
             ...req.body,
+            createdBy: req.user?.id,
             createdAt: new Date().toISOString()
         };
         await createItem(TABLES.COURSES, newCourse);
@@ -38,8 +40,8 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Update a course
-router.put("/:id", async (req, res) => {
+// Update a course — Admin only
+router.put("/:id", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const courseId = req.params.id;
         const existingCourses = await getAllItems(TABLES.COURSES);
@@ -50,7 +52,9 @@ router.put("/:id", async (req, res) => {
             return;
         }
 
-        const updatedCourse = Object.assign({}, courseToUpdate, req.body);
+        const updatedCourse = Object.assign({}, courseToUpdate, req.body, {
+            updatedAt: new Date().toISOString()
+        });
         await createItem(TABLES.COURSES, updatedCourse);
         res.json(updatedCourse);
     } catch (error) {
@@ -59,8 +63,8 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-// Delete a course
-router.delete("/:id", async (req, res) => {
+// Delete a course — Admin only
+router.delete("/:id", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         await deleteItem(TABLES.COURSES, { id: req.params.id });
         res.status(204).send();
