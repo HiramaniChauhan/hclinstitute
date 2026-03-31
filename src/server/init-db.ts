@@ -73,7 +73,11 @@ async function initTables() {
 
 async function seedAdminSecret() {
     try {
-        const { ADMIN_SECRET } = await import("./constants");
+        const ADMIN_SECRET = process.env.ADMIN_SECRET;
+        if (!ADMIN_SECRET) {
+            console.error("[Init] CRITICAL: ADMIN_SECRET is not defined in environment variables. Refusing to seed fallback secret.");
+            return;
+        }
         const exists = await client.send(new DescribeTableCommand({ TableName: TABLES.CONFIG }));
         if (exists.Table) {
             console.log("[Init] Seeding default ADMIN_SECRET...");

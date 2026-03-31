@@ -62,7 +62,10 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
         if (!testId) return;
         setLoading(true);
         try {
-            const resp = await fetch(`/api/chapter-tests/test/${testId}`);
+            const token = sessionStorage.getItem('token');
+            const resp = await fetch(`/api/chapter-tests/test/${testId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (resp.ok) {
                 const data = await resp.json();
                 setTestData(data);
