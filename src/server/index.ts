@@ -42,19 +42,27 @@ const port = process.env.PORT || 5001;
 app.use(helmet());
 
 // ── CORS — allow localhost in dev, locked to production domain in prod ────────
-const productionOrigin = process.env.ALLOWED_ORIGIN || "";
+const rawOrigins = process.env.ALLOWED_ORIGIN || "";
+const allowedOrigins = rawOrigins.split(",").map(o => o.trim().replace(/\/$/, "")).filter(Boolean);
+
 app.use(cors({
     origin: (origin, callback) => {
         // Allow server-to-server (no origin header) — e.g. curl, mobile apps
         if (!origin) return callback(null, true);
+        
+        // Strip trailing slash from origin just in case
+        const cleanOrigin = origin.replace(/\/$/, "");
+
         // Allow any localhost port in development
-        if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+        if (cleanOrigin.startsWith("http://localhost:") || cleanOrigin.startsWith("http://127.0.0.1:")) {
             return callback(null, true);
         }
-        // Allow the configured production origin
-        if (productionOrigin && origin === productionOrigin) {
+        
+        // Allow if exact match with one of the configured origins
+        if (allowedOrigins.includes(cleanOrigin)) {
             return callback(null, true);
         }
+
         callback(new Error(`CORS: origin '${origin}' is not allowed`));
     },
     credentials: true,
