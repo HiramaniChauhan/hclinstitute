@@ -46,8 +46,27 @@ export const CourseManagement = () => {
     maxStudents: "",
     description: "",
     profilePicData: "", // Base64 string for image
-    accessFeatures: [] as string[]
+    accessFeatures: [] as string[],
+    pointableFeatures: [] as string[]
   });
+  const [newPointableFeature, setNewPointableFeature] = useState("");
+
+  const addPointableFeature = () => {
+    if (newPointableFeature.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        pointableFeatures: [...prev.pointableFeatures, newPointableFeature.trim()]
+      }));
+      setNewPointableFeature("");
+    }
+  };
+
+  const removePointableFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      pointableFeatures: prev.pointableFeatures.filter((_, i) => i !== index)
+    }));
+  };
 
   const fetchCourses = useCallback(async () => {
     try {
@@ -108,8 +127,10 @@ export const CourseManagement = () => {
       maxStudents: "",
       description: "",
       profilePicData: "",
-      accessFeatures: []
+      accessFeatures: [],
+      pointableFeatures: []
     });
+    setNewPointableFeature("");
     setOpen(true);
   };
 
@@ -122,8 +143,10 @@ export const CourseManagement = () => {
       maxStudents: (course.maxStudents || 0).toString(),
       description: course.description || "",
       profilePicData: course.profilePicData || "",
-      accessFeatures: course.accessFeatures || ['Lectures', 'Tests', 'Notes']
+      accessFeatures: course.accessFeatures || ['Lectures', 'Tests', 'Notes'],
+      pointableFeatures: course.pointableFeatures || []
     });
+    setNewPointableFeature("");
     setOpen(true);
   };
 
@@ -161,6 +184,7 @@ export const CourseManagement = () => {
         maxStudents: Number(formData.maxStudents) || 100,
         description: formData.description,
         accessFeatures: formData.accessFeatures,
+        pointableFeatures: formData.pointableFeatures,
         profilePicData: formData.profilePicData,
       };
 
@@ -352,6 +376,37 @@ export const CourseManagement = () => {
                 </div>
                 <p className="text-xs text-gray-500">Select which features students will get access to upon enrollment.</p>
               </div>
+
+              {/* Pointable Features */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Key Highlights (Pointable Features)</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={newPointableFeature}
+                    onChange={(e) => setNewPointableFeature(e.target.value)}
+                    placeholder="e.g. Lectures is provided"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addPointableFeature();
+                      }
+                    }}
+                  />
+                  <Button type="button" onClick={addPointableFeature} variant="secondary">Add</Button>
+                </div>
+                {formData.pointableFeatures.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {formData.pointableFeatures.map((feature, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                        <span className="text-sm font-medium">{feature}</span>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removePointableFeature(idx)} className="text-red-500 h-6 w-6 p-0 rounded-full">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -445,6 +500,17 @@ export const CourseManagement = () => {
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
                           {course.accessFeatures.map((feature: string, idx: number) => (
                             <Badge key={idx} variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-100">{feature}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {course.pointableFeatures && course.pointableFeatures.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          {course.pointableFeatures.map((feat: string, idx: number) => (
+                            <div key={idx} className="flex items-center text-xs text-gray-600">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2" />
+                              {feat}
+                            </div>
                           ))}
                         </div>
                       )}

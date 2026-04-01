@@ -375,6 +375,17 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                       </div>
                     )}
 
+                    {course.pointableFeatures && course.pointableFeatures.length > 0 && (
+                      <div className="mb-6 space-y-2">
+                        {course.pointableFeatures.map((feat: string, i: number) => (
+                          <div key={i} className="flex items-start text-sm text-gray-300">
+                            <CheckCircle2 className={`w-4 h-4 mr-2 shrink-0 ${theme.color}`} />
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-col gap-3 mb-8">
                       <div className="flex items-center text-gray-400 bg-black/40 p-2 rounded-lg text-sm">
                         <Clock className={`w-4 h-4 mr-3 ${theme.color}`} /> {course.duration} Months

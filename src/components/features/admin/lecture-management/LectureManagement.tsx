@@ -128,9 +128,34 @@ export const LectureManagement = () => {
     setEditingSubject(null);
   };
 
+  const deleteChapterTestsForChapter = (chapter: any) => {
+    const testsToDelete = [...(chapter.chapterTests || [])];
+    if (chapter.chapterTestId && !testsToDelete.find((t: any) => t.id === chapter.chapterTestId)) {
+      testsToDelete.push({ id: chapter.chapterTestId });
+    }
+    const token = sessionStorage.getItem('token');
+    testsToDelete.forEach((test: any) => {
+      fetch(`/api/chapter-tests/${test.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(console.error);
+    });
+  };
+
   const handleDeleteSubject = async (subjectToDelete: string) => {
     if (confirm(`Are you sure you want to delete ${subjectToDelete} and all of its contents? This cannot be undone.`)) {
       const newStructure = { ...lectureStructure };
+      const subjectData = newStructure[subjectToDelete];
+      
+      // Cascade delete all tests in this subject
+      if (subjectData && subjectData.portions) {
+        subjectData.portions.forEach((portion: any) => {
+          portion.chapters?.forEach((chapter: any) => {
+            deleteChapterTestsForChapter(chapter);
+          });
+        });
+      }
+
       delete newStructure[subjectToDelete];
 
       const newSubjects = subjects.filter(s => s !== subjectToDelete);
@@ -192,7 +217,9 @@ export const LectureManagement = () => {
         id: editingChapter ? editingChapter.id : Date.now(),
         name: chapterName,
         lectures: editingChapter ? (editingChapter.lectures || []) : [],
-        tests: editingChapter ? (editingChapter.tests || []) : []
+        tests: editingChapter ? (editingChapter.tests || []) : [],
+        chapterTests: editingChapter ? (editingChapter.chapterTests || []) : [],
+        chapterTestId: editingChapter ? editingChapter.chapterTestId : null
       };
 
       if (editingChapter) {
@@ -245,6 +272,15 @@ export const LectureManagement = () => {
   const deletePortion = (id: string) => {
     if (confirm("Are you sure you want to delete this portion and all its chapters? This cannot be undone.")) {
       const newStructure = { ...lectureStructure };
+      const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === id);
+      
+      if (portion) {
+        // Cascade delete all tests in this portion
+        portion.chapters?.forEach((chapter: any) => {
+          deleteChapterTestsForChapter(chapter);
+        });
+      }
+      
       newStructure[selectedSubject].portions = newStructure[selectedSubject].portions.filter((p: any) => p.id !== id);
       saveStructure(newStructure);
       toast.success("Portion deleted");
@@ -256,6 +292,11 @@ export const LectureManagement = () => {
       const newStructure = { ...lectureStructure };
       const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
       if (portion) {
+        const chapter = portion.chapters.find((c: any) => c.id === chapterId);
+        if (chapter) {
+          deleteChapterTestsForChapter(chapter);
+        }
+
         portion.chapters = portion.chapters.filter((c: any) => c.id !== chapterId);
         saveStructure(newStructure);
         toast.success("Chapter deleted");
@@ -276,20 +317,30 @@ export const LectureManagement = () => {
     }
   };
 
-  const deleteTest = (portionId: string, chapterId: number, testId: string) => {
+  const deleteTest = async (portionId: string, chapterId: number, testId: string) => {
     if (confirm("Are you sure you want to delete this practice test?")) {
-      // Handling via dedicated database now if needed, but for now we just remove from structure
-      const newStructure = { ...lectureStructure };
-      const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
-      const chapter = portion?.chapters.find((c: any) => c.id === chapterId);
-      if (chapter) {
-        if (Array.isArray(chapter.chapterTests)) {
-          chapter.chapterTests = chapter.chapterTests.filter((t: any) => t.id !== testId);
-        } else if (chapter.chapterTestId === testId) {
-          chapter.chapterTestId = null; // Clean up old singular test if legacy
+      try {
+        const token = sessionStorage.getItem('token');
+        await fetch(`/api/chapter-tests/${testId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        const newStructure = { ...lectureStructure };
+        const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
+        const chapter = portion?.chapters.find((c: any) => c.id === chapterId);
+        if (chapter) {
+          if (Array.isArray(chapter.chapterTests)) {
+            chapter.chapterTests = chapter.chapterTests.filter((t: any) => t.id !== testId);
+          } else if (chapter.chapterTestId === testId) {
+            chapter.chapterTestId = null; // Clean up old singular test if legacy
+          }
+          saveStructure(newStructure);
+          toast.success("Chapter test deleted");
         }
-        saveStructure(newStructure);
-        toast.success("Chapter test removed");
+      } catch(err) {
+        console.error("Test delete error", err);
+        toast.error("Failed to completely delete test data");
       }
     }
   };

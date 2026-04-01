@@ -106,6 +106,17 @@ export const Courses = () => {
                   </div>
                 )}
 
+                {course.pointableFeatures && course.pointableFeatures.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {course.pointableFeatures.map((feat: string, i: number) => (
+                      <div key={i} className="flex items-center text-xs text-gray-600">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2" />
+                        {feat}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="space-y-2 text-sm text-gray-600 mt-auto pt-4">
                   <div className="flex items-center gap-2">
                     <Clock size={14} />
