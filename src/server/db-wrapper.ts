@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, DeleteCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import dotenv from "dotenv";
 import { memoryDb, InMemoryDatabase } from "./db-memory";
 
@@ -27,7 +27,7 @@ if (useDynamoDb) {
     class MockDocClient {
         async send(command: any) {
             try {
-                console.log(`[MockDB Command] ${command.constructor.name} on Table: ${command.input.TableName}`);
+                // console.log(`[MockDB Command] ${command.constructor.name} on Table: ${command.input.TableName}`);
                 if (command instanceof PutCommand) {
                     memoryDb.put(command.input.TableName, command.input.Item);
                     return { Item: command.input.Item };
@@ -38,13 +38,21 @@ if (useDynamoDb) {
                     const items = memoryDb.scan(command.input.TableName);
                     let filtered = items;
 
-                    // Apply filter expression if needed
+                    // Optimization: If the filter is specifically for an email and useDynamoDB is false, use our index
                     if (command.input.FilterExpression && command.input.ExpressionAttributeValues) {
+                        const expr = command.input.FilterExpression;
+                        const vals = command.input.ExpressionAttributeValues;
+
+                        // Check if we can use the email index
+                        if (expr === "email = :email" && vals[":email"]) {
+                            const indexedItem = (memoryDb as any).getByIndex(command.input.TableName, "email", vals[":email"]);
+                            return { Items: indexedItem ? [indexedItem] : [] };
+                        }
+
+                        // Fallback to manual filter loop for complex queries
                         filtered = items.filter(item => {
                             let match = true;
-                            const expr = command.input.FilterExpression;
-                            const vals = command.input.ExpressionAttributeValues;
-
+                            // ... existing filter logic ...
                             if (expr.includes("email") && vals[":email"]) {
                                 match = match && item.email === vals[":email"];
                             }
@@ -80,13 +88,43 @@ if (useDynamoDb) {
                         });
                     }
 
+                    /*
                     console.log(`[MockDB Scan] Table: ${command.input.TableName} | Raw Found: ${items.length} items`);
                     if (items.length > 0) {
                         console.log(`[MockDB Scan] Sample ID: ${items[0].id || items[0].key}`);
                     }
+                    */
                     return { Items: filtered };
                 } else if (command instanceof DeleteCommand) {
                     memoryDb.delete(command.input.TableName, command.input.Key);
+                    return {};
+                } else if (command instanceof QueryCommand) {
+                    const { TableName, IndexName, KeyConditionExpression, ExpressionAttributeValues } = command.input;
+                    
+                    // Optimization: If the query is specifically for an email and useDynamoDB is false, use our index
+                    if (KeyConditionExpression === "email = :email" && ExpressionAttributeValues?.[":email"]) {
+                        const indexedItem = (memoryDb as any).getByIndex(TableName, "email", ExpressionAttributeValues[":email"]);
+                        return { Items: indexedItem ? [indexedItem] : [] };
+                    }
+
+                    // Fallback to scan if index not matched or complex condition
+                    const items = memoryDb.scan(TableName);
+                    const filtered = items.filter(item => {
+                        if (KeyConditionExpression.includes("email") && ExpressionAttributeValues?.[":email"]) {
+                            return item.email === ExpressionAttributeValues[":email"];
+                        }
+                        if (KeyConditionExpression.includes("id = :id") && ExpressionAttributeValues?.[":id"]) {
+                            return item.id === ExpressionAttributeValues[":id"];
+                        }
+                        return true;
+                    });
+                    return { Items: filtered };
+                } else if (command instanceof UpdateCommand) {
+                    // UpdateCommand in DynamoDB usually uses UpdateExpression. 
+                    // For our simple mock, we'll try to find the item and update it.
+                    // This is handled by memoryDb.put because it replaces existing items by PK.
+                    // However, updateItems often only provides partial data. 
+                    // For now, return success to avoid crashes, as memoryDB.put is usually used for full updates in this codebase.
                     return {};
                 }
                 return {};

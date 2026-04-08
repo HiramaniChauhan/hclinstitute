@@ -1,9 +1,12 @@
 import fs from 'fs';
+import { writeFile } from 'fs/promises';
 import path from 'path';
 
 export class InMemoryDatabase {
     private tables: Record<string, any[]> = {};
+    private indices: Record<string, Record<string, Map<string, any>>> = {};
     private dataFilePath: string;
+    private saveTimeout: NodeJS.Timeout | null = null;
 
     constructor() {
         this.dataFilePath = path.join(process.cwd(), '.data.json');
@@ -15,19 +18,69 @@ export class InMemoryDatabase {
             if (fs.existsSync(this.dataFilePath)) {
                 const data = fs.readFileSync(this.dataFilePath, 'utf-8');
                 this.tables = JSON.parse(data);
-                console.log("[Database] Loaded data from disk");
+                this.rebuildIndices();
+                console.log("[Database] Loaded data from disk and rebuilt indices");
             }
         } catch (error) {
             console.error("[Database] Error loading from disk:", error);
         }
     }
 
-    private saveToFile() {
+    private rebuildIndices() {
+        this.indices = {};
+        for (const tableName in this.tables) {
+            this.indices[tableName] = {};
+            const table = this.tables[tableName];
+            
+            // We index 'id' and 'email' as they are most commonly used for lookups
+            const fieldsToIndex = ['id', 'email'];
+            for (const field of fieldsToIndex) {
+                this.indices[tableName][field] = new Map();
+                for (const item of table) {
+                    if (item[field] !== undefined) {
+                        this.indices[tableName][field].set(item[field], item);
+                    }
+                }
+            }
+        }
+    }
+
+    private updateIndices(tableName: string, item: any, isDelete = false) {
+        if (!this.indices[tableName]) this.indices[tableName] = {};
+        
+        const fieldsToIndex = ['id', 'email'];
+        for (const field of fieldsToIndex) {
+            if (item[field] !== undefined) {
+                if (!this.indices[tableName][field]) this.indices[tableName][field] = new Map();
+                
+                if (isDelete) {
+                    this.indices[tableName][field].delete(item[field]);
+                } else {
+                    this.indices[tableName][field].set(item[field], item);
+                }
+            }
+        }
+    }
+
+    private async saveToFile() {
         try {
-            fs.writeFileSync(this.dataFilePath, JSON.stringify(this.tables, null, 2));
+            // Minify JSON to save space and IO time
+            await writeFile(this.dataFilePath, JSON.stringify(this.tables));
         } catch (error) {
             console.error("[Database] Error saving to disk:", error);
         }
+    }
+
+    private scheduleSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        // Debounce: Wait 500ms after the last activity before saving
+        this.saveTimeout = setTimeout(() => {
+            this.saveToFile();
+            this.saveTimeout = null;
+        }, 500);
     }
 
     private getTable(tableName: string) {
@@ -75,12 +128,32 @@ export class InMemoryDatabase {
             table.push(item);
         }
 
-        this.saveToFile();
+        // Keep indices in sync
+        this.updateIndices(tableName, item);
+        this.scheduleSave();
     }
 
     get(tableName: string, key: any) {
+        // Optimization: if searching by ID or Email, use the index
+        if (this.indices[tableName]) {
+            if (key.id !== undefined && this.indices[tableName].id) {
+                return this.indices[tableName].id.get(key.id) || null;
+            }
+            if (key.email !== undefined && this.indices[tableName].email) {
+                return this.indices[tableName].email.get(key.email) || null;
+            }
+        }
+
         const table = this.getTable(tableName);
         return table.find(item => this.matchKey(item, key)) || null;
+    }
+
+    // Helper for wrapper to do indexed lookup
+    getByIndex(tableName: string, field: string, value: string) {
+        if (this.indices[tableName] && this.indices[tableName][field]) {
+            return this.indices[tableName][field].get(value) || null;
+        }
+        return null;
     }
 
     scan(tableName: string) {
@@ -91,8 +164,10 @@ export class InMemoryDatabase {
         const table = this.getTable(tableName);
         const index = table.findIndex(item => this.matchKey(item, key));
         if (index !== -1) {
+            const item = table[index];
             table.splice(index, 1);
-            this.saveToFile();
+            this.updateIndices(tableName, item, true);
+            this.scheduleSave();
         }
     }
 }

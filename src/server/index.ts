@@ -14,6 +14,7 @@ import { docClient, TABLES, isMemory } from "./db-wrapper";
 import { PutCommand, ScanCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { errorHandler } from "./middleware/errorHandler";
 import { verifyToken, requireAdmin } from "./middleware/auth";
+import { queryItems } from "./utils/db-helpers";
 import coursesRouter from "./routes/courses";
 import batchesRouter from "./routes/batches";
 import announcementsRouter from "./routes/announcements";
@@ -173,7 +174,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
 
         // 1. Try Brevo REST API (Preferred - bypasses SMTP blocking)
         if (process.env.BREVO_API_KEY) {
-            console.log(`[Email] Attempting Brevo REST API to ${toEmail}`);
+            // console.log(`[Email] Attempting Brevo REST API to ${toEmail}`);
 
             const reqBody: any = {
                 sender: { email: senderEmail, name: senderName },
@@ -200,7 +201,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
             });
 
             if (response.ok) {
-                console.log(`[Email Sent] Brevo REST API: ${toEmail}`);
+                // console.log(`[Email Sent] Brevo REST API: ${toEmail}`);
                 return true;
             } else {
                 const errorData = await response.json();
@@ -211,7 +212,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
 
         // 2. Fallback to SMTP
         if (process.env.SMTP_USER) {
-            console.log(`[Email] Attempting SMTP to ${toEmail}`);
+            // console.log(`[Email] Attempting SMTP to ${toEmail}`);
             const host = process.env.SMTP_HOST;
             const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
             const secure = port === 465;
@@ -239,16 +240,18 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
             }
 
             await transporter.sendMail(mailOptions);
-            console.log(`[Email Sent]SMTP: ${toEmail}`);
+            // console.log(`[Email Sent]SMTP: ${toEmail}`);
             return true;
         }
 
         // 3. Last resort: Mock logging
+        /*
         console.log("-----------------------------------------");
         console.log("No Email Config found, showing Mock OTP");
         console.log(`[Mock Email] To: ${toEmail} | Subject: ${subject}`);
         console.log("[Mock Email] OTP has been sent (not logged for security).");
         console.log("-----------------------------------------");
+        */
         return true;
     } catch (error) {
         console.error("Failed to send OTP Email:", error);
@@ -262,15 +265,16 @@ app.post("/api/auth/forgot-password/request", otpLimiter, async (req, res) => {
     const { email, role } = req.body;
 
     try {
-        // Check if user exists
-        const scanResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "email = :email AND #r = :role",
-            ExpressionAttributeValues: { ":email": email, ":role": role },
-            ExpressionAttributeNames: { "#r": "role" }
-        }));
+        // Check if user exists using efficient Query indexed by email
+        const users = await queryItems<any>(
+            TABLES.USERS,
+            "EmailIndex",
+            "email = :email",
+            { ":email": email }
+        );
+        const user = users.find(u => u.role === role);
 
-        if (!scanResult.Items || scanResult.Items.length === 0) {
+        if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
@@ -330,15 +334,14 @@ app.post("/api/auth/forgot-password/reset", otpLimiter, async (req, res) => {
             return res.status(400).json({ error: "Invalid or expired session" });
         }
 
-        // Get user
-        const scanResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "email = :email AND #r = :role",
-            ExpressionAttributeValues: { ":email": email, ":role": role },
-            ExpressionAttributeNames: { "#r": "role" }
-        }));
-
-        const user = scanResult.Items?.[0];
+        // Get user using index
+        const users = await queryItems<any>(
+            TABLES.USERS,
+            "EmailIndex",
+            "email = :email",
+            { ":email": email }
+        );
+        const user = users.find(u => u.role === role);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
@@ -534,16 +537,14 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
     }
 
     try {
-        // Check for existing user first
-
-        // Check for existing user first
-        const scanResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "email = :email AND #r = :role",
-            ExpressionAttributeValues: { ":email": email, ":role": role || "student" },
-            ExpressionAttributeNames: { "#r": "role" }
-        }));
-        const existingUser = scanResult.Items?.[0];
+        // Check for existing user first using index
+        const users = await queryItems<any>(
+            TABLES.USERS,
+            "EmailIndex",
+            "email = :email",
+            { ":email": email }
+        );
+        const existingUser = users.find(u => u.role === (role || "student"));
 
         let userId = Date.now().toString();
         let createdAt = new Date().toISOString();
@@ -620,14 +621,13 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
     }
 
     try {
-        const scanResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "email = :email AND #r = :role",
-            ExpressionAttributeValues: { ":email": email, ":role": role },
-            ExpressionAttributeNames: { "#r": "role" }
-        }));
-
-        const user = scanResult.Items?.[0];
+        const users = await queryItems<any>(
+            TABLES.USERS,
+            "EmailIndex",
+            "email = :email",
+            { ":email": email }
+        );
+        const user = users.find(u => u.role === role);
 
         if (!user) {
             return res.status(401).json({ error: "Invalid credentials" });
@@ -697,13 +697,13 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
 
         const { email, name, sub } = payload;
 
-        const scanResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "email = :email",
-            ExpressionAttributeValues: { ":email": email },
-        }));
-
-        const user = scanResult.Items?.[0];
+        const users = await queryItems<any>(
+            TABLES.USERS,
+            "EmailIndex",
+            "email = :email",
+            { ":email": email }
+        );
+        const user = users[0]; // For Google, we usually don't have multiple roles per direct login
 
         if (user && user.isDeleted) {
             return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });

@@ -1,5 +1,5 @@
 
-import { DynamoDBClient, CreateTableCommand, DescribeTableCommand, ScalarAttributeType, KeyType } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, CreateTableCommand, DescribeTableCommand, ScalarAttributeType, KeyType, UpdateTableCommand } from "@aws-sdk/client-dynamodb";
 import { TABLES } from "./db-wrapper";
 import dotenv from "dotenv";
 
@@ -46,19 +46,62 @@ async function initTables() {
 
     for (const config of tableConfigs) {
         try {
-            await client.send(new DescribeTableCommand({ TableName: config.name }));
+            const description = await client.send(new DescribeTableCommand({ TableName: config.name }));
             console.log(`[Init] Table "${config.name}" already exists.`);
+
+            // Specialized GSI check for Users table
+            if (config.name === TABLES.USERS) {
+                const existingGSIs = description.Table?.GlobalSecondaryIndexes || [];
+                const hasEmailIndex = existingGSIs.some(gsi => gsi.IndexName === "EmailIndex");
+
+                if (!hasEmailIndex) {
+                    console.log(`[Init] Adding "EmailIndex" GSI to existing "${config.name}" table...`);
+                    await client.send(new UpdateTableCommand({
+                        TableName: config.name,
+                        AttributeDefinitions: [
+                            { AttributeName: "email", AttributeType: "S" }
+                        ],
+                        GlobalSecondaryIndexUpdates: [
+                            {
+                                Create: {
+                                    IndexName: "EmailIndex",
+                                    KeySchema: [
+                                        { AttributeName: "email", KeyType: "HASH" }
+                                    ],
+                                    Projection: { ProjectionType: "ALL" }
+                                }
+                            }
+                        ]
+                    }));
+                    console.log(`[Init] "EmailIndex" GSI creation initiated.`);
+                }
+            }
         } catch (error: any) {
             if (error.name === "ResourceNotFoundException") {
                 console.log(`[Init] Creating table "${config.name}"...`);
+                
+                const attributeDefinitions = [
+                    { AttributeName: config.pk, AttributeType: "S" as ScalarAttributeType }
+                ];
+                const gsis: any[] = [];
+
+                // Add Email Index for Users table on creation
+                if (config.name === TABLES.USERS) {
+                    attributeDefinitions.push({ AttributeName: "email", AttributeType: "S" });
+                    gsis.push({
+                        IndexName: "EmailIndex",
+                        KeySchema: [{ AttributeName: "email", KeyType: "HASH" }],
+                        Projection: { ProjectionType: "ALL" }
+                    });
+                }
+
                 await client.send(new CreateTableCommand({
                     TableName: config.name,
-                    AttributeDefinitions: [
-                        { AttributeName: config.pk, AttributeType: "S" as ScalarAttributeType }
-                    ],
+                    AttributeDefinitions: attributeDefinitions,
                     KeySchema: [
                         { AttributeName: config.pk, KeyType: "HASH" as KeyType }
                     ],
+                    GlobalSecondaryIndexes: gsis.length > 0 ? gsis : undefined,
                     BillingMode: "PAY_PER_REQUEST"
                 }));
                 console.log(`[Init] Table "${config.name}" created.`);

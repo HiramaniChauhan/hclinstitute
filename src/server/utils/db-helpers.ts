@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient } from "../db-wrapper";
 
 export const generateId = (prefix?: string) => {
@@ -18,6 +18,16 @@ export async function getAllItems<T>(tableName: string, filterExpression?: strin
         params.ExpressionAttributeValues = expressionAttributeValues;
     }
     const result = await docClient.send(new ScanCommand(params));
+    return (result.Items as T[]) || [];
+}
+
+export async function queryItems<T>(tableName: string, indexName: string, keyCondition: string, attrValues: any): Promise<T[]> {
+    const result = await docClient.send(new QueryCommand({
+        TableName: tableName,
+        IndexName: indexName,
+        KeyConditionExpression: keyCondition,
+        ExpressionAttributeValues: attrValues
+    }));
     return (result.Items as T[]) || [];
 }
 
