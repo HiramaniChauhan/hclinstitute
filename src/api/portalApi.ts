@@ -12,6 +12,33 @@ export const fetchAdminDashboard = async () => {
     return res.json();
 };
 
+// ─────────────── Admin Management ──────────────────────────────────────────
+export const fetchAllAdmins = async () => {
+    const res = await fetch(`${API_BASE}/admin/admins`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const requestAdminDeleteOtp = async (adminId: string) => {
+    const res = await fetch(`${API_BASE}/admin/admins/delete-otp`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ adminId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const deleteAdminWithOtp = async (adminId: string, otp: string) => {
+    const res = await fetch(`${API_BASE}/admin/admins/${adminId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+        body: JSON.stringify({ otp }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
 // ─────────────── Student Management ────────────────────────────────────────
 export const fetchAllStudents = async () => {
     const res = await fetch(`${API_BASE}/admin/students`, { headers: getHeaders() });
@@ -262,6 +289,31 @@ export const fetchSelectedStudents = async () => {
 
 export const fetchAboutInfo = async () => {
     const res = await fetch(`${API_BASE}/about`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const fetchTerms = async () => {
+    const res = await fetch(`${API_BASE}/terms`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const requestTermsUpdateOtp = async () => {
+    const res = await fetch(`${API_BASE}/terms/update-otp`, {
+        method: "POST",
+        headers: getHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+};
+
+export const updateTerms = async (termsData: any, otp: string) => {
+    const res = await fetch(`${API_BASE}/terms`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({ ...termsData, otp })
+    });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 };

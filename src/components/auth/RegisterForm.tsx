@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
 import { Fingerprint, FileText, Chrome, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import { Link } from 'react-router-dom';
 
 interface RegisterFormProps {
   onBack: () => void;
@@ -27,6 +28,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   // Step 2 
   const [formData, setFormData] = useState({
@@ -47,7 +49,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     emergencyContact: '',
     password: '',
     confirmPassword: '',
-    agreeTerms: false,
     aadharNumber: ''
   });
 
@@ -63,6 +64,10 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     e.preventDefault();
     if (!email) {
       toast({ title: "Error", description: "Email is required", variant: "destructive" });
+      return;
+    }
+    if (!agreeTerms) {
+      toast({ title: "Error", description: "Please agree to terms and conditions before proceeding", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -91,6 +96,10 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
 
   const onGoogleSignupSuccess = async (credentialResponse: any) => {
     if (!credentialResponse.credential) return;
+    if (!agreeTerms) {
+      toast({ title: "Error", description: "Please agree to terms and conditions before proceeding", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
       const googleUser = await googleLogin(credentialResponse.credential, 'student', undefined, true);
@@ -123,17 +132,33 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+    // Validate required fields
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      toast({ title: "Error", description: "First name and last name are required", variant: "destructive" });
       return;
     }
-
+    if (!formData.aadharNumber.trim()) {
+      toast({ title: "Error", description: "Aadhar number is required", variant: "destructive" });
+      return;
+    }
+    if (!formData.gender) {
+      toast({ title: "Error", description: "Please select your gender", variant: "destructive" });
+      return;
+    }
+    if (!formData.password) {
+      toast({ title: "Error", description: "Password is required", variant: "destructive" });
+      return;
+    }
     if (formData.password.length < 6) {
       toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
-    if (!formData.agreeTerms) {
-      toast({ title: "Error", description: "Please agree to terms and conditions", variant: "destructive" });
+    if (!formData.confirmPassword) {
+      toast({ title: "Error", description: "Please confirm your password", variant: "destructive" });
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
       return;
     }
 
@@ -142,6 +167,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     try {
       const payload = {
         ...formData,
+        agreeTerms,
         email,
         name: `${formData.firstName} ${formData.lastName}`,
       };
@@ -171,6 +197,15 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              {/* Terms & Conditions checkbox - must accept before any action */}
+              <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <Checkbox id="terms-step1" checked={agreeTerms} onCheckedChange={(checked) => setAgreeTerms(!!checked)} />
+                <div className="text-sm flex items-center gap-1">
+                  <label htmlFor="terms-step1" className="cursor-pointer">I agree to HCL Institute</label>
+                  <Link to="/terms" target="_blank" className="text-blue-600 hover:underline font-medium">terms and conditions</Link>
+                </div>
+              </div>
+
               <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Email Address *</label>
@@ -195,7 +230,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                     </Button>
                   </div>
                 ) : (
-                  <Button className="w-full" type="submit" disabled={loading}>
+                  <Button className="w-full" type="submit" disabled={loading || !agreeTerms}>
                     {loading ? 'Sending...' : 'Send Verification OTP'}
                   </Button>
                 )}
@@ -206,7 +241,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                 <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-muted-foreground">Or continue with</span></div>
               </div>
 
-              <div className="flex justify-center">
+              <div className={`flex justify-center ${!agreeTerms ? 'opacity-50 pointer-events-none' : ''}`}>
                 <GoogleLogin
                   onSuccess={onGoogleSignupSuccess}
                   onError={onGoogleSignupError}
@@ -215,6 +250,9 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
                   width="100%"
                 />
               </div>
+              {!agreeTerms && (
+                <p className="text-xs text-center text-gray-500 -mt-3">Please accept terms and conditions to continue</p>
+              )}
 
               <div className="mt-6 text-center text-sm space-y-2">
                 <p className="text-gray-600">
@@ -234,8 +272,8 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
   // Step 2 Return Block
   return (
     <div className="min-h-screen py-10 px-4 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 relative">
-      <Button variant="ghost" className="absolute top-4 left-4 flex items-center gap-2" onClick={() => setStep(1)}>
-        <ArrowLeft className="w-5 h-5" /> Back to Email
+      <Button variant="ghost" className="absolute top-4 left-4 flex items-center gap-2" onClick={onBack}>
+        <ArrowLeft className="w-5 h-5" /> Cancel Registration
       </Button>
       <Card className="w-full max-w-2xl mt-8">
         <CardHeader className="text-center">
@@ -324,10 +362,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox id="terms" checked={formData.agreeTerms} onCheckedChange={(checked) => handleInputChange('agreeTerms', !!checked)} />
-              <label htmlFor="terms" className="text-sm">Agree to HCL terms and conditions</label>
-            </div>
+
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating Account...' : 'Complete Registration'}

@@ -18,7 +18,9 @@ import {
   Trophy,
   Info,
   User,
-  Star
+  Star,
+  Shield,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -40,9 +42,11 @@ const menuItems = [
   { id: 'notes-management', label: 'Notes Management', icon: StickyNote },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
   { id: 'student-management', label: 'Student Management', icon: Users },
+  { id: 'admin-management', label: 'Admin Management', icon: Shield },
   { id: 'selected-students', label: 'Selected Students', icon: Trophy },
   { id: 'about-management', label: 'About Management', icon: Info },
   { id: 'review-management', label: 'Review Management', icon: Star },
+  { id: 'terms-management', label: 'Terms & Conditions', icon: FileText },
   { id: 'chat', label: 'Student Chat', icon: MessageCircle },
 ];
 

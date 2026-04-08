@@ -17,11 +17,13 @@ import {
   ArrowRight,
   Calculator,
   CheckCircle2,
-  Globe
+  Globe,
+  AlertTriangle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchAboutInfo, fetchCourses, fetchSelectedStudents } from "@/api/portalApi";
 import { HomePageReviews } from "@/components/features/reviews/HomePageReviews";
+import { Link } from "react-router-dom";
 
 interface HomePageProps {
   onLogin: () => void;
@@ -73,7 +75,8 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
     contactInstagram: "#",
     contactEmail: "hclinstitute.official@gmail.com",
     establishedYear: "2025",
-    additionalLinks: []
+    additionalLinks: [],
+    siteNotices: []
   });
 
   useEffect(() => {
@@ -185,6 +188,20 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
           </div>
         </div>
       </header>
+
+      {/* Site Notice Marquee */}
+      {about.siteNotices && about.siteNotices.filter((n: string) => n?.trim()).length > 0 && (
+        <div className="bg-amber-500 text-black py-2.5 overflow-hidden w-full">
+          <div className="animate-marquee whitespace-nowrap inline-block w-max">
+            {about.siteNotices.filter((n: string) => n?.trim()).map((notice: string, i: number) => (
+              <span key={i} className="inline-flex items-center gap-3 text-sm font-semibold mx-12 md:mx-32">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                {notice}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden z-10">
@@ -525,7 +542,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
             <div className="flex gap-4">
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>
             <div className="flex items-center gap-4 mt-4 md:mt-0">
               <p>&copy; {new Date().getFullYear()} HCL Institute. All rights reserved</p>

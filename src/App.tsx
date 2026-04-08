@@ -11,6 +11,7 @@ import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 import { AllSelectedStudents } from "./components/features/selected-students/AllSelectedStudents";
 import { AllReviews } from "./pages/public/AllReviews";
+import { TermsAndConditions } from "./components/legal/TermsAndConditions";
 
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/selections" element={<AllSelectedStudents />} />
                 <Route path="/reviews" element={<AllReviews />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

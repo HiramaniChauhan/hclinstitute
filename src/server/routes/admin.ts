@@ -339,4 +339,125 @@ router.post("/notify", verifyToken, requireAdmin, async (req: AuthRequest, res: 
     }
 });
 
+// ─── Admin Management ─────────────────────────────────────────────────────────
+
+const SUPER_ADMIN_EMAIL = "hiramanichauhan2399@gmail.com";
+
+// GET all admins
+router.get("/admins", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const users = await getAllItems<any>(TABLES.USERS);
+        const admins = users
+            .filter((u: any) => u.role === "admin" && !u.isDeleted)
+            .map(({ password, ...rest }: any) => rest)
+            .sort((a: any, b: any) => {
+                const dateA = new Date(a.createdAt || 0).getTime();
+                const dateB = new Date(b.createdAt || 0).getTime();
+                return dateB - dateA; // Newest first
+            });
+        res.json(admins);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST send OTP for admin deletion (always sent to super admin email)
+router.post("/admins/delete-otp", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const { adminId } = req.body;
+        if (!adminId) return res.status(400).json({ error: "adminId is required" });
+
+        // Can't delete yourself
+        if (req.user?.id === adminId) {
+            return res.status(403).json({ error: "You cannot delete your own admin account" });
+        }
+
+        // Verify target admin exists
+        const targetAdmin = await getItem<any>(TABLES.USERS, { id: adminId });
+        if (!targetAdmin || targetAdmin.role !== "admin") {
+            return res.status(404).json({ error: "Admin not found" });
+        }
+
+        // Generate OTP and store under the super admin email key
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Store OTP using a unique key combining the super admin email and admin deletion purpose
+        const { docClient, TABLES: T } = await import("../db-wrapper");
+        const { PutCommand } = await import("@aws-sdk/lib-dynamodb");
+        await docClient.send(new PutCommand({
+            TableName: T.OTPS,
+            Item: {
+                email: `admin-delete-${SUPER_ADMIN_EMAIL}`,
+                otp,
+                adminId,
+                expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 mins
+            },
+        }));
+
+        // Send OTP to super admin email
+        const { sendOtpEmail } = await import("../index");
+        await sendOtpEmail(
+            SUPER_ADMIN_EMAIL,
+            otp,
+            `Admin Deletion OTP - Deleting ${targetAdmin.name || targetAdmin.email}`
+        );
+
+        res.json({ message: "OTP sent to super admin email for verification" });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// DELETE admin with OTP verification
+router.delete("/admins/:id", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+    try {
+        const adminId = req.params.id;
+        const { otp } = req.body;
+
+        if (!otp) return res.status(400).json({ error: "OTP is required" });
+
+        // Can't delete yourself
+        if (req.user?.id === adminId) {
+            return res.status(403).json({ error: "You cannot delete your own admin account" });
+        }
+
+        // Verify target admin exists
+        const targetAdmin = await getItem<any>(TABLES.USERS, { id: adminId });
+        if (!targetAdmin || targetAdmin.role !== "admin") {
+            return res.status(404).json({ error: "Admin not found" });
+        }
+
+        // Verify OTP
+        const { docClient, TABLES: T } = await import("../db-wrapper");
+        const { GetCommand, DeleteCommand } = await import("@aws-sdk/lib-dynamodb");
+        const otpResult = await docClient.send(new GetCommand({
+            TableName: T.OTPS,
+            Key: { email: `admin-delete-${SUPER_ADMIN_EMAIL}` },
+        }));
+
+        const storedOtp = otpResult.Item;
+        if (!storedOtp || storedOtp.otp !== otp || storedOtp.expiresAt < Math.floor(Date.now() / 1000)) {
+            return res.status(400).json({ error: "Invalid or expired OTP" });
+        }
+
+        // Verify the OTP was generated for this specific admin
+        if (storedOtp.adminId !== adminId) {
+            return res.status(400).json({ error: "OTP was not generated for this admin" });
+        }
+
+        // Clean up OTP
+        await docClient.send(new DeleteCommand({
+            TableName: T.OTPS,
+            Key: { email: `admin-delete-${SUPER_ADMIN_EMAIL}` },
+        }));
+
+        // Permanently delete the admin
+        await deleteItem(TABLES.USERS, { id: adminId });
+
+        res.json({ message: `Admin ${targetAdmin.name || targetAdmin.email} has been permanently deleted` });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

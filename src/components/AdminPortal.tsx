@@ -18,9 +18,11 @@ import { AboutManagement } from "@/components/features/admin/about-management/Ab
 import { AdminProfile } from "@/components/features/admin/profile/AdminProfile";
 import { StudentManagement } from "@/components/features/admin/student-management/StudentManagement";
 import { ReviewManagement } from "@/components/features/admin/review-management/ReviewManagement";
+import { AdminManagement } from "@/components/features/admin/admin-management/AdminManagement";
+import { TermsManagement } from "@/components/features/admin/terms-management/TermsManagement";
 // import { FeesManagement } from "@/components/features/admin/fees-management/FeesManagement";
 
-type AdminActiveTab = 'dashboard' | 'profile' | 'test-creation' | 'video-management' | 'performance-tracker' | 'analytics' | 'real-time-monitoring' | 'course-management' | 'batch-management' | 'chat' | 'lecture-management' | 'notes-management' | 'announcements' | 'selected-students' | 'student-management' | 'about-management' | 'fees-management' | 'review-management';
+type AdminActiveTab = 'dashboard' | 'profile' | 'test-creation' | 'video-management' | 'performance-tracker' | 'analytics' | 'real-time-monitoring' | 'course-management' | 'batch-management' | 'chat' | 'lecture-management' | 'notes-management' | 'announcements' | 'selected-students' | 'student-management' | 'admin-management' | 'about-management' | 'fees-management' | 'review-management' | 'terms-management';
 
 export const AdminPortal = () => {
   const [activeTab, setActiveTab] = useState<AdminActiveTab>(() => {
@@ -60,6 +62,10 @@ export const AdminPortal = () => {
         return <AdminProfile />;
       case 'student-management':
         return <StudentManagement />;
+      case 'admin-management':
+        return <AdminManagement />;
+      case 'terms-management':
+        return <TermsManagement />;
       case 'test-creation':
         return <TestCreation />;
       case 'video-management':

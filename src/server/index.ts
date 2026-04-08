@@ -33,6 +33,7 @@ import chapterTestsRouter from "./routes/chapter-tests";
 import videosRouter from "./routes/videos";
 import paymentsRouter from "./routes/payments";
 import aboutRouter from "./routes/about";
+import termsRouter from "./routes/terms";
 import reviewsRouter from "./routes/reviews";
 
 const app = express();
@@ -813,6 +814,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/about", aboutRouter);
+app.use("/api/terms", termsRouter);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -387,14 +387,14 @@ export const Lectures = () => {
                                     </div>
                                   )}
 
-                                  {chapter.chapterTests?.map((test: any, idx: number) => (
+                                  {[...(chapter.chapterTests || [])].sort((a: any, b: any) => (a.title || "").localeCompare(b.title || "")).map((test: any, idx: number) => (
                                     <div key={test.id} className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
                                       <div className="flex items-center gap-4">
                                         <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                                           <FileText className="h-5 w-5 text-green-500" />
                                         </div>
                                         <div>
-                                          <div className="font-bold text-slate-800">Practice Test {idx + 1}</div>
+                                          <div className="font-bold text-slate-800">{test.title || `Practice Test ${idx + 1}`}</div>
                                           <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
                                             <span>{test.totalQuestions || 0} Questions</span>
                                             <span>•</span>
