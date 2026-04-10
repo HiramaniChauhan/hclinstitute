@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthProvider';
 import { ShieldCheck, ArrowLeft, KeySquare, Eye, EyeOff, Lock } from 'lucide-react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { getMaskedSuperAdminEmail } from '@/utils/maskEmail';
 
 interface AdminLoginFormProps {
     onRegisterClick: () => void;
@@ -67,11 +68,11 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
 
     const handleRequestOtp = async () => {
         setLoading(true);
-        const success = await sendAdminSecretOtp('hiramanichauhan2399@gmail.com');
+        const success = await sendAdminSecretOtp(import.meta.env.VITE_SUPER_ADMIN_EMAIL);
         setLoading(false);
         if (success) {
             setOtpSent(true);
-            toast({ title: "OTP Sent", description: "Sent to hi...99@gmail.com" });
+            toast({ title: "OTP Sent", description: `Sent to ${getMaskedSuperAdminEmail()}` });
         }
     };
 
@@ -81,7 +82,7 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
             return;
         }
         setLoading(true);
-        const success = await updateAdminSecret('hiramanichauhan2399@gmail.com', otp, newSecret);
+        const success = await updateAdminSecret(import.meta.env.VITE_SUPER_ADMIN_EMAIL, otp, newSecret);
         setLoading(false);
         if (success) {
             setIsResetMode(false);
@@ -108,7 +109,7 @@ export const AdminLoginForm = ({ onRegisterClick, onBack }: AdminLoginFormProps)
                         {!otpSent ? (
                             <div className="text-center space-y-4">
                                 <p className="text-sm text-gray-600">
-                                    An OTP will be sent to the master administrator email address (hi...99@gmail.com).
+                                    An OTP will be sent to the master administrator email address ({getMaskedSuperAdminEmail()}).
                                 </p>
                                 <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white" onClick={handleRequestOtp} disabled={loading}>
                                     {loading ? 'Sending...' : 'Request OTP'}

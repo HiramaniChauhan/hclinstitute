@@ -1,11 +1,12 @@
 import { Router } from "express";
+import { maskEmail } from "../utils/maskEmail";
 import { docClient, TABLES } from "../db-wrapper";
 import { PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { verifyToken } from "../middleware/auth";
 import { sendOtpEmail } from "../index";
 
 const router = Router();
-const SUPER_ADMIN_EMAIL = "hiramanichauhan2399@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.VITE_SUPER_ADMIN_EMAIL!;
 let termsOtpStore: { [key: string]: { otp: string, expires: number, attempts: number } } = {};
 
 function generateOTP() {
@@ -61,7 +62,7 @@ router.post("/update-otp", verifyToken, isAdmin, async (req: any, res: any) => {
             "OTP for Terms & Conditions Update - HCL Institute"
         );
 
-        res.json({ message: "OTP sent to super admin email" });
+        res.json({ message: `OTP sent to ${maskEmail(SUPER_ADMIN_EMAIL)}`, maskedEmail: maskEmail(SUPER_ADMIN_EMAIL) });
     } catch (error) {
         console.error("Error sending update terms OTP:", error);
         res.status(500).json({ error: "Failed to send OTP" });

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { maskEmail } from "../utils/maskEmail";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { getAllItems, getItem, createItem, deleteItem, generateId } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
@@ -341,7 +342,7 @@ router.post("/notify", verifyToken, requireAdmin, async (req: AuthRequest, res: 
 
 // ─── Admin Management ─────────────────────────────────────────────────────────
 
-const SUPER_ADMIN_EMAIL = "hiramanichauhan2399@gmail.com";
+const SUPER_ADMIN_EMAIL = process.env.VITE_SUPER_ADMIN_EMAIL!;
 
 // GET all admins
 router.get("/admins", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
@@ -402,7 +403,7 @@ router.post("/admins/delete-otp", verifyToken, requireAdmin, async (req: AuthReq
             `Admin Deletion OTP - Deleting ${targetAdmin.name || targetAdmin.email}`
         );
 
-        res.json({ message: "OTP sent to super admin email for verification" });
+        res.json({ message: `OTP sent to ${maskEmail(SUPER_ADMIN_EMAIL)}`, maskedEmail: maskEmail(SUPER_ADMIN_EMAIL) });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

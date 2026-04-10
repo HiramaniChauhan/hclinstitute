@@ -422,7 +422,8 @@ app.post("/api/auth/verify-otp", otpLimiter, async (req, res) => {
 });
 
 // Admin Secret Key Endpoints
-const ADMIN_AUTHORIZED_EMAIL = "hiramanichauhan2399@gmail.com";
+import { maskEmail } from "./utils/maskEmail";
+const ADMIN_AUTHORIZED_EMAIL = process.env.VITE_SUPER_ADMIN_EMAIL!;
 
 app.post("/api/auth/admin-secret-otp", otpLimiter, async (req, res) => {
     const { email } = req.body;
@@ -443,7 +444,8 @@ app.post("/api/auth/admin-secret-otp", otpLimiter, async (req, res) => {
 
         await sendOtpEmail(email, otp, "Master Admin Secret Reset OTP");
         res.json({
-            message: "Admin OTP sent successfully"
+            message: `OTP sent to ${maskEmail(ADMIN_AUTHORIZED_EMAIL)}`,
+            maskedEmail: maskEmail(ADMIN_AUTHORIZED_EMAIL)
         });
     } catch (error) {
         res.status(500).json({ error: "Failed to send Admin OTP" });

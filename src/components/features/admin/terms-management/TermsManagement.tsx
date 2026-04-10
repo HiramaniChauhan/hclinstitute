@@ -7,6 +7,7 @@ import { ShieldAlert, Save, Pencil, X, KeyRound, Loader2, Plus, Trash2, GripVert
 import { useState, useEffect } from "react";
 import { fetchTerms, updateTerms, requestTermsUpdateOtp } from "@/api/portalApi";
 import { toast } from "sonner";
+import { getMaskedSuperAdminEmail } from "@/utils/maskEmail";
 
 interface TermsSection {
   id: string;
@@ -148,7 +149,7 @@ export const TermsManagement = () => {
     try {
       await requestTermsUpdateOtp();
       setOtpDialogOpen(true);
-      toast.info("OTP sent to Super Admin email.");
+      toast.info(`OTP sent to ${getMaskedSuperAdminEmail()}`);
     } catch (error) {
       console.error("Failed to request OTP:", error);
       toast.error("Failed to initiate save. Try again.");
@@ -407,7 +408,7 @@ export const TermsManagement = () => {
               Super Admin Verification
             </DialogTitle>
             <DialogDescription>
-              To protect the Terms & Conditions, an OTP has been sent to the Super Admin (hir*****99@gmail.com). Please enter it below to confirm changes.
+              To protect the Terms & Conditions, an OTP has been sent to the Super Admin ({getMaskedSuperAdminEmail()}). Please enter it below to confirm changes.
             </DialogDescription>
           </DialogHeader>
 

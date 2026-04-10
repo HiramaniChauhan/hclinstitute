@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { getMaskedSuperAdminEmail } from "@/utils/maskEmail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,7 +143,7 @@ export const AdminManagement = () => {
                         <ShieldCheck className="h-8 w-8 text-blue-400" />
                         <div>
                             <p className="text-xs text-gray-500">Super Admin</p>
-                            <p className="text-sm font-semibold text-gray-700 truncate">hir*****99@gmail.com</p>
+                            <p className="text-sm font-semibold text-gray-700 truncate">{getMaskedSuperAdminEmail()}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -153,7 +154,7 @@ export const AdminManagement = () => {
                 <KeyRound className="h-5 w-5 mt-0.5 flex-shrink-0" />
                 <div>
                     <p className="font-semibold">OTP Secured Deletion</p>
-                    <p>To delete any admin, a verification OTP will be sent to the <strong>Super Admin email</strong> (hir*****99@gmail.com). You cannot delete your own account.</p>
+                    <p>To delete any admin, a verification OTP will be sent to the <strong>Super Admin email</strong> ({getMaskedSuperAdminEmail()}). You cannot delete your own account.</p>
                 </div>
             </div>
 
@@ -253,7 +254,7 @@ export const AdminManagement = () => {
                         <DialogDescription>
                             {otpStep === "confirm"
                                 ? `You are about to delete admin "${deleteTarget?.name}". A verification OTP will be sent to the Super Admin email.`
-                                : "Enter the 6-digit OTP sent to the Super Admin email (hir*****99@gmail.com)."
+                                : `Enter the 6-digit OTP sent to the Super Admin email (${getMaskedSuperAdminEmail()}).`
                             }
                         </DialogDescription>
                     </DialogHeader>
@@ -284,7 +285,7 @@ export const AdminManagement = () => {
                     {otpStep === "otp" && (
                         <div className="space-y-4 py-2">
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                                <p>A 6-digit verification code has been sent to <strong>hir*****99@gmail.com</strong>. It is valid for 10 minutes.</p>
+                                <p>A 6-digit verification code has been sent to <strong>{getMaskedSuperAdminEmail()}</strong>. It is valid for 10 minutes.</p>
                             </div>
                             <Input
                                 type="text"
