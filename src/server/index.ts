@@ -521,7 +521,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
 // Auth Routes
 app.post("/api/auth/register", otpLimiter, async (req, res) => {
     const {
-        firstName, lastName, email, password, role, aadharNumber, adminSecret,
+        firstName, lastName, email, password, role, adminSecret,
         phone, dateOfBirth, gender, address, city, state, pincode,
         qualification, institute, parentName, parentPhone, emergencyContact
     } = req.body;
@@ -572,7 +572,6 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
             email,
             password: hashedPassword,
             role: role || "student",
-            aadharNumber,
             phone,
             dateOfBirth,
             gender,

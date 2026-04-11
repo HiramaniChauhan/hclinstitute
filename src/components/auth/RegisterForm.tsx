@@ -48,8 +48,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
     parentPhone: '',
     emergencyContact: '',
     password: '',
-    confirmPassword: '',
-    aadharNumber: ''
+    confirmPassword: ''
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -137,10 +136,7 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
       toast({ title: "Error", description: "First name and last name are required", variant: "destructive" });
       return;
     }
-    if (!formData.aadharNumber.trim()) {
-      toast({ title: "Error", description: "Aadhar number is required", variant: "destructive" });
-      return;
-    }
+
     if (!formData.gender) {
       toast({ title: "Error", description: "Please select your gender", variant: "destructive" });
       return;
@@ -296,15 +292,6 @@ export const RegisterForm = ({ onBack, onSuccess, onLoginClick }: RegisterFormPr
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2"><Fingerprint className="w-4 h-4" /> Aadhar Number *</label>
-                <Input
-                  placeholder="12-digit Aadhar"
-                  value={formData.aadharNumber}
-                  onChange={(e) => handleInputChange('aadharNumber', e.target.value)}
-                  required
-                />
-              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Gender *</label>
                 <Select value={formData.gender} onValueChange={(v) => handleInputChange('gender', v)}>
