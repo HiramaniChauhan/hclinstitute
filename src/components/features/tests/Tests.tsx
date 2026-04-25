@@ -111,7 +111,25 @@ export const Tests = () => {
     );
   };
 
-  const handleStartTest = (test: Test, isScheduled = false) => {
+  const handleStartTest = async (test: Test, isScheduled = false) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const accessRes = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (accessRes.ok) {
+        const accessData = await accessRes.json();
+        const accessFeatures = accessData.accessFeatures || [];
+        if (!accessFeatures.includes('Tests')) {
+          toast.error("You need to enroll in a course to attempt tests.");
+          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
     const testId = test.testId || test.id;
     const attemptCount = getAttemptCount(testId);
     if (attemptCount >= 2) {

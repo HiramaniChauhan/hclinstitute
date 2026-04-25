@@ -36,6 +36,28 @@ export const LiveClasses = () => {
     }
   };
 
+  const handleWatchVideo = async (url: string) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const accessRes = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (accessRes.ok) {
+        const accessData = await accessRes.json();
+        const accessFeatures = accessData.accessFeatures || [];
+        if (!accessFeatures.includes('Live Classes')) {
+          toast.error("You need to enroll in a course to watch live classes.");
+          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
+    window.open(url, '_blank');
+  };
+
   const activeClasses = useMemo(() => {
     return liveClasses.filter(c => c.type === 'live' && (c.status === 'Scheduled' || c.status === 'Live') &&
       ((c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,7 +140,7 @@ export const LiveClasses = () => {
                       {liveClass.status === 'Live' ? (
                         <Button
                           className="bg-red-600 hover:bg-red-700"
-                          onClick={() => window.open(liveClass.url, '_blank')}
+                          onClick={() => handleWatchVideo(liveClass.url)}
                         >
                           <Play className="w-4 h-4 mr-2" />
                           Join Now
@@ -167,7 +189,7 @@ export const LiveClasses = () => {
                     </div>
                     <div className="flex items-center justify-between mt-4">
                       <Badge variant="outline">{streamedClass.subject}</Badge>
-                      <Button size="sm" variant="outline" className="text-purple-700 border-purple-200 hover:bg-purple-50" onClick={() => window.open(streamedClass.url, '_blank')}>
+                      <Button size="sm" variant="outline" className="text-purple-700 border-purple-200 hover:bg-purple-50" onClick={() => handleWatchVideo(streamedClass.url)}>
                         <Play size={14} className="mr-1" />
                         Watch Recording
                       </Button>
@@ -206,7 +228,7 @@ export const LiveClasses = () => {
                     )}
                     <div className="flex items-center justify-between mt-4">
                       <Badge variant="outline">{savedVideo.subject}</Badge>
-                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => window.open(savedVideo.url, '_blank')}>
+                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleWatchVideo(savedVideo.url)}>
                         <Play size={14} className="mr-1" />
                         Watch Video
                       </Button>

@@ -118,6 +118,20 @@ export const Lectures = () => {
   const handleStartTest = async (testId: string | number) => {
     try {
       const token = sessionStorage.getItem('token');
+      
+      const accessRes = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (accessRes.ok) {
+        const accessData = await accessRes.json();
+        const accessFeatures = accessData.accessFeatures || [];
+        if (!accessFeatures.includes('Lectures')) {
+          toast.error("You need to enroll in a course to attempt chapter tests.");
+          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+          return;
+        }
+      }
+
       const resp = await fetch(`/api/chapter-tests/test/${testId}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });

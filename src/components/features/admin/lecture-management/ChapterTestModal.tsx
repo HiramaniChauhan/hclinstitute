@@ -25,7 +25,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
     const [loading, setLoading] = useState(false);
     const [testData, setTestData] = useState<any>({
         id: "",
-        title: `Practice: ${chapterName}`,
+        title: `${chapterName}`,
         duration: 30,
         sections: [] as TestSection[]
     });
@@ -47,7 +47,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                 // Reset to blank for a new test
                 setTestData({
                     id: `ctest_${Date.now()}`,
-                    title: `Practice: ${chapterName}`,
+                    title: `${chapterName}`,
                     duration: 30,
                     sections: [] as TestSection[]
                 });

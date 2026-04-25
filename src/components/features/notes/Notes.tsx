@@ -35,6 +35,24 @@ export const Notes = () => {
   };
 
   const handleView = useCallback(async (note: any) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const accessRes = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (accessRes.ok) {
+        const accessData = await accessRes.json();
+        const accessFeatures = accessData.accessFeatures || [];
+        if (!accessFeatures.includes('Notes')) {
+          toast.error("You need to enroll in a course to view notes.");
+          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
     if (!note.fileData) {
       toast.error("File data missing");
       return;

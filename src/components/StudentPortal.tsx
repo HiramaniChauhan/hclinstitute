@@ -28,7 +28,6 @@ export const StudentPortal = () => {
     return (hash as ActiveTab) || 'dashboard';
   });
   const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
-  const [accessFeatures, setAccessFeatures] = useState<string[]>([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -38,87 +37,32 @@ export const StudentPortal = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const restrictedTabs = ['tests', 'lectures', 'live-classes', 'notes'];
-
-  const fetchAccessFeatures = async () => {
-    try {
-      const token = sessionStorage.getItem('token');
-      if (!token) return;
-      const res = await fetch('/api/enrollments/my-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAccessFeatures(data.accessFeatures || []);
-      }
-    } catch (err) {
-      console.error("Error fetching access features", err);
-    }
-  };
-
-  // Fetch on mount
-  useEffect(() => {
-    fetchAccessFeatures();
-  }, []);
-
-  // Re-fetch when a course enrollment happens (fired by PaymentModal)
-  useEffect(() => {
-    const handleEnrollmentUpdated = () => fetchAccessFeatures();
-    window.addEventListener('enrollment-updated', handleEnrollmentUpdated);
-    return () => window.removeEventListener('enrollment-updated', handleEnrollmentUpdated);
-  }, []);
-
-  const enforceAccess = (tab: ActiveTab) => {
-    // Mapping URL tab names to backend 'accessFeatures' strings
-    const tabFeatureMap: Record<string, string> = {
-      'tests': 'Tests',
-      'lectures': 'Lectures',
-      'live-classes': 'Live Classes',
-      'notes': 'Notes'
-    };
-
-    if (restrictedTabs.includes(tab)) {
-      const requiredFeature = tabFeatureMap[tab];
-      if (!accessFeatures.includes(requiredFeature)) {
-        toast.error(`You need to enroll in a course to access ${requiredFeature}.`);
-        return 'courses';
-      }
-    }
-    return tab;
-  };
-
   // Sync state with URL hash on browser back/forward
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '') as ActiveTab;
-      const safeTab = enforceAccess(hash || 'dashboard');
-      if (safeTab !== hash) {
-        window.location.hash = safeTab;
-      }
-      setActiveTab(safeTab);
+      setActiveTab(hash || 'dashboard');
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [accessFeatures]);
+  }, []);
 
   // Listen for navigation events fired by child components (e.g. Dashboard)
   useEffect(() => {
     const handler = (e: Event) => {
       const tab = (e as CustomEvent).detail as ActiveTab;
       if (tab) {
-        const safeTab = enforceAccess(tab);
-        setActiveTab(safeTab);
-        window.location.hash = safeTab;
+        setActiveTab(tab);
+        window.location.hash = tab;
       }
     };
     window.addEventListener('navigate-to-tab', handler);
     return () => window.removeEventListener('navigate-to-tab', handler);
-  }, [accessFeatures]);
+  }, []);
 
   const handleTabChange = (tab: string) => {
-    const safeTab = enforceAccess(tab as ActiveTab);
-    setActiveTab(safeTab);
-    window.location.hash = safeTab;
+    setActiveTab(tab as ActiveTab);
+    window.location.hash = tab;
   };
 
   const renderContent = () => {

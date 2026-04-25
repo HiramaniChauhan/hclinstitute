@@ -466,7 +466,7 @@ export const TestCreation = () => {
 
       const testToSave = {
         ...testFormData,
-        title: testFormData.title.includes(" (Copy)") ? testFormData.title : `${testFormData.title} (Copy)`,
+        title: testFormData.title,
         duration: parseInt(testFormData.duration) || 0,
         totalQuestions: testFormData.sections.reduce((acc, s) => acc + s.questions.length, 0),
         totalMarks: testFormData.sections.reduce((acc, s) => acc + (s.questions.length * s.marksPerQuestion), 0),
