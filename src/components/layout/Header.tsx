@@ -36,10 +36,10 @@ export const Header = ({ onMenuClick, onProfileClick }: HeaderProps) => {
   };
 
   return (
-    <header className="bg-[#24252a] border-b border-gray-700 px-6 py-4 transition-colors duration-200">
+    <header className="bg-white/80 backdrop-blur-md border-b border-[rgba(74,124,89,0.15)] px-6 py-4 transition-colors duration-200 shadow-[0_2px_8px_rgba(61,56,48,0.08)]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onMenuClick} className="lg:hidden text-white hover:bg-white/10">
+          <Button variant="ghost" size="sm" onClick={onMenuClick} className="lg:hidden text-[#3d3830] hover:bg-[rgba(74,124,89,0.1)]">
             <Menu size={20} />
           </Button>
         </div>
@@ -47,7 +47,7 @@ export const Header = ({ onMenuClick, onProfileClick }: HeaderProps) => {
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-gray-600 hover:bg-white/10">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-[rgba(74,124,89,0.15)] hover:bg-[rgba(74,124,89,0.1)]">
                 <Avatar>
                   <AvatarImage src={user?.profileImage} />
                   <AvatarFallback>{user?.name?.slice(0, 2).toUpperCase() || '??'}</AvatarFallback>

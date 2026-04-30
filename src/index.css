@@ -1,4 +1,5 @@
 @import "katex/dist/katex.min.css";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,368 @@
 
 .animate-marquee-preview {
   animation: marquee-preview 12s linear infinite;
+}
+
+/* ─── DASHBOARD DESIGN SYSTEM ─── */
+
+:root {
+  --db-cream: #faf8f3;
+  --db-cream-dark: #f2ede3;
+  --db-cream-deep: #e8e0d0;
+  --db-sage: #4a7c59;
+  --db-sage-light: #6b9e7a;
+  --db-sage-dim: rgba(74,124,89,0.1);
+  --db-sage-dim2: rgba(74,124,89,0.18);
+  --db-amber: #c17f24;
+  --db-amber-light: #e09a3a;
+  --db-amber-dim: rgba(193,127,36,0.12);
+  --db-gold: #b8860b;
+  --db-gold-dim: rgba(184,134,11,0.12);
+  --db-moss: #3d6b4a;
+  --db-warm-dark: #3d3830;
+  --db-warm-gray: #8a8278;
+  --db-warm-mid: #6b6358;
+  --db-border: rgba(74,124,89,0.15);
+  --db-border-amber: rgba(193,127,36,0.2);
+  --db-shadow: rgba(61,56,48,0.08);
+  --db-shadow-md: rgba(61,56,48,0.14);
+}
+
+.dashboard-premium {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--db-warm-dark);
+}
+
+.dashboard-premium .font-display {
+  font-family: 'Fraunces', serif;
+}
+
+/* Stat cards */
+.dashboard-premium .db-stat-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid var(--db-border);
+  box-shadow: 0 2px 12px var(--db-shadow);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.dashboard-premium .db-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px var(--db-shadow-md);
+  border-color: rgba(74,124,89,0.25);
+}
+.dashboard-premium .db-stat-card::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  opacity: 0.07;
+}
+.dashboard-premium .db-stat-card.sc-sage::after { background: var(--db-sage); }
+.dashboard-premium .db-stat-card.sc-amber::after { background: var(--db-amber); }
+
+/* DB Card */
+.dashboard-premium .db-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px;
+  border: 1px solid var(--db-border);
+  box-shadow: 0 2px 12px var(--db-shadow);
+}
+
+/* Live dot animation */
+@keyframes liveAnim {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+.db-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--db-amber-light);
+  animation: liveAnim 1.6s ease infinite;
+}
+
+/* Fade up animation */
+@keyframes dbFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.db-fade-up { animation: dbFadeUp 0.4s ease both; }
+.db-fade-up-1 { animation: dbFadeUp 0.4s ease 0.08s both; }
+.db-fade-up-2 { animation: dbFadeUp 0.4s ease 0.14s both; }
+.db-fade-up-3 { animation: dbFadeUp 0.4s ease 0.20s both; }
+.db-fade-up-4 { animation: dbFadeUp 0.4s ease 0.28s both; }
+
+/* Progress bars */
+.db-prog-track {
+  height: 6px; background: var(--db-cream-dark);
+  border-radius: 4px; overflow: hidden;
+}
+.db-prog-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.db-prog-fill.pf-sage { background: linear-gradient(90deg, var(--db-sage), var(--db-sage-light)); }
+.db-prog-fill.pf-amber { background: linear-gradient(90deg, var(--db-amber), var(--db-amber-light)); }
+
+/* Interactive rows */
+.db-class-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px; background: var(--db-sage-dim);
+  border: 1px solid var(--db-border);
+  border-radius: 12px; margin-bottom: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.db-class-row:hover {
+  background: var(--db-sage-dim2);
+  border-color: rgba(74,124,89,0.3);
+  transform: translateX(3px);
+}
+
+.db-test-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 13px; background: var(--db-cream);
+  border: 1px solid var(--db-border);
+  border-radius: 12px; margin-bottom: 9px;
+  cursor: pointer; transition: all 0.2s;
+}
+.db-test-row:hover {
+  background: var(--db-cream-dark);
+  border-color: rgba(74,124,89,0.25);
+  transform: translateX(3px);
+}
+
+.db-go-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 10px; margin-top: 12px;
+  background: var(--db-cream); border: 1px solid var(--db-border);
+  border-radius: 12px; font-size: 12px; font-weight: 600;
+  color: var(--db-warm-mid); cursor: pointer; transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.db-go-btn:hover {
+  background: var(--db-sage-dim);
+  border-color: var(--db-sage);
+  color: var(--db-sage);
+}
+
+.db-btn-main {
+  background: var(--db-sage); color: #fff; border: none;
+  border-radius: 8px; padding: 8px 15px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 12px rgba(74,124,89,0.3);
+}
+.db-btn-main:hover {
+  background: var(--db-moss);
+  transform: scale(1.04);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL STUDENT PORTAL OVERRIDES
+   Scoped to .student-portal so admin pages stay untouched.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page headings (exclude sidebar) ── */
+.student-portal h1 {
+  font-family: 'Fraunces', serif;
+  color: var(--db-warm-dark);
+  letter-spacing: -0.5px;
+}
+.student-portal .fixed h1 {
+  color: #fff !important;
+}
+
+/* ── Cards ── */
+.student-portal [data-slot="card"],
+.student-portal .rounded-lg.border.bg-card,
+.student-portal [class*="border"][class*="bg-card"] {
+  background: #fff;
+  border-color: var(--db-border);
+  border-radius: 18px;
+  box-shadow: 0 2px 12px var(--db-shadow);
+}
+
+/* Card title */
+.student-portal [data-slot="card-title"] {
+  font-family: 'Fraunces', serif;
+  color: var(--db-warm-dark);
+}
+
+/* ── Buttons ── */
+.student-portal button[data-slot="button"].bg-primary,
+.student-portal .bg-blue-600 {
+  background: var(--db-sage) !important;
+  box-shadow: 0 3px 12px rgba(74,124,89,0.3);
+}
+.student-portal button[data-slot="button"].bg-primary:hover,
+.student-portal .bg-blue-600:hover,
+.student-portal .hover\:bg-blue-700:hover {
+  background: var(--db-moss) !important;
+}
+
+.student-portal .bg-green-600 {
+  background: var(--db-sage) !important;
+}
+.student-portal .bg-green-600:hover,
+.student-portal .hover\:bg-green-700:hover {
+  background: var(--db-moss) !important;
+}
+
+/* Outline buttons */
+.student-portal button[data-slot="button"][data-variant="outline"] {
+  border-color: var(--db-border);
+  color: var(--db-warm-mid);
+}
+.student-portal button[data-slot="button"][data-variant="outline"]:hover {
+  border-color: var(--db-sage);
+  color: var(--db-sage);
+  background: var(--db-sage-dim);
+}
+
+/* ── Inputs ── */
+.student-portal input[data-slot="input"],
+.student-portal input[type="text"],
+.student-portal input[type="search"] {
+  border-color: var(--db-border);
+  background: #fff;
+  color: var(--db-warm-dark);
+  border-radius: 12px;
+}
+.student-portal input[data-slot="input"]:focus,
+.student-portal input:focus {
+  border-color: rgba(74,124,89,0.35);
+  box-shadow: 0 0 0 3px var(--db-sage-dim);
+}
+
+/* ── Badges ── */
+.student-portal .bg-blue-100 { background: var(--db-sage-dim) !important; }
+.student-portal .text-blue-700,
+.student-portal .text-blue-600 { color: var(--db-sage) !important; }
+.student-portal .border-blue-200 { border-color: var(--db-border) !important; }
+.student-portal .bg-blue-50 { background: var(--db-sage-dim) !important; }
+
+.student-portal .bg-green-100 { background: rgba(74,124,89,0.12) !important; }
+.student-portal .text-green-700,
+.student-portal .text-green-600 { color: var(--db-sage) !important; }
+.student-portal .text-green-800 { color: var(--db-moss) !important; }
+
+/* Amber overrides (keep amber tones) */
+.student-portal .text-amber-600 { color: var(--db-amber) !important; }
+.student-portal .border-amber-600 { border-color: var(--db-border-amber) !important; }
+.student-portal .bg-amber-50 { background: var(--db-amber-dim) !important; }
+.student-portal .border-amber-100 { border-color: var(--db-border-amber) !important; }
+.student-portal .text-amber-700 { color: var(--db-amber) !important; }
+
+/* ── Tabs ── */
+.student-portal [role="tablist"] {
+  background: var(--db-cream-dark);
+  border-radius: 14px;
+  border: 1px solid var(--db-border);
+}
+.student-portal [role="tab"][data-state="active"] {
+  background: #fff !important;
+  color: var(--db-sage) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--db-shadow);
+  border-radius: 12px;
+}
+.student-portal [role="tab"] {
+  color: var(--db-warm-gray);
+  font-weight: 600;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.student-portal [role="tab"]:hover {
+  color: var(--db-sage);
+}
+
+/* ── Accordion ── */
+.student-portal [data-state] .border.rounded-2xl,
+.student-portal .accordion-item {
+  border-color: var(--db-border);
+}
+
+/* ── Hover states ── */
+.student-portal .hover\:bg-gray-50:hover {
+  background: var(--db-sage-dim) !important;
+}
+.student-portal .hover\:shadow-md:hover,
+.student-portal .hover\:shadow-lg:hover {
+  box-shadow: 0 8px 28px var(--db-shadow-md) !important;
+}
+
+/* ── Links & text overrides ── */
+.student-portal .text-gray-600 { color: var(--db-warm-mid); }
+.student-portal .text-gray-500 { color: var(--db-warm-gray); }
+.student-portal .text-gray-400 { color: #b5ad9f; }
+.student-portal .text-gray-900,
+.student-portal .text-slate-800,
+.student-portal .text-slate-900 { color: var(--db-warm-dark); }
+.student-portal .text-slate-700 { color: var(--db-warm-mid); }
+.student-portal .text-slate-500,
+.student-portal .text-slate-400 { color: var(--db-warm-gray); }
+
+/* ── Border radius overrides ── */
+.student-portal .rounded-lg { border-radius: 14px; }
+
+/* ── Backgrounds ── */
+.student-portal .bg-gray-50 { background: var(--db-cream) !important; }
+.student-portal .bg-white { background: #fff; }
+.student-portal .bg-slate-50,
+.student-portal .bg-slate-50\/70 { background: var(--db-cream) !important; }
+
+/* ── Red/Live indicators → amber ── */
+.student-portal .bg-red-500.animate-pulse {
+  background: var(--db-amber) !important;
+}
+.student-portal .text-red-600.animate-pulse,
+.student-portal .text-red-600 .animate-pulse {
+  color: var(--db-amber) !important;
+}
+.student-portal .border-red-200 { border-color: var(--db-border-amber) !important; }
+.student-portal .border-red-100 { border-color: var(--db-border-amber) !important; }
+.student-portal .bg-red-50 { background: var(--db-amber-dim) !important; }
+.student-portal .text-red-600:not(.text-red-600.text-red-500) { color: var(--db-amber) !important; }
+
+/* ── Indigo → Sage ── */
+.student-portal .bg-indigo-50 { background: var(--db-sage-dim) !important; }
+.student-portal .text-indigo-700,
+.student-portal .text-indigo-600 { color: var(--db-sage) !important; }
+.student-portal .border-indigo-100,
+.student-portal .border-indigo-200 { border-color: var(--db-border) !important; }
+
+/* ── Chat bubbles ── */
+.student-portal .bg-blue-600.text-white.rounded-tr-none {
+  background: var(--db-sage) !important;
+}
+
+/* ── Scrollbar ── */
+.student-portal ::-webkit-scrollbar { width: 4px; }
+.student-portal ::-webkit-scrollbar-thumb {
+  background: var(--db-cream-deep);
+  border-radius: 2px;
+}
+
+/* ── Dot-pattern overlay on main content ── */
+.student-portal > div:last-child > main {
+  position: relative;
+}
+.student-portal > div:last-child > main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(74,124,89,0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+.student-portal > div:last-child > main > * {
+  position: relative;
+  z-index: 1;
 }

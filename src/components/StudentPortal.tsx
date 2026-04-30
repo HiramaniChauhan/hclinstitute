@@ -109,7 +109,7 @@ export const StudentPortal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#faf8f3] flex relative overflow-x-hidden student-portal">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div

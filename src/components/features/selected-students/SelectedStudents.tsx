@@ -108,14 +108,15 @@ export const SelectedStudents = () => {
           {/* Success Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card
-              className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] group"
+              className="cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] group border-0"
+              style={{ background: 'linear-gradient(to right, #c17f24, #b8860b)', color: '#fff' }}
               onClick={() => navigate('/selections')}
             >
               <CardContent className="p-6 text-center">
-                <Trophy className="h-8 w-8 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                <div className="text-2xl font-bold">{allStudents.length}</div>
-                <p className="text-sm">Total Selected All Time</p>
-                <div className="mt-1 text-[10px] opacity-80 flex items-center justify-center gap-1">
+                <Trophy className="h-8 w-8 mx-auto mb-2 group-hover:scale-110 transition-transform" style={{ color: '#fff' }} />
+                <div className="text-2xl font-bold" style={{ color: '#fff' }}>{allStudents.length}</div>
+                <p className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>Total Selected All Time</p>
+                <div className="mt-1 text-[10px] flex items-center justify-center gap-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
                   <Users size={10} /> Click to see all
                 </div>
               </CardContent>
@@ -123,14 +124,17 @@ export const SelectedStudents = () => {
 
             <Dialog open={isHoldersOpen} onOpenChange={setIsHoldersOpen}>
               <DialogTrigger asChild>
-                <Card className="bg-gradient-to-r from-green-400 to-green-600 text-white cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02]">
+                <Card
+                  className="cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] border-0"
+                  style={{ background: 'linear-gradient(to right, #4a7c59, #3d6b4a)', color: '#fff' }}
+                >
                   <CardContent className="p-6 text-center">
-                    <Star className="h-8 w-8 mx-auto mb-2" />
-                    <div className="text-2xl font-bold">
+                    <Star className="h-8 w-8 mx-auto mb-2" style={{ color: '#fff' }} />
+                    <div className="text-2xl font-bold" style={{ color: '#fff' }}>
                       {allTimeTopRank !== null ? `Rank-${allTimeTopRank}` : "N/A"}
                     </div>
-                    <p className="text-sm">All Time Top Rank {latestHolder && `(${latestHolder.name})`}</p>
-                    <div className="mt-1 text-[10px] opacity-80 flex items-center justify-center gap-1">
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.9)' }}>All Time Top Rank {latestHolder && `(${latestHolder.name})`}</p>
+                    <div className="mt-1 text-[10px] flex items-center justify-center gap-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
                       <Users size={10} /> Click to see all holders
                     </div>
                   </CardContent>

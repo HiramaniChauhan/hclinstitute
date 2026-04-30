@@ -41,22 +41,22 @@ export const AllSelectedStudents = () => {
     );
 
     return (
-        <div className="container mx-auto px-4 py-8 space-y-8 min-h-screen bg-gray-50/30">
+        <div className="container mx-auto px-4 py-8 space-y-8 min-h-screen" style={{ background: '#faf8f3' }}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => navigate(-1)}
-                        className="rounded-full bg-white shadow-sm ring-1 ring-gray-100"
+                        className="rounded-full shadow-sm" style={{ background: '#fff', border: '1px solid rgba(74,124,89,0.15)' }}
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold flex items-center gap-3">
+                        <h1 className="text-3xl font-bold flex items-center gap-3" style={{ fontFamily: "'Fraunces', serif", color: '#3d3830' }}>
                             All Selected Students
                         </h1>
-                        <p className="text-gray-500 mt-1">Our hall of fame across all years</p>
+                        <p style={{ color: '#8a8278' }} className="mt-1">Our hall of fame across all years</p>
                     </div>
                 </div>
 
@@ -64,7 +64,7 @@ export const AllSelectedStudents = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                     <Input
                         placeholder="Search by name, rank, college or year..."
-                        className="pl-10 w-full md:w-96 h-12 bg-white shadow-sm"
+                        className="pl-10 w-full md:w-96 h-12 shadow-sm" style={{ background: '#fff', borderColor: 'rgba(74,124,89,0.15)', borderRadius: '12px' }}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -81,14 +81,14 @@ export const AllSelectedStudents = () => {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-                    <p className="text-gray-400 font-medium">Loading success stories...</p>
+                    <Loader2 className="h-12 w-12 animate-spin" style={{ color: '#4a7c59' }} />
+                    <p style={{ color: '#b5ad9f' }} className="font-medium">Loading success stories...</p>
                 </div>
             ) : (
                 <div className="space-y-6">
                     <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-blue-500" />
-                        <span className="font-semibold text-gray-700">Total Selections: {filteredStudents.length}</span>
+                        <Users className="h-5 w-5" style={{ color: '#4a7c59' }} />
+                        <span className="font-semibold" style={{ color: '#3d3830' }}>Total Selections: {filteredStudents.length}</span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -103,46 +103,46 @@ export const AllSelectedStudents = () => {
                                 return rankA - rankB;
                             })
                             .map((student) => (
-                                <Card key={student.id} className="group hover:shadow-2xl transition-all duration-300 border-none bg-white ring-1 ring-gray-100 overflow-hidden rounded-2xl">
-                                    <div className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+                                <Card key={student.id} className="group hover:shadow-2xl transition-all duration-300 border-none overflow-hidden rounded-2xl" style={{ background: '#fff', boxShadow: '0 2px 12px rgba(61,56,48,0.08)', border: '1px solid rgba(74,124,89,0.15)' }}>
+                                    <div className="h-2" style={{ background: 'linear-gradient(to right, #c17f24, #b8860b, #4a7c59)' }} />
                                     <CardContent className="p-6">
                                         <div className="flex flex-col items-center text-center space-y-4">
                                             <div className="relative">
-                                                <div className="absolute inset-0 bg-blue-500 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity" />
+                                                <div className="absolute inset-0 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity" style={{ background: '#4a7c59' }} />
                                                 <img
                                                     src={student.photo || "https://images.unsplash.com/photo-1544717297-fa95b3396467?w=200&h=200&fit=crop"}
                                                     alt={student.name}
                                                     className="w-24 h-24 rounded-full object-cover relative ring-4 ring-white shadow-lg"
                                                 />
                                                 <div className="absolute -bottom-2 -right-2">
-                                                    <Badge className="h-8 w-8 rounded-full bg-yellow-400 text-yellow-900 border-2 border-white shadow-md flex items-center justify-center p-0">
+                                                    <Badge className="h-8 w-8 rounded-full border-2 border-white shadow-md flex items-center justify-center p-0" style={{ background: '#c17f24', color: '#fff' }}>
                                                         <Star size={14} fill="currentColor" />
                                                     </Badge>
                                                 </div>
                                             </div>
 
                                             <div className="space-y-1 w-full">
-                                                <h3 className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                                                <h3 className="font-bold text-xl truncate transition-colors" style={{ color: '#3d3830', fontFamily: "'Fraunces', serif" }}>
                                                     {student.name}
                                                 </h3>
                                                 <div className="flex items-center justify-center gap-2">
-                                                    <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                                                    <span className="text-2xl font-black text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, #4a7c59, #3d6b4a)' }}>
                                                         Rank-{student.rank}
                                                     </span>
-                                                    <Badge variant="outline" className="border-blue-100 bg-blue-50/50 text-blue-700 font-bold">
+                                                    <Badge variant="outline" className="font-bold" style={{ borderColor: 'rgba(74,124,89,0.15)', background: 'rgba(74,124,89,0.1)', color: '#4a7c59' }}>
                                                         {student.year}
                                                     </Badge>
                                                 </div>
                                             </div>
 
                                             <div className="w-full space-y-3 pt-2">
-                                                <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100 group-hover:bg-blue-50/30 group-hover:border-blue-100 transition-all">
-                                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">College Allotted</p>
-                                                    <p className="text-sm font-bold text-gray-700 leading-tight truncate">{student.collegeAllotted}</p>
+                                                <div className="p-3 rounded-xl transition-all" style={{ background: 'rgba(74,124,89,0.06)', border: '1px solid rgba(74,124,89,0.12)' }}>
+                                                    <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: '#b5ad9f' }}>College Allotted</p>
+                                                    <p className="text-sm font-bold leading-tight truncate" style={{ color: '#3d3830' }}>{student.collegeAllotted}</p>
                                                 </div>
 
-                                                <div className="flex items-center bg-gray-50/50 rounded-lg p-2 gap-2">
-                                                    <Badge variant="secondary" className="flex-1 bg-white border border-gray-100 shadow-sm text-[10px] py-1">
+                                                <div className="flex items-center rounded-lg p-2 gap-2" style={{ background: 'rgba(74,124,89,0.05)' }}>
+                                                    <Badge variant="secondary" className="flex-1 shadow-sm text-[10px] py-1" style={{ background: '#fff', border: '1px solid rgba(74,124,89,0.12)' }}>
                                                         {student.batch}
                                                     </Badge>
                                                     {student.linkedinId && (
@@ -150,7 +150,7 @@ export const AllSelectedStudents = () => {
                                                             href={student.linkedinId}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all shadow-sm" style={{ background: 'rgba(74,124,89,0.1)', color: '#4a7c59' }}
                                                         >
                                                             <Linkedin size={14} />
                                                         </a>

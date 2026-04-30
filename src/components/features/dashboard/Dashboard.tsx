@@ -1,9 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   BookOpen,
   Trophy,
@@ -95,7 +91,6 @@ export const Dashboard = () => {
     userResults.filter(r => String(r.testId) === String(testId)).length;
 
   const navigateToTests = () => {
-    // Navigate to Tests tab — fire a custom event the portal can listen to
     window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'tests' }));
   };
 
@@ -115,183 +110,246 @@ export const Dashboard = () => {
     window.open(url, '_blank');
   };
 
+  const overallAccuracy = (() => {
+    if (userResults.length === 0) return '—';
+    const valid = userResults.filter(r => r.totalQuestions > 0);
+    if (valid.length === 0) return '—';
+    const avg = valid.reduce((s, r) => s + (r.correctAnswers / r.totalQuestions), 0) / valid.length;
+    return `${(avg * 100).toFixed(1)}%`;
+  })();
+
+  const now = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dateStr = `${dayNames[now.getDay()]}, ${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = user?.name?.split(' ')[0] || 'Student';
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Welcome back, {user?.name?.split(' ')[0] || 'Student'}!</h1>
+    <div className="dashboard-premium space-y-5">
+
+      {/* ─── GREETING ─── */}
+      <div className="db-fade-up">
+        <div
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold mb-2"
+          style={{ background: 'var(--db-amber-dim)', border: '1px solid var(--db-border-amber)', color: 'var(--db-amber)' }}
+        >
+          🌿 {dateStr}
+        </div>
+        <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: 'var(--db-warm-dark)', letterSpacing: '-0.5px' }}>
+          {greeting}, <em style={{ color: 'var(--db-sage)', fontStyle: 'italic' }}>{firstName}</em> ✨
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--db-warm-gray)' }}>
+          You've completed {userResults.length} test{userResults.length !== 1 ? 's' : ''} — keep going!
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Card 1: Tests Completed */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tests Completed</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userResults.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {userResults.length === 1 ? '1 total attempt' : `${userResults.length} total attempts`}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Card 2: Overall Accuracy = avg(correctAnswers / totalQuestions) */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overall Accuracy</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {userResults.length > 0
-                ? (() => {
-                  const valid = userResults.filter(r => r.totalQuestions > 0);
-                  if (valid.length === 0) return '—';
-                  const avg = valid.reduce((s, r) => s + (r.correctAnswers / r.totalQuestions), 0) / valid.length;
-                  return `${(avg * 100).toFixed(1)}%`;
-                })()
-                : '—'}
+      {/* ─── STATS GRID ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Tests Completed */}
+        <div className="db-stat-card sc-sage db-fade-up-1">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'var(--db-sage-dim)' }}>
+              🎯
             </div>
-            <p className="text-xs text-muted-foreground">avg correct / total questions</p>
-          </CardContent>
-        </Card>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(74,124,89,0.12)', color: 'var(--db-sage)' }}>
+              <Target size={10} className="inline mr-1" />Tests
+            </span>
+          </div>
+          <div className="font-display font-bold text-3xl tracking-tight leading-none mb-1" style={{ color: 'var(--db-sage)' }}>
+            {String(userResults.length).padStart(2, '0')}
+          </div>
+          <div className="text-xs font-medium" style={{ color: 'var(--db-warm-gray)' }}>Tests Completed</div>
+          <div className="text-[11px] mt-0.5" style={{ color: '#b5ad9f' }}>
+            {userResults.length === 1 ? '1 total attempt' : `${userResults.length} total attempts`}
+          </div>
+        </div>
+
+        {/* Overall Accuracy */}
+        <div className="db-stat-card sc-amber db-fade-up-2">
+          <div className="flex items-start justify-between mb-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: 'var(--db-amber-dim)' }}>
+              📊
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'var(--db-cream-dark)', color: 'var(--db-warm-gray)' }}>
+              <TrendingUp size={10} className="inline mr-1" />Accuracy
+            </span>
+          </div>
+          <div className="font-display font-bold text-3xl tracking-tight leading-none mb-1" style={{ color: 'var(--db-amber)' }}>
+            {overallAccuracy}
+          </div>
+          <div className="text-xs font-medium" style={{ color: 'var(--db-warm-gray)' }}>Overall Accuracy</div>
+          <div className="text-[11px] mt-0.5" style={{ color: '#b5ad9f' }}>avg correct / total questions</div>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="space-y-6">
-        {/* Active Live Classes (Only show if there are any) */}
-        {activeLiveClasses.length > 0 && (
-          <Card className="border-red-200">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="flex items-center gap-2 text-red-600">
-                <Video className="h-5 w-5 animate-pulse" />
-                Live Classes Happening Now!
-              </CardTitle>
-              <Badge className="bg-red-500 animate-pulse text-white">
-                LIVE
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
-                {activeLiveClasses.map((liveClass: any) => (
-                  <div key={liveClass.id} className="p-4 rounded-xl border border-red-100 bg-red-50 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-100 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                    <h3 className="font-semibold text-gray-900 pr-6 relative z-10">{liveClass.title}</h3>
-                    {liveClass.subject && (
-                      <Badge variant="outline" className="mt-2 bg-white/50 border-red-200 text-red-700">
-                        {liveClass.subject}
-                      </Badge>
-                    )}
-                    <div className="mt-4 flex gap-2">
-                      <Button size="sm" className="w-full bg-red-600 hover:bg-red-700" onClick={() => handleJoinLiveClass(liveClass.url)}>
-                        <Video size={14} className="mr-1" />
-                        Join Now
-                      </Button>
-                      <Button size="sm" variant="outline" className="w-full bg-white bg-opacity-50" onClick={navigateToLiveClasses}>
-                        Details →
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      {/* ─── LIVE CLASSES ─── */}
+      {activeLiveClasses.length > 0 && (
+        <div className="db-card db-fade-up-3">
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-display text-[15px] font-semibold flex items-center gap-2" style={{ color: 'var(--db-warm-dark)' }}>
+              <Video size={16} style={{ color: 'var(--db-sage)' }} />
+              Live Classes Now
+            </div>
+            <div
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide"
+              style={{ background: 'rgba(193,127,36,0.1)', border: '1px solid rgba(193,127,36,0.22)', color: 'var(--db-amber)' }}
+            >
+              <div className="db-live-dot" />
+              LIVE
+            </div>
+          </div>
 
-        {/* Today's Active Tests */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Today's Live Tests
-            </CardTitle>
-            {activeTests.length > 0 && (
-              <Badge className="bg-red-500 text-white animate-pulse">
-                <Zap size={12} className="mr-1" /> {activeTests.length} Active
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loadingTests ? (
-              <div className="text-center py-6 text-gray-400 text-sm">Loading tests...</div>
-            ) : activeTests.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <Calendar size={40} className="mx-auto mb-3 opacity-20" />
-                <p className="font-medium text-gray-500">No live tests right now</p>
-                <p className="text-sm mt-1">Check the Tests tab for upcoming &amp; practice tests</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={navigateToTests}>
-                  Go to Tests <ChevronRight size={14} className="ml-1" />
-                </Button>
+          {activeLiveClasses.map((liveClass: any) => (
+            <div key={liveClass.id} className="db-class-row">
+              <div
+                className="w-11 h-11 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                style={{ background: 'var(--db-sage)', color: '#fff' }}
+              >
+                <Video size={18} />
               </div>
-            ) : (
-              activeTests.map((test: any) => {
-                const testId = test.testId || test.id;
-                const attempts = getAttemptCount(testId);
-                const maxed = attempts >= 2;
-                const totalQ = test.sections?.reduce((a: number, s: any) => a + s.questions.length, 0) ?? 0;
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate" style={{ color: 'var(--db-warm-dark)' }}>{liveClass.title}</div>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
+                  {liveClass.subject && (
+                    <span
+                      className="text-[10px] px-2 py-0.5 rounded font-semibold"
+                      style={{ background: 'var(--db-sage-dim)', border: '1px solid var(--db-border)', color: 'var(--db-sage)' }}
+                    >
+                      {liveClass.subject}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 items-center flex-shrink-0">
+                <button className="db-btn-main" onClick={() => handleJoinLiveClass(liveClass.url)}>
+                  ▶ Join Now
+                </button>
+                <button
+                  className="bg-transparent border rounded-lg px-3 py-2 text-xs cursor-pointer transition-all hover:border-[var(--db-sage)] hover:text-[var(--db-sage)]"
+                  style={{ borderColor: 'var(--db-border)', color: 'var(--db-warm-mid)' }}
+                  onClick={navigateToLiveClasses}
+                >
+                  Details →
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-                return (
-                  <div key={String(testId)}
-                    className={`p-4 rounded-xl border-2 ${maxed
-                      ? 'border-gray-200 bg-gray-50'
-                      : 'border-green-200 bg-green-50'}`}
+      {/* ─── TODAY'S TESTS ─── */}
+      <div className="db-card db-fade-up-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-display text-[15px] font-semibold flex items-center gap-2" style={{ color: 'var(--db-warm-dark)' }}>
+            <Calendar size={16} style={{ color: 'var(--db-amber)' }} />
+            Today's Live Tests
+          </div>
+          {activeTests.length > 0 && (
+            <div
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
+              style={{ background: 'var(--db-amber-dim)', border: '1px solid var(--db-border-amber)', color: 'var(--db-amber)' }}
+            >
+              <Zap size={10} /> {activeTests.length} Active
+            </div>
+          )}
+        </div>
+
+        {loadingTests ? (
+          <div className="text-center py-6 text-sm" style={{ color: 'var(--db-warm-gray)' }}>Loading tests...</div>
+        ) : activeTests.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="db-test-row justify-center" style={{ background: 'var(--db-cream)' }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{ background: 'var(--db-sage-dim)' }}>🧪</div>
+              <div className="flex-1 text-left">
+                <div className="text-[13px] font-semibold" style={{ color: 'var(--db-warm-dark)' }}>No live tests right now</div>
+                <div className="text-[11px] mt-0.5" style={{ color: 'var(--db-warm-gray)' }}>Check the Tests tab for upcoming & practice tests</div>
+              </div>
+              <span
+                className="text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                style={{ background: 'var(--db-sage-dim)', border: '1px solid var(--db-border)', color: 'var(--db-sage)' }}
+              >
+                ALL DONE
+              </span>
+            </div>
+            <button className="db-go-btn" onClick={navigateToTests}>
+              <ChevronRight size={13} /> Go to Tests
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTests.map((test: any) => {
+              const testId = test.testId || test.id;
+              const attempts = getAttemptCount(testId);
+              const maxed = attempts >= 2;
+              const totalQ = test.sections?.reduce((a: number, s: any) => a + s.questions.length, 0) ?? 0;
+
+              return (
+                <div key={String(testId)} className="db-test-row" style={maxed ? { background: 'var(--db-cream-dark)', opacity: 0.7 } : {}}>
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                    style={{ background: maxed ? 'var(--db-cream-deep)' : 'var(--db-sage-dim)' }}
                   >
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">{test.title}</h3>
-                          {!maxed && (
-                            <Badge className="bg-green-500 text-white text-[10px] px-2">
-                              🔴 LIVE NOW
-                            </Badge>
-                          )}
-                          {maxed && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              Attempted (2/2)
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-0.5">
-                          {totalQ} questions • {test.duration} min
-                          {test.subject && ` • ${test.subject}`}
-                        </p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {test.sections?.map((s: any) => (
-                            <Badge key={s.id} variant="outline" className="text-[10px] text-blue-700 border-blue-200 bg-blue-50">
-                              {s.name}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                          <AlertCircle size={11} />
-                          Ends: {test.endDate} at {test.endTime}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2 items-end">
-                        {!maxed ? (
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 shadow"
-                            onClick={navigateToTests}
-                          >
-                            Start Test →
-                          </Button>
-                        ) : (
-                          <Button size="sm" variant="outline" onClick={navigateToTests}>
-                            Review →
-                          </Button>
-                        )}
-                        <span className="text-[10px] text-gray-500">{attempts}/2 attempts used</span>
-                      </div>
+                    📝
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[13px] font-semibold" style={{ color: 'var(--db-warm-dark)' }}>{test.title}</span>
+                      {!maxed && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: 'var(--db-amber-dim)', border: '1px solid var(--db-border-amber)', color: 'var(--db-amber)' }}
+                        >
+                          🔴 LIVE NOW
+                        </span>
+                      )}
+                      {maxed && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--db-cream-deep)', color: 'var(--db-warm-gray)' }}>
+                          Attempted (2/2)
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: 'var(--db-warm-gray)' }}>
+                      {totalQ} questions • {test.duration} min{test.subject && ` • ${test.subject}`}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {test.sections?.map((s: any) => (
+                        <span
+                          key={s.id}
+                          className="text-[10px] px-2 py-0.5 rounded font-semibold"
+                          style={{ background: 'var(--db-sage-dim)', border: '1px solid var(--db-border)', color: 'var(--db-sage)' }}
+                        >
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-[10px] mt-1 flex items-center gap-1" style={{ color: 'var(--db-warm-gray)' }}>
+                      <AlertCircle size={11} /> Ends: {test.endDate} at {test.endTime}
                     </div>
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+                  <div className="flex flex-col gap-2 items-end flex-shrink-0">
+                    {!maxed ? (
+                      <button className="db-btn-main" onClick={navigateToTests}>Start Test →</button>
+                    ) : (
+                      <button
+                        className="bg-transparent border rounded-lg px-3 py-2 text-xs cursor-pointer transition-all hover:border-[var(--db-sage)] hover:text-[var(--db-sage)]"
+                        style={{ borderColor: 'var(--db-border)', color: 'var(--db-warm-mid)' }}
+                        onClick={navigateToTests}
+                      >
+                        Review →
+                      </button>
+                    )}
+                    <span className="text-[10px]" style={{ color: '#b5ad9f' }}>{attempts}/2 attempts used</span>
+                  </div>
+                </div>
+              );
+            })}
+            <button className="db-go-btn" onClick={navigateToTests}>
+              <ChevronRight size={13} /> Go to Tests
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
