@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { verifyToken, AuthRequest } from "../middleware/auth";
-import { docClient, TABLES } from "../db-wrapper";
-import { PutCommand, ScanCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { TABLES } from "../db-wrapper";
+import { createItem, deleteItem, queryByField } from "../utils/db-helpers";
 
 const router = Router();
 
@@ -9,13 +9,8 @@ const router = Router();
 router.get("/progress", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         const studentId = req.user.id;
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.LECTURE_PROGRESS,
-            FilterExpression: "studentId = :studentId",
-            ExpressionAttributeValues: { ":studentId": studentId },
-        }));
-
-        const completedIds = result.Items?.map((item: any) => item.lectureId) || [];
+        const progressRecords = await queryByField<any>(TABLES.LECTURE_PROGRESS, "studentId", studentId);
+        const completedIds = progressRecords.map((item: any) => item.lectureId);
         res.json(completedIds);
     } catch (error) {
         console.error("[Backend] Error fetching lecture progress:", error);
@@ -37,20 +32,14 @@ router.post("/progress", verifyToken, async (req: AuthRequest, res: Response) =>
         const progressId = `progress_${studentId}_${lectureId}`;
 
         if (completed) {
-            await docClient.send(new PutCommand({
-                TableName: TABLES.LECTURE_PROGRESS,
-                Item: {
-                    id: progressId,
-                    studentId,
-                    lectureId: String(lectureId),
-                    completedAt: new Date().toISOString()
-                },
-            }));
+            await createItem(TABLES.LECTURE_PROGRESS, {
+                id: progressId,
+                studentId,
+                lectureId: String(lectureId),
+                completedAt: new Date().toISOString()
+            });
         } else {
-            await docClient.send(new DeleteCommand({
-                TableName: TABLES.LECTURE_PROGRESS,
-                Key: { id: progressId }
-            }));
+            await deleteItem(TABLES.LECTURE_PROGRESS, { id: progressId });
         }
 
         res.json({ message: `Lecture ${completed ? 'marked as done' : 'marked as undone'}` });

@@ -50,13 +50,15 @@ export async function getAllItemsPaginated<T>(
 // When a GSI exists, queryByField uses QueryCommand (reads only matching items)
 // instead of ScanCommand (reads ALL items and filters).
 const GSI_MAP: Record<string, Record<string, string>> = {
-    Users:         { email: "EmailIndex" },
-    Enrollments:   { userId: "UserIdIndex" },
-    Results:       { userId: "UserIdIndex", testId: "TestIdIndex" },
-    Notifications: { userId: "UserIdIndex" },
-    Fees:          { userId: "UserIdIndex" },
-    ChatMessages:  { studentId: "StudentIdIndex" },
-    ChapterResults: { userId: "UserIdIndex" },
+    Users:           { email: "EmailIndex" },
+    Enrollments:     { userId: "UserIdIndex" },
+    Results:         { userId: "UserIdIndex", testId: "TestIdIndex" },
+    Notifications:   { userId: "UserIdIndex" },
+    Fees:            { userId: "UserIdIndex" },
+    ChatMessages:    { studentId: "StudentIdIndex" },
+    ChapterResults:  { userId: "UserIdIndex" },
+    LectureProgress: { studentId: "StudentIdIndex" },
+    Reviews:         { studentId: "StudentIdIndex", targetId: "TargetIdIndex" },
 };
 
 /**
@@ -64,18 +66,27 @@ const GSI_MAP: Record<string, Record<string, string>> = {
  * Falls back to Scan + filter if no GSI is configured for that table/field.
  * This is much cheaper than getAllItems() for DynamoDB.
  */
-export async function queryByField<T>(tableName: string, field: string, value: string): Promise<T[]> {
+export async function queryByField<T>(tableName: string, field: string, value: any): Promise<T[]> {
     const gsiName = GSI_MAP[tableName]?.[field];
 
     if (gsiName && !isMemory) {
-        // Use GSI — reads only matching items (cost efficient)
-        const result = await docClient.send(new QueryCommand({
-            TableName: tableName,
-            IndexName: gsiName,
-            KeyConditionExpression: `${field} = :val`,
-            ExpressionAttributeValues: { ":val": value }
-        }));
-        return (result.Items as T[]) || [];
+        try {
+            // Use GSI — reads only matching items (cost efficient)
+            const result = await docClient.send(new QueryCommand({
+                TableName: tableName,
+                IndexName: gsiName,
+                KeyConditionExpression: `${field} = :val`,
+                ExpressionAttributeValues: { ":val": value }
+            }));
+            return (result.Items as T[]) || [];
+        } catch (err: any) {
+            // GSI doesn't exist yet on DynamoDB — fall back to Scan
+            if (err.name === "ValidationException" && err.message?.includes("specified index")) {
+                console.warn(`[DB] GSI "${gsiName}" not found on "${tableName}", falling back to Scan`);
+            } else {
+                throw err; // Re-throw if it's a different error
+            }
+        }
     }
 
     // Fallback to Scan + filter (works for in-memory DB and tables without GSIs)

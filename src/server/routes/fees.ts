@@ -3,6 +3,7 @@ import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { createItem, getAllItems, getItem, deleteItem, generateId, queryByField } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
+import { validate, createFeeSchema } from "../middleware/validate";
 import { parseDuration } from "./payments";
 
 const router = Router();
@@ -22,7 +23,7 @@ interface FeeRecord {
 }
 
 // POST — Admin creates a fee record for a student
-router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+router.post("/", verifyToken, requireAdmin, validate(createFeeSchema), async (req: AuthRequest, res: Response) => {
     try {
         const { userId, amount, description, dueDate, category } = req.body;
         if (!userId || !amount || !description || !dueDate) {

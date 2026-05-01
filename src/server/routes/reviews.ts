@@ -1,24 +1,19 @@
 import express from "express";
-import { docClient, TABLES } from "../db-wrapper";
-import { PutCommand, ScanCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { TABLES } from "../db-wrapper";
 import { verifyToken, requireAdmin } from "../middleware/auth";
+import { getAllItems, getItem, createItem, deleteItem, queryByField } from "../utils/db-helpers";
+import { validate, submitReviewSchema, reviewQuestionSchema } from "../middleware/validate";
 
 const router = express.Router();
 
 async function checkValidEnrollment(userId: string): Promise<boolean> {
-    const enrollmentResult = await docClient.send(new ScanCommand({
-        TableName: TABLES.ENROLLMENTS,
-        FilterExpression: "userId = :userId",
-        ExpressionAttributeValues: { ":userId": userId }
-    }));
-    if (!enrollmentResult.Items || enrollmentResult.Items.length === 0) return false;
+    const enrollments = await queryByField<any>(TABLES.ENROLLMENTS, "userId", userId);
+    if (!enrollments || enrollments.length === 0) return false;
 
-    const coursesResult = await docClient.send(new ScanCommand({
-        TableName: TABLES.COURSES
-    }));
-    const existingCourseIds = new Set((coursesResult.Items || []).map((c: any) => c.id));
+    const courses = await getAllItems<any>(TABLES.COURSES);
+    const existingCourseIds = new Set(courses.map((c: any) => c.id));
 
-    return enrollmentResult.Items.some((e: any) =>
+    return enrollments.some((e: any) =>
         e.status === "active" && e.courseId && existingCourseIds.has(e.courseId)
     );
 }
@@ -26,17 +21,13 @@ async function checkValidEnrollment(userId: string): Promise<boolean> {
 // Get questions (Admin can see all, others see active only)
 router.get("/questions", verifyToken, async (req: any, res) => {
     try {
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEW_QUESTIONS,
-        }));
+        let questions = await getAllItems<any>(TABLES.REVIEW_QUESTIONS);
 
-        let questions = result.Items || [];
         if (req.user.role !== 'admin') {
             const isValid = await checkValidEnrollment(req.user.id);
             if (!isValid) {
                 return res.status(403).json({ error: "Not enrolled in any active courses" });
             }
-
             questions = questions.filter((q: any) => q.isActive !== false);
         }
 
@@ -48,7 +39,7 @@ router.get("/questions", verifyToken, async (req: any, res) => {
 });
 
 // Admin: Create or update a review question
-router.post("/questions", verifyToken, requireAdmin, async (req, res) => {
+router.post("/questions", verifyToken, requireAdmin, validate(reviewQuestionSchema), async (req, res) => {
     try {
         const { id, text, type, isActive } = req.body;
 
@@ -58,15 +49,11 @@ router.post("/questions", verifyToken, requireAdmin, async (req, res) => {
 
         const questionId = id || Date.now().toString();
 
-        // For edits, we might need to get existing to preserve createdAt
         let createdAt = new Date().toISOString();
         if (id) {
-            const existing = await docClient.send(new GetCommand({
-                TableName: TABLES.REVIEW_QUESTIONS,
-                Key: { id }
-            }));
-            if (existing.Item?.createdAt) {
-                createdAt = existing.Item.createdAt;
+            const existing = await getItem<any>(TABLES.REVIEW_QUESTIONS, { id });
+            if (existing?.createdAt) {
+                createdAt = existing.createdAt;
             }
         }
 
@@ -79,11 +66,7 @@ router.post("/questions", verifyToken, requireAdmin, async (req, res) => {
             updatedAt: new Date().toISOString()
         };
 
-        await docClient.send(new PutCommand({
-            TableName: TABLES.REVIEW_QUESTIONS,
-            Item: question,
-        }));
-
+        await createItem(TABLES.REVIEW_QUESTIONS, question);
         res.json({ message: id ? "Question updated" : "Question created", question });
     } catch (error) {
         console.error("Error saving review question:", error);
@@ -94,10 +77,7 @@ router.post("/questions", verifyToken, requireAdmin, async (req, res) => {
 // Admin: Delete a review question
 router.delete("/questions/:id", verifyToken, requireAdmin, async (req, res) => {
     try {
-        await docClient.send(new DeleteCommand({
-            TableName: TABLES.REVIEW_QUESTIONS,
-            Key: { id: req.params.id },
-        }));
+        await deleteItem(TABLES.REVIEW_QUESTIONS, { id: req.params.id });
         res.json({ message: "Question deleted successfully" });
     } catch (error) {
         console.error("Error deleting review question:", error);
@@ -115,12 +95,8 @@ router.get("/mine", verifyToken, async (req: any, res) => {
             }
         }
 
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEWS,
-            FilterExpression: "studentId = :studentId",
-            ExpressionAttributeValues: { ":studentId": req.user.id }
-        }));
-        res.json(result.Items?.[0] || null);
+        const reviews = await queryByField<any>(TABLES.REVIEWS, "studentId", req.user.id);
+        res.json(reviews?.[0] || null);
     } catch (error) {
         console.error("Error fetching my review:", error);
         res.status(500).json({ error: "Failed to fetch your review" });
@@ -128,7 +104,7 @@ router.get("/mine", verifyToken, async (req: any, res) => {
 });
 
 // Student: Submit a review
-router.post("/", verifyToken, async (req: any, res) => {
+router.post("/", verifyToken, validate(submitReviewSchema), async (req: any, res) => {
     try {
         const { targetId, targetType, answers, overallRating, comment } = req.body;
         const studentId = req.user.id;
@@ -138,11 +114,7 @@ router.post("/", verifyToken, async (req: any, res) => {
         }
 
         // Fetch student details to store with review
-        const userResult = await docClient.send(new GetCommand({
-            TableName: TABLES.USERS,
-            Key: { id: studentId }
-        }));
-        const user = userResult.Item;
+        const user = await getItem<any>(TABLES.USERS, { id: studentId });
 
         const isValid = await checkValidEnrollment(studentId);
         if (!isValid) {
@@ -150,17 +122,13 @@ router.post("/", verifyToken, async (req: any, res) => {
         }
 
         // Check if review already exists
-        const existingResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEWS,
-            FilterExpression: "studentId = :studentId",
-            ExpressionAttributeValues: { ":studentId": studentId }
-        }));
+        const existingReviews = await queryByField<any>(TABLES.REVIEWS, "studentId", studentId);
 
         let reviewId = Date.now().toString();
         let createdAt = new Date().toISOString();
-        if (existingResult.Items && existingResult.Items.length > 0) {
-            reviewId = existingResult.Items[0].id;
-            createdAt = existingResult.Items[0].createdAt;
+        if (existingReviews && existingReviews.length > 0) {
+            reviewId = existingReviews[0].id;
+            createdAt = existingReviews[0].createdAt;
         }
 
         const review = {
@@ -175,11 +143,7 @@ router.post("/", verifyToken, async (req: any, res) => {
             createdAt
         };
 
-        await docClient.send(new PutCommand({
-            TableName: TABLES.REVIEWS,
-            Item: review,
-        }));
-
+        await createItem(TABLES.REVIEWS, review);
         res.status(201).json({ message: "Review saved successfully", review });
     } catch (error) {
         console.error("Error submitting review:", error);
@@ -190,34 +154,23 @@ router.post("/", verifyToken, async (req: any, res) => {
 // Public: Get reviews for Home Page
 router.get("/public", async (req, res) => {
     try {
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEWS,
-        }));
+        const [reviews, questions, users] = await Promise.all([
+            getAllItems<any>(TABLES.REVIEWS),
+            getAllItems<any>(TABLES.REVIEW_QUESTIONS),
+            getAllItems<any>(TABLES.USERS),
+        ]);
 
-        const qResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEW_QUESTIONS,
-        }));
-        const questions = qResult.Items || [];
         const qMap = new Map();
         questions.forEach(q => qMap.set(q.id, q.type));
 
-        // Fetch users to filter out reviews from softly or permanently deleted students
-        const usersResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS
-        }));
-        const activeUsers = new Set((usersResult.Items || [])
-            .filter((u: any) => u.isActive !== false)
-            .map((u: any) => u.id)
+        const activeUsers = new Set(
+            users.filter((u: any) => u.isActive !== false).map((u: any) => u.id)
         );
 
-        let reviews = result.Items || [];
+        let filteredReviews = reviews.filter((r: any) => activeUsers.has(r.studentId));
 
-        // Discard reviews from deleted or inactive users
-        reviews = reviews.filter((r: any) => activeUsers.has(r.studentId));
-
-        reviews.forEach((r: any) => {
+        filteredReviews.forEach((r: any) => {
             if (r.answers) {
-                // Filter out answers for deleted target criteria
                 r.answers = r.answers.filter((ans: any) => qMap.has(ans.questionId));
                 r.answers.forEach((ans: any) => {
                     ans.questionText = qMap.get(ans.questionId);
@@ -226,14 +179,14 @@ router.get("/public", async (req, res) => {
         });
 
         // Sort highest overallRating first, then descending by created date
-        reviews.sort((a, b) => {
+        filteredReviews.sort((a, b) => {
             if (b.overallRating !== a.overallRating) {
                 return (b.overallRating || 0) - (a.overallRating || 0);
             }
             return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         });
 
-        res.json(reviews);
+        res.json(filteredReviews);
     } catch (error) {
         console.error("Error fetching public reviews:", error);
         res.status(500).json({ error: "Failed to fetch public reviews" });
@@ -243,26 +196,16 @@ router.get("/public", async (req, res) => {
 // Get reviews for a specific target (test or lecture)
 router.get("/target/:targetId", verifyToken, async (req, res) => {
     try {
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.REVIEWS,
-            FilterExpression: "targetId = :targetId",
-            ExpressionAttributeValues: { ":targetId": req.params.targetId }
-        }));
+        const [allReviews, users] = await Promise.all([
+            queryByField<any>(TABLES.REVIEWS, "targetId", req.params.targetId),
+            getAllItems<any>(TABLES.USERS),
+        ]);
 
-        let reviews = result.Items || [];
-
-        // Fetch users to filter out reviews from softly or permanently deleted students
-        const usersResult = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS
-        }));
-        const activeUsers = new Set((usersResult.Items || [])
-            .filter((u: any) => u.isActive !== false)
-            .map((u: any) => u.id)
+        const activeUsers = new Set(
+            users.filter((u: any) => u.isActive !== false).map((u: any) => u.id)
         );
 
-        // Discard reviews from deleted or inactive users
-        reviews = reviews.filter((r: any) => activeUsers.has(r.studentId));
-
+        const reviews = allReviews.filter((r: any) => activeUsers.has(r.studentId));
         res.json(reviews);
     } catch (error) {
         console.error("Error fetching target reviews:", error);
@@ -275,25 +218,13 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
     try {
         const { overallRating, comment } = req.body;
 
-        const existingResult = await docClient.send(new GetCommand({
-            TableName: TABLES.REVIEWS,
-            Key: { id: req.params.id }
-        }));
-
-        if (!existingResult.Item) {
+        const existing = await getItem<any>(TABLES.REVIEWS, { id: req.params.id });
+        if (!existing) {
             return res.status(404).json({ error: "Review not found" });
         }
 
-        const updatedReview = {
-            ...existingResult.Item,
-            overallRating,
-            comment
-        };
-
-        await docClient.send(new PutCommand({
-            TableName: TABLES.REVIEWS,
-            Item: updatedReview
-        }));
+        const updatedReview = { ...existing, overallRating, comment };
+        await createItem(TABLES.REVIEWS, updatedReview);
 
         res.json({ message: "Review updated successfully", review: updatedReview });
     } catch (error) {
@@ -305,10 +236,7 @@ router.put("/:id", verifyToken, requireAdmin, async (req, res) => {
 // Admin: Delete a review
 router.delete("/:id", verifyToken, requireAdmin, async (req, res) => {
     try {
-        await docClient.send(new DeleteCommand({
-            TableName: TABLES.REVIEWS,
-            Key: { id: req.params.id }
-        }));
+        await deleteItem(TABLES.REVIEWS, { id: req.params.id });
         res.json({ message: "Review deleted successfully" });
     } catch (error) {
         console.error("Error deleting review:", error);

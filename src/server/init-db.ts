@@ -46,9 +46,12 @@ const tableConfigs: TableConfig[] = [
     { name: TABLES.CHAPTER_RESULTS, pk: "resultId", gsis: [{ field: "userId", indexName: "UserIdIndex" }] },
     { name: TABLES.CHAPTER_TEST_LAST_RESULTS, pk: "id" },
     { name: TABLES.VIDEOS, pk: "id" },
-    { name: TABLES.LECTURE_PROGRESS, pk: "id" },
+    { name: TABLES.LECTURE_PROGRESS, pk: "id", gsis: [{ field: "studentId", indexName: "StudentIdIndex" }] },
     { name: TABLES.REVIEW_QUESTIONS, pk: "id" },
-    { name: TABLES.REVIEWS, pk: "id" }
+    { name: TABLES.REVIEWS, pk: "id", gsis: [
+        { field: "studentId", indexName: "StudentIdIndex" },
+        { field: "targetId", indexName: "TargetIdIndex" }
+    ]}
 ];
 
 async function initTables() {

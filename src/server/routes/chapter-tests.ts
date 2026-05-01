@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { createItem, getItem, getAllItems, deleteItem } from "../utils/db-helpers";
-import { TABLES } from "../db";
+import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 
 const router = Router();

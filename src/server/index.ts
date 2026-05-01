@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
+import { validate, registerSchema, loginSchema, otpRequestSchema, resetPasswordSchema } from "./middleware/validate";
 import { getJwtSecret } from "./config-service";
 
 import express from "express";
@@ -273,7 +274,7 @@ export const sendOtpEmail = async (toEmail: string, otp: string, subject: string
 
 // OTP Endpoints
 // Forgot Password Endpoints
-app.post("/api/auth/forgot-password/request", otpLimiter, async (req, res) => {
+app.post("/api/auth/forgot-password/request", otpLimiter, validate(otpRequestSchema), async (req, res) => {
     const { email, role } = req.body;
 
     try {
@@ -327,7 +328,7 @@ app.post("/api/auth/forgot-password/verify", otpLimiter, async (req, res) => {
     }
 });
 
-app.post("/api/auth/forgot-password/reset", otpLimiter, async (req, res) => {
+app.post("/api/auth/forgot-password/reset", otpLimiter, validate(resetPasswordSchema), async (req, res) => {
     const { email, otp, newPassword, role } = req.body;
 
     if (!newPassword || newPassword.length < 6) {
@@ -381,7 +382,7 @@ app.post("/api/auth/forgot-password/reset", otpLimiter, async (req, res) => {
     }
 });
 
-app.post("/api/auth/send-otp", otpLimiter, async (req, res) => {
+app.post("/api/auth/send-otp", otpLimiter, validate(otpRequestSchema), async (req, res) => {
     const { email, purpose } = req.body;
 
     try {
@@ -531,7 +532,7 @@ async function verifyAdminSecret(providedSecret: string): Promise<boolean> {
 }
 
 // Auth Routes
-app.post("/api/auth/register", otpLimiter, async (req, res) => {
+app.post("/api/auth/register", otpLimiter, validate(registerSchema), async (req, res) => {
     const {
         firstName, lastName, email, password, role, adminSecret,
         phone, dateOfBirth, gender, address, city, state, pincode,
@@ -619,7 +620,7 @@ app.post("/api/auth/register", otpLimiter, async (req, res) => {
     }
 });
 
-app.post("/api/auth/login", loginLimiter, async (req, res) => {
+app.post("/api/auth/login", loginLimiter, validate(loginSchema), async (req, res) => {
     const { email, password, role, adminSecret } = req.body;
 
     if (!password || password.length < 6) {

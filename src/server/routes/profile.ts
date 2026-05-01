@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyToken, AuthRequest } from "../middleware/auth";
 import { getItem, updateItem, getAllItems, createItem, deleteItem } from "../utils/db-helpers";
-import { TABLES } from "../db";
+import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 import { docClient } from "../db-wrapper";
 import { GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
