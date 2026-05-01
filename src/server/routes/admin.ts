@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { maskEmail } from "../utils/maskEmail";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
-import { getAllItems, getItem, createItem, deleteItem, generateId } from "../utils/db-helpers";
+import { getAllItems, getItem, createItem, deleteItem, generateId, getAllItemsPaginated } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 import { parseDuration } from "./payments";
@@ -48,9 +48,12 @@ router.get("/dashboard", verifyToken, requireAdmin, async (req: AuthRequest, res
 
 // ─── Student Management ───────────────────────────────────────────────────────
 
-// GET all students
+// GET all students (supports pagination: ?page=1&limit=50)
 router.get("/students", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+
         const users = await getAllItems<any>(TABLES.USERS);
         const students = users
             .filter((u: any) => u.role === "student")
@@ -60,7 +63,15 @@ router.get("/students", verifyToken, requireAdmin, async (req: AuthRequest, res:
                 const dateB = new Date(b.createdAt || 0).getTime();
                 return dateB - dateA; // Newest first
             });
-        res.json(students);
+
+        const total = students.length;
+        const start = (page - 1) * limit;
+        const paginated = students.slice(start, start + limit);
+
+        res.json({
+            students: paginated,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+        });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

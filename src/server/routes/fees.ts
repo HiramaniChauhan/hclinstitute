@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
-import { createItem, getAllItems, getItem, deleteItem, generateId } from "../utils/db-helpers";
+import { createItem, getAllItems, getItem, deleteItem, generateId, queryByField } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 import { parseDuration } from "./payments";
@@ -65,11 +65,7 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const fees = await getAllItems<FeeRecord>(
-            TABLES.FEES,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        const fees = await queryByField<FeeRecord>(TABLES.FEES, "userId", req.user.id);
 
         const sorted = fees.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         const totalAmount = sorted.reduce((sum, f) => sum + f.amount, 0);
@@ -98,11 +94,7 @@ router.get("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respons
 // GET — Fee records for a specific student (Admin)
 router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
-        const fees = await getAllItems<FeeRecord>(
-            TABLES.FEES,
-            "userId = :userId",
-            { ":userId": req.params.userId }
-        );
+        const fees = await queryByField<FeeRecord>(TABLES.FEES, "userId", req.params.userId);
         res.json(fees);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

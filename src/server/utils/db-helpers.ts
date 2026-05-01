@@ -1,5 +1,5 @@
 import { GetCommand, PutCommand, ScanCommand, DeleteCommand, UpdateCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { docClient } from "../db-wrapper";
+import { docClient, isMemory } from "../db-wrapper";
 
 export const generateId = (prefix?: string) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
@@ -18,6 +18,72 @@ export async function getAllItems<T>(tableName: string, filterExpression?: strin
         params.ExpressionAttributeValues = expressionAttributeValues;
     }
     const result = await docClient.send(new ScanCommand(params));
+    return (result.Items as T[]) || [];
+}
+
+/**
+ * Paginated version of getAllItems.
+ * Returns { items, total } where items is the current page.
+ */
+export async function getAllItemsPaginated<T>(
+    tableName: string,
+    options: { page?: number; limit?: number; filterExpression?: string; expressionAttributeValues?: any } = {}
+): Promise<{ items: T[]; total: number }> {
+    const { page = 1, limit = 50, filterExpression, expressionAttributeValues } = options;
+
+    const params: any = { TableName: tableName };
+    if (filterExpression && expressionAttributeValues) {
+        params.FilterExpression = filterExpression;
+        params.ExpressionAttributeValues = expressionAttributeValues;
+    }
+
+    const result = await docClient.send(new ScanCommand(params));
+    const allItems = (result.Items as T[]) || [];
+    const total = allItems.length;
+    const start = (page - 1) * limit;
+    const items = allItems.slice(start, start + limit);
+
+    return { items, total };
+}
+
+// ── GSI Map — field → GSI name per table ──────────────────────────────────────
+// When a GSI exists, queryByField uses QueryCommand (reads only matching items)
+// instead of ScanCommand (reads ALL items and filters).
+const GSI_MAP: Record<string, Record<string, string>> = {
+    Users:         { email: "EmailIndex" },
+    Enrollments:   { userId: "UserIdIndex" },
+    Results:       { userId: "UserIdIndex", testId: "TestIdIndex" },
+    Notifications: { userId: "UserIdIndex" },
+    Fees:          { userId: "UserIdIndex" },
+    ChatMessages:  { studentId: "StudentIdIndex" },
+    ChapterResults: { userId: "UserIdIndex" },
+};
+
+/**
+ * Query items by a single field using a GSI (if available).
+ * Falls back to Scan + filter if no GSI is configured for that table/field.
+ * This is much cheaper than getAllItems() for DynamoDB.
+ */
+export async function queryByField<T>(tableName: string, field: string, value: string): Promise<T[]> {
+    const gsiName = GSI_MAP[tableName]?.[field];
+
+    if (gsiName && !isMemory) {
+        // Use GSI — reads only matching items (cost efficient)
+        const result = await docClient.send(new QueryCommand({
+            TableName: tableName,
+            IndexName: gsiName,
+            KeyConditionExpression: `${field} = :val`,
+            ExpressionAttributeValues: { ":val": value }
+        }));
+        return (result.Items as T[]) || [];
+    }
+
+    // Fallback to Scan + filter (works for in-memory DB and tables without GSIs)
+    const result = await docClient.send(new ScanCommand({
+        TableName: tableName,
+        FilterExpression: `${field} = :val`,
+        ExpressionAttributeValues: { ":val": value }
+    }));
     return (result.Items as T[]) || [];
 }
 

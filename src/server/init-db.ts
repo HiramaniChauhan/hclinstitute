@@ -14,8 +14,16 @@ const client = new DynamoDBClient({
     },
 });
 
-const tableConfigs = [
-    { name: TABLES.USERS, pk: "id" },
+// GSI definitions: { field, indexName } arrays per table
+// These enable QueryCommand instead of ScanCommand for common lookups
+interface TableConfig {
+    name: string;
+    pk: string;
+    gsis?: { field: string; indexName: string }[];
+}
+
+const tableConfigs: TableConfig[] = [
+    { name: TABLES.USERS, pk: "id", gsis: [{ field: "email", indexName: "EmailIndex" }] },
     { name: TABLES.OTPS, pk: "email" },
     { name: TABLES.CONFIG, pk: "id" },
     { name: TABLES.COURSES, pk: "id" },
@@ -23,17 +31,19 @@ const tableConfigs = [
     { name: TABLES.ANNOUNCEMENTS, pk: "id" },
     { name: TABLES.LECTURES, pk: "id" },
     { name: TABLES.TESTS, pk: "testId" },
-    { name: TABLES.RESULTS, pk: "resultId" },
+    { name: TABLES.RESULTS, pk: "resultId", gsis: [
+        { field: "userId", indexName: "UserIdIndex" },
+        { field: "testId", indexName: "TestIdIndex" }
+    ]},
     { name: TABLES.FORUM_POSTS, pk: "id" },
-    { name: TABLES.CHAT_MESSAGES, pk: "id" },
+    { name: TABLES.CHAT_MESSAGES, pk: "id", gsis: [{ field: "studentId", indexName: "StudentIdIndex" }] },
     { name: TABLES.NOTES, pk: "id" },
-    { name: TABLES.ENROLLMENTS, pk: "enrollmentId" },
-    { name: TABLES.NOTIFICATIONS, pk: "notificationId" },
-    { name: TABLES.ATTENDANCE, pk: "attendanceId" },
-    { name: TABLES.FEES, pk: "feeId" },
+    { name: TABLES.ENROLLMENTS, pk: "enrollmentId", gsis: [{ field: "userId", indexName: "UserIdIndex" }] },
+    { name: TABLES.NOTIFICATIONS, pk: "notificationId", gsis: [{ field: "userId", indexName: "UserIdIndex" }] },
+    { name: TABLES.FEES, pk: "feeId", gsis: [{ field: "userId", indexName: "UserIdIndex" }] },
     { name: TABLES.SELECTED_STUDENTS, pk: "id" },
     { name: TABLES.CHAPTER_TESTS, pk: "id" },
-    { name: TABLES.CHAPTER_RESULTS, pk: "resultId" },
+    { name: TABLES.CHAPTER_RESULTS, pk: "resultId", gsis: [{ field: "userId", indexName: "UserIdIndex" }] },
     { name: TABLES.CHAPTER_TEST_LAST_RESULTS, pk: "id" },
     { name: TABLES.VIDEOS, pk: "id" },
     { name: TABLES.LECTURE_PROGRESS, pk: "id" },
@@ -49,50 +59,52 @@ async function initTables() {
             const description = await client.send(new DescribeTableCommand({ TableName: config.name }));
             console.log(`[Init] Table "${config.name}" already exists.`);
 
-            // Specialized GSI check for Users table
-            if (config.name === TABLES.USERS) {
+            // Check if any configured GSIs are missing and add them
+            if (config.gsis && config.gsis.length > 0) {
                 const existingGSIs = description.Table?.GlobalSecondaryIndexes || [];
-                const hasEmailIndex = existingGSIs.some(gsi => gsi.IndexName === "EmailIndex");
-
-                if (!hasEmailIndex) {
-                    console.log(`[Init] Adding "EmailIndex" GSI to existing "${config.name}" table...`);
-                    await client.send(new UpdateTableCommand({
-                        TableName: config.name,
-                        AttributeDefinitions: [
-                            { AttributeName: "email", AttributeType: "S" }
-                        ],
-                        GlobalSecondaryIndexUpdates: [
-                            {
+                for (const gsi of config.gsis) {
+                    const exists = existingGSIs.some(g => g.IndexName === gsi.indexName);
+                    if (!exists) {
+                        console.log(`[Init] Adding "${gsi.indexName}" GSI to "${config.name}"...`);
+                        await client.send(new UpdateTableCommand({
+                            TableName: config.name,
+                            AttributeDefinitions: [
+                                { AttributeName: gsi.field, AttributeType: "S" }
+                            ],
+                            GlobalSecondaryIndexUpdates: [{
                                 Create: {
-                                    IndexName: "EmailIndex",
-                                    KeySchema: [
-                                        { AttributeName: "email", KeyType: "HASH" }
-                                    ],
+                                    IndexName: gsi.indexName,
+                                    KeySchema: [{ AttributeName: gsi.field, KeyType: "HASH" }],
                                     Projection: { ProjectionType: "ALL" }
                                 }
-                            }
-                        ]
-                    }));
-                    console.log(`[Init] "EmailIndex" GSI creation initiated.`);
+                            }]
+                        }));
+                        console.log(`[Init] "${gsi.indexName}" GSI creation initiated.`);
+                    }
                 }
             }
         } catch (error: any) {
             if (error.name === "ResourceNotFoundException") {
                 console.log(`[Init] Creating table "${config.name}"...`);
                 
-                const attributeDefinitions = [
+                const attributeDefinitions: any[] = [
                     { AttributeName: config.pk, AttributeType: "S" as ScalarAttributeType }
                 ];
                 const gsis: any[] = [];
 
-                // Add Email Index for Users table on creation
-                if (config.name === TABLES.USERS) {
-                    attributeDefinitions.push({ AttributeName: "email", AttributeType: "S" });
-                    gsis.push({
-                        IndexName: "EmailIndex",
-                        KeySchema: [{ AttributeName: "email", KeyType: "HASH" }],
-                        Projection: { ProjectionType: "ALL" }
-                    });
+                // Add GSIs from config
+                if (config.gsis) {
+                    for (const gsi of config.gsis) {
+                        // Only add attribute definition if not already the PK
+                        if (gsi.field !== config.pk) {
+                            attributeDefinitions.push({ AttributeName: gsi.field, AttributeType: "S" });
+                        }
+                        gsis.push({
+                            IndexName: gsi.indexName,
+                            KeySchema: [{ AttributeName: gsi.field, KeyType: "HASH" }],
+                            Projection: { ProjectionType: "ALL" }
+                        });
+                    }
                 }
 
                 await client.send(new CreateTableCommand({

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
-import { createItem, getAllItems, getItem, deleteItem, generateId } from "../utils/db-helpers";
+import { createItem, getAllItems, getItem, deleteItem, generateId, queryByField } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 
@@ -35,12 +35,8 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
         const { batchId, courseId } = req.body;
         if (!batchId) return res.status(400).json({ error: "batchId is required" });
 
-        // Prevent duplicate enrollments
-        const existing = await getAllItems<EnrollmentData>(
-            TABLES.ENROLLMENTS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        // Prevent duplicate enrollments (uses GSI instead of full scan)
+        const existing = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user.id);
         const alreadyEnrolled = existing.find(e => e.batchId === batchId && e.status === "active");
         if (alreadyEnrolled) {
             return res.status(409).json({ error: "Already enrolled in this batch" });
@@ -85,12 +81,8 @@ router.post("/enroll-course", verifyToken, requireAdmin, async (req: AuthRequest
         const { courseId } = req.body;
         if (!courseId) return res.status(400).json({ error: "courseId is required" });
 
-        // Prevent duplicate enrollments
-        const existing = await getAllItems<EnrollmentData>(
-            TABLES.ENROLLMENTS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        // Prevent duplicate enrollments (uses GSI instead of full scan)
+        const existing = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user.id);
         const alreadyEnrolled = existing.find(e => e.courseId === courseId && e.status === "active");
         if (alreadyEnrolled) {
             return res.status(409).json({ error: "Already enrolled in this course" });
@@ -140,9 +132,8 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        // Fetch all and filter in JS — mock DB ignores FilterExpression
-        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
-        const enrollments = all.filter(e => e.userId === req.user!.id);
+        // Query by userId using GSI (instead of full table scan)
+        const enrollments = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user!.id);
         res.json(enrollments);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -154,11 +145,10 @@ router.get("/my-access", verifyToken, async (req: AuthRequest, res: Response) =>
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        // Fetch all and filter in JS — mock DB ignores FilterExpression
-        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
+        // Query by userId using GSI (instead of full table scan)
+        const all = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user!.id);
         const now = new Date();
         const activeEnrollments = all.filter(e =>
-            e.userId === req.user!.id &&
             e.status === "active" &&
             !!e.courseId &&
             // Exclude expired enrollments (if expiresAt is set and has passed)
@@ -231,8 +221,7 @@ router.delete("/:enrollmentId", verifyToken, async (req: AuthRequest, res: Respo
 // GET — Enrollments for a specific student (Admin)
 router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
-        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
-        const enrollments = all.filter(e => e.userId === req.params.userId);
+        const enrollments = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.params.userId);
         res.json(enrollments);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -276,9 +265,9 @@ router.post("/admin/enroll", verifyToken, requireAdmin, async (req: AuthRequest,
         const user = await getItem<any>(TABLES.USERS, { id: userId });
         if (!user || user.role !== "student") return res.status(404).json({ error: "Student not found" });
 
-        // Prevent duplicate enrollments
-        const all = await getAllItems<EnrollmentData>(TABLES.ENROLLMENTS);
-        const existing = all.find(e => e.userId === userId && e.courseId === courseId && e.status === "active");
+        // Prevent duplicate enrollments (uses GSI instead of full scan)
+        const userEnrollments = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", userId);
+        const existing = userEnrollments.find(e => e.courseId === courseId && e.status === "active");
         if (existing) return res.status(409).json({ error: "Already enrolled in this course" });
 
         const enrolledAt = new Date().toISOString();

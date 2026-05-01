@@ -110,7 +110,11 @@ router.put("/me", verifyToken, async (req: AuthRequest, res: Response) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const updates = req.body;
+        // Strip sensitive/privileged fields — only allow safe profile updates
+        const { password, role, id, email, isDeleted, deletedAt, sessionId,
+                provider, isVerified, verifiedAt, verifiedBy,
+                isSuspended, suspendedAt, suspendedBy, suspensionReason,
+                createdAt, ...safeUpdates } = req.body;
 
         const user = await getItem<UserProfileData>(TABLES.USERS, { id: req.user.id });
         if (!user) {
@@ -119,16 +123,13 @@ router.put("/me", verifyToken, async (req: AuthRequest, res: Response) => {
 
         const updatedUser: UserProfileData = {
             ...user,
-            ...updates,
-            id: user.id, // Ensure ID is not changed
-            email: user.email, // Ensure email is not changed
-            role: user.role, // Ensure role is not changed
+            ...safeUpdates,
         };
 
         await createItem(TABLES.USERS, updatedUser);
 
         // Remove password from response
-        const { password, ...userWithoutPassword } = updatedUser as any;
+        const { password: _pw, ...userWithoutPassword } = updatedUser as any;
         res.json(userWithoutPassword);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -143,7 +144,10 @@ router.put("/:userId", verifyToken, async (req: AuthRequest, res: Response) => {
         }
 
         const { userId } = req.params;
-        const updates = req.body;
+
+        // Strip sensitive fields — admins can update most things but not these
+        const { password, id, email, role, isDeleted, deletedAt, sessionId,
+                provider, createdAt, ...safeUpdates } = req.body;
 
         const user = await getItem<UserProfileData>(TABLES.USERS, { id: userId });
         if (!user) {
@@ -152,16 +156,13 @@ router.put("/:userId", verifyToken, async (req: AuthRequest, res: Response) => {
 
         const updatedUser: UserProfileData = {
             ...user,
-            ...updates,
-            id: user.id, // Ensure ID is not changed
-            email: user.email, // Ensure email is not changed
-            role: user.role, // Ensure role is not changed
+            ...safeUpdates,
         };
 
         await createItem(TABLES.USERS, updatedUser);
 
         // Remove password from response
-        const { password, ...userWithoutPassword } = updatedUser as any;
+        const { password: _pw2, ...userWithoutPassword } = updatedUser as any;
         res.json(userWithoutPassword);
     } catch (error: any) {
         res.status(500).json({ error: error.message });

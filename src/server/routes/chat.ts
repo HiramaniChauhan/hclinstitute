@@ -17,24 +17,32 @@ const isAdmin = (req: any, res: any, next: any) => {
 // GET /conversations - List all student conversations (Admin only)
 router.get("/conversations", isAdmin, async (req: any, res: any) => {
     try {
-        const result = await docClient.send(new ScanCommand({
-            TableName: TABLES.USERS,
-            FilterExpression: "#r = :role",
-            ExpressionAttributeNames: { "#r": "role" },
-            ExpressionAttributeValues: { ":role": "student" }
-        }));
+        // Fetch students and ALL messages in just 2 scans (instead of 1 + N)
+        const [studentsResult, allMessagesResult] = await Promise.all([
+            docClient.send(new ScanCommand({
+                TableName: TABLES.USERS,
+                FilterExpression: "#r = :role",
+                ExpressionAttributeNames: { "#r": "role" },
+                ExpressionAttributeValues: { ":role": "student" }
+            })),
+            docClient.send(new ScanCommand({
+                TableName: TABLES.CHAT_MESSAGES
+            }))
+        ]);
 
-        const students = result.Items || [];
+        const students = studentsResult.Items || [];
+        const allMessages = allMessagesResult.Items || [];
 
-        // Enhance with last message info (In a real app, we'd use a separate Conversations table for efficiency)
-        const conversations = await Promise.all(students.map(async (student: any) => {
-            const messagesResult = await docClient.send(new ScanCommand({
-                TableName: TABLES.CHAT_MESSAGES,
-                FilterExpression: "studentId = :studentId",
-                ExpressionAttributeValues: { ":studentId": student.id }
-            }));
+        // Group messages by studentId in memory (O(n) instead of N scans)
+        const messagesByStudent: Record<string, any[]> = {};
+        for (const msg of allMessages) {
+            if (!msg.studentId) continue;
+            if (!messagesByStudent[msg.studentId]) messagesByStudent[msg.studentId] = [];
+            messagesByStudent[msg.studentId].push(msg);
+        }
 
-            const messages = messagesResult.Items || [];
+        const conversations = students.map((student: any) => {
+            const messages = messagesByStudent[student.id] || [];
             messages.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
             return {
@@ -46,7 +54,7 @@ router.get("/conversations", isAdmin, async (req: any, res: any) => {
                 unread: messages.filter((m: any) => m.sender === 'student' && !m.read).length,
                 subject: 'Support'
             };
-        }));
+        });
 
         // Sort conversations by latest message time
         conversations.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());

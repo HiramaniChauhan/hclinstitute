@@ -17,7 +17,12 @@ export const AdminDashboard = () => {
         const studentsResp = await fetch('/api/admin/students', { headers });
         if (studentsResp.ok) {
           const studentsData = await studentsResp.json();
-          setTotalStudents(Array.isArray(studentsData) ? studentsData.length : 0);
+          // Support both paginated { students, pagination } and legacy array format
+          if (studentsData.pagination) {
+            setTotalStudents(studentsData.pagination.total);
+          } else {
+            setTotalStudents(Array.isArray(studentsData) ? studentsData.length : 0);
+          }
         }
 
         // Fetch Active Tests

@@ -43,7 +43,9 @@ export const deleteAdminWithOtp = async (adminId: string, otp: string) => {
 export const fetchAllStudents = async () => {
     const res = await fetch(`${API_BASE}/admin/students`, { headers: getHeaders() });
     if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    const data = await res.json();
+    // Support both paginated { students, pagination } and legacy array format
+    return data.students || (Array.isArray(data) ? data : []);
 };
 
 export const fetchStudentProfile = async (id: string) => {
@@ -195,36 +197,6 @@ export const markAllNotificationsRead = async () => {
     return res.json();
 };
 
-// ─────────────── Attendance ───────────────────────────────────────────────
-export const fetchMyAttendance = async () => {
-    const res = await fetch(`${API_BASE}/attendance/my`, { headers: getHeaders() });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-};
-
-export const fetchBatchAttendance = async (batchId: string) => {
-    const res = await fetch(`${API_BASE}/attendance/batch/${batchId}`, { headers: getHeaders() });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-};
-
-export const fetchStudentAttendance = async (userId: string) => {
-    const res = await fetch(`${API_BASE}/attendance/student/${userId}`, { headers: getHeaders() });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-};
-
-export const markAttendance = async (data: {
-    userId: string; batchId: string; date: string; status: string; lectureId?: string; notes?: string;
-}) => {
-    const res = await fetch(`${API_BASE}/attendance`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-};
 
 // ─────────────── Fees ──────────────────────────────────────────────────────
 export const fetchMyFees = async () => {

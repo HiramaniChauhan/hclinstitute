@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
-import { createItem, getAllItems, getItem, generateId } from "../utils/db-helpers";
+import { createItem, getAllItems, getItem, generateId, queryByField } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
 
@@ -21,11 +21,7 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const notifications = await getAllItems<NotificationData>(
-            TABLES.NOTIFICATIONS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        const notifications = await queryByField<NotificationData>(TABLES.NOTIFICATIONS, "userId", req.user.id);
 
         // Sort newest first
         const sorted = notifications.sort(
@@ -42,11 +38,7 @@ router.get("/unread-count", verifyToken, async (req: AuthRequest, res: Response)
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const notifications = await getAllItems<NotificationData>(
-            TABLES.NOTIFICATIONS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        const notifications = await queryByField<NotificationData>(TABLES.NOTIFICATIONS, "userId", req.user.id);
 
         const unreadCount = notifications.filter(n => !n.isRead).length;
         res.json({ unreadCount });
@@ -60,11 +52,7 @@ router.put("/mark-read", verifyToken, async (req: AuthRequest, res: Response) =>
     try {
         if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-        const notifications = await getAllItems<NotificationData>(
-            TABLES.NOTIFICATIONS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        const notifications = await queryByField<NotificationData>(TABLES.NOTIFICATIONS, "userId", req.user.id);
 
         const unread = notifications.filter(n => !n.isRead);
         await Promise.all(

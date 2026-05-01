@@ -26,7 +26,6 @@ import notesRouter from "./routes/notes";
 import adminRouter from "./routes/admin";
 import enrollmentsRouter from "./routes/enrollments";
 import notificationsRouter from "./routes/notifications";
-import attendanceRouter from "./routes/attendance";
 import feesRouter from "./routes/fees";
 import chatRouter from "./routes/chat";
 import selectedStudentsRouter from "./routes/selected-students";
@@ -55,9 +54,11 @@ app.use(cors({
         // Strip trailing slash from origin just in case
         const cleanOrigin = origin.replace(/\/$/, "");
 
-        // Allow any localhost port in development
-        if (cleanOrigin.startsWith("http://localhost:") || cleanOrigin.startsWith("http://127.0.0.1:")) {
-            return callback(null, true);
+        // Allow any localhost port — ONLY in development
+        if (process.env.NODE_ENV !== 'production') {
+            if (cleanOrigin.startsWith("http://localhost:") || cleanOrigin.startsWith("http://127.0.0.1:")) {
+                return callback(null, true);
+            }
         }
         
         // Allow if exact match with one of the configured origins
@@ -70,10 +71,20 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // ── Rate Limiters ─────────────────────────────────────────────────────────────
+// Global: max 100 requests per minute per IP across all API routes
+const globalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 100,
+    message: { error: "Too many requests. Please slow down." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api', globalLimiter);
+
 // Login: max 10 attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -95,8 +106,9 @@ const otpLimiter = rateLimit({
 import fs from 'fs';
 import path from 'path';
 
-// Helper for OTP generation
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+// Helper for OTP generation (cryptographically secure)
+import crypto from 'crypto';
+const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 
 // Email Setup 
 const testAccountInfo: any = null;
@@ -766,7 +778,6 @@ app.use("/api/notes", notesRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/enrollments", enrollmentsRouter);
 app.use("/api/notifications", notificationsRouter);
-app.use("/api/attendance", attendanceRouter);
 app.use("/api/fees", feesRouter);
 app.use("/api/chat", verifyToken, chatRouter);
 app.use("/api/selected-students", selectedStudentsRouter);

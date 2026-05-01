@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
-import { createItem, getAllItems, getItem, generateId } from "../utils/db-helpers";
+import { createItem, getAllItems, getItem, generateId, queryByField } from "../utils/db-helpers";
 import { TABLES } from "../db";
 import { Response } from "express";
 
@@ -28,11 +28,7 @@ router.get("/my-results", verifyToken, async (req: AuthRequest, res: Response) =
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const results = await getAllItems<ResultData>(
-            TABLES.RESULTS,
-            "userId = :userId",
-            { ":userId": req.user.id }
-        );
+        const results = await queryByField<ResultData>(TABLES.RESULTS, "userId", req.user.id);
 
         res.json(results);
     } catch (error: any) {
@@ -70,9 +66,7 @@ router.get("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respons
 router.get("/student/:userId", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
         const { userId } = req.params;
-        const all = await getAllItems<ResultData>(TABLES.RESULTS);
-        const results = all
-            .filter(r => r.userId === userId)
+        const results = (await queryByField<ResultData>(TABLES.RESULTS, "userId", userId))
             .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
         res.json(results);
     } catch (error: any) {
@@ -108,10 +102,10 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
             return res.status(401).json({ error: "Unauthorized" });
         }
 
-        const { testId, courseId, score, totalQuestions, correctAnswers, incorrectAnswers, duration, userAnswers } = req.body;
+        const { testId, courseId, duration, userAnswers } = req.body;
 
-        if (score === undefined || totalQuestions === undefined || correctAnswers === undefined || !testId) {
-            return res.status(400).json({ error: "Missing required fields: score, totalQuestions, correctAnswers, testId" });
+        if (!testId || !userAnswers) {
+            return res.status(400).json({ error: "Missing required fields: testId, userAnswers" });
         }
 
         // Limit to 2 attempts for ANY test
@@ -127,11 +121,39 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
             });
         }
 
+        // ── Server-side score computation ────────────────────────────────────
         const test = await getItem<any>(TABLES.TESTS, { testId });
+        if (!test) {
+            return res.status(404).json({ error: "Test not found" });
+        }
+
+        // Collect all questions with their correct answers from every section
+        let totalQuestions = 0;
+        let correctAnswers = 0;
+        let totalScore = 0;
+
+        if (test.sections && Array.isArray(test.sections)) {
+            for (const section of test.sections) {
+                const marksPerQuestion = section.marksPerQuestion || 1;
+                if (section.questions && Array.isArray(section.questions)) {
+                    for (const question of section.questions) {
+                        totalQuestions++;
+                        const questionId = question.id || question.questionId;
+                        const studentAnswer = userAnswers[questionId];
+
+                        if (studentAnswer !== undefined && studentAnswer !== null &&
+                            String(studentAnswer) === String(question.correctAnswer)) {
+                            correctAnswers++;
+                            totalScore += marksPerQuestion;
+                        }
+                    }
+                }
+            }
+        }
+
         const finalCourseId = courseId || test?.subject || "General";
         const finalDuration = duration || 0;
-
-        const percentage = (correctAnswers / totalQuestions) * 100;
+        const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
         const status = percentage >= (test?.passingScore || 40) ? "passed" : "failed";
 
         const result: ResultData = {
@@ -139,7 +161,7 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
             userId: req.user.id,
             testId,
             courseId: finalCourseId,
-            score: Number(score.toFixed(2)),
+            score: Number(totalScore.toFixed(2)),
             totalQuestions,
             correctAnswers,
             percentage: Number(percentage.toFixed(2)),

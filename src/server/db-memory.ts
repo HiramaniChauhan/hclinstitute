@@ -100,7 +100,7 @@ export class InMemoryDatabase {
 
         // Primary key fields per table - only match on the true PK to decide update vs insert
         // Results intentionally use ONLY resultId as PK so multiple attempts per test are stored separately
-        const pkFields = ['id', 'email', 'resultId', 'feeId', 'notificationId', 'attendanceId', 'key'];
+        const pkFields = ['id', 'email', 'resultId', 'feeId', 'notificationId', 'key'];
         let replaced = false;
 
         for (const i of table) {

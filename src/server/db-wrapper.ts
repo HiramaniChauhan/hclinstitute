@@ -49,40 +49,29 @@ if (useDynamoDb) {
                             return { Items: indexedItem ? [indexedItem] : [] };
                         }
 
-                        // Fallback to manual filter loop for complex queries
+                        // Generic filter — parse field names from FilterExpression
                         filtered = items.filter(item => {
                             let match = true;
-                            // ... existing filter logic ...
-                            if (expr.includes("email") && vals[":email"]) {
-                                match = match && item.email === vals[":email"];
-                            }
-                            if ((expr.includes("#r = :role") || expr.includes("role = :role")) && vals[":role"]) {
-                                match = match && item.role === vals[":role"];
-                            }
-                            if (expr.includes("courseId") && vals[":courseId"]) {
-                                match = match && item.courseId === vals[":courseId"];
-                            }
-                            if (expr.includes("studentId") && vals[":studentId"]) {
-                                match = match && item.studentId === vals[":studentId"];
-                            }
-                            if (expr.includes("sender") && vals[":sender"]) {
-                                match = match && item.sender === vals[":sender"];
-                            }
-                            if ((expr.includes("#r = :unread") || expr.includes("read = :unread")) && vals[":unread"] !== undefined) {
-                                match = match && item.read === vals[":unread"];
-                            }
-                            if (expr.includes("userId") && vals[":userId"]) {
-                                match = match && item.userId === vals[":userId"];
-                            }
-                            if (expr.includes("testId") && vals[":testId"]) {
-                                match = match && item.testId === vals[":testId"];
-                            }
-                            if (expr.includes("id = :id") && vals[":id"]) {
-                                match = match && item.id === vals[":id"];
-                            }
-                            // Support begins_with
-                            if (expr.includes("begins_with(resultId, :testId)") && vals[":testId"]) {
-                                match = match && item.resultId?.startsWith(vals[":testId"]);
+                            for (const [placeholder, value] of Object.entries(vals)) {
+                                // Handle begins_with() patterns
+                                const bwRegex = new RegExp(`begins_with\\((\\w+),\\s*${placeholder.replace(':', '\\:')}`);
+                                const bwMatch = expr.match(bwRegex);
+                                if (bwMatch) {
+                                    match = match && (item[bwMatch[1]]?.startsWith(value as string) ?? false);
+                                    continue;
+                                }
+
+                                // Handle "field = :val" and "#alias = :val" patterns
+                                const eqRegex = new RegExp(`([#\\w]+)\\s*=\\s*${placeholder.replace(':', '\\:')}`);
+                                const eqMatch = expr.match(eqRegex);
+                                if (eqMatch) {
+                                    let fieldName = eqMatch[1];
+                                    // Resolve aliases from ExpressionAttributeNames
+                                    if (fieldName.startsWith('#') && command.input.ExpressionAttributeNames) {
+                                        fieldName = command.input.ExpressionAttributeNames[fieldName] || fieldName;
+                                    }
+                                    match = match && item[fieldName] === value;
+                                }
                             }
                             return match;
                         });
@@ -101,20 +90,25 @@ if (useDynamoDb) {
                 } else if (command instanceof QueryCommand) {
                     const { TableName, IndexName, KeyConditionExpression, ExpressionAttributeValues } = command.input;
                     
-                    // Optimization: If the query is specifically for an email and useDynamoDB is false, use our index
+                    // Optimization: If the query is specifically for an email, use our index
                     if (KeyConditionExpression === "email = :email" && ExpressionAttributeValues?.[":email"]) {
                         const indexedItem = (memoryDb as any).getByIndex(TableName, "email", ExpressionAttributeValues[":email"]);
                         return { Items: indexedItem ? [indexedItem] : [] };
                     }
 
-                    // Fallback to scan if index not matched or complex condition
+                    // Generic field matching — parse "field = :val" from KeyConditionExpression
                     const items = memoryDb.scan(TableName);
                     const filtered = items.filter(item => {
-                        if (KeyConditionExpression.includes("email") && ExpressionAttributeValues?.[":email"]) {
-                            return item.email === ExpressionAttributeValues[":email"];
-                        }
-                        if (KeyConditionExpression.includes("id = :id") && ExpressionAttributeValues?.[":id"]) {
-                            return item.id === ExpressionAttributeValues[":id"];
+                        if (!KeyConditionExpression || !ExpressionAttributeValues) return true;
+                        // Support patterns like "userId = :val", "studentId = :val", etc.
+                        for (const [placeholder, value] of Object.entries(ExpressionAttributeValues)) {
+                            // Extract field name: "fieldName = :placeholder" → fieldName
+                            const regex = new RegExp(`(\\w+)\\s*=\\s*${placeholder.replace(':', '\\:')}`);
+                            const match = KeyConditionExpression.match(regex);
+                            if (match) {
+                                const fieldName = match[1];
+                                if (item[fieldName] !== value) return false;
+                            }
                         }
                         return true;
                     });
@@ -156,7 +150,6 @@ export const TABLES = {
     NOTES: "Notes",
     ENROLLMENTS: "Enrollments",
     NOTIFICATIONS: "Notifications",
-    ATTENDANCE: "Attendance",
     FEES: "Fees",
     SELECTED_STUDENTS: "SelectedStudents",
     CHAPTER_TESTS: "ChapterTests",

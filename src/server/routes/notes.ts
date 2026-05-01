@@ -1,9 +1,13 @@
 import { Router } from "express";
+import express from "express";
 import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { generateId, createItem, getAllItems, deleteItem } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 
 const router = Router();
+
+// Large body parser for file uploads (base64 notes can be up to 50MB)
+const largeBodyParser = express.json({ limit: '50mb' });
 
 // GET all notes — any logged-in user can read notes
 router.get("/", verifyToken, async (req, res) => {
@@ -19,7 +23,7 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // Create a new note — Admin only
-router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res) => {
+router.post("/", largeBodyParser, verifyToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
         const { title, subject, chapter, fileType, fileSize, fileData } = req.body;
 
