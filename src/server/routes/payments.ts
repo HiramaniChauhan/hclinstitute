@@ -149,10 +149,35 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
 
         console.log(`[Payment] Signature verified for order ${razorpay_order_id}, payment ${razorpay_payment_id}`);
 
+        // ── Prevent duplicate enrollments (same order processed twice) ────────
+        const existingEnrollments = await getAllItems<any>(
+            TABLES.ENROLLMENTS,
+            "orderId = :orderId",
+            { ":orderId": razorpay_order_id }
+        );
+        if (existingEnrollments.length > 0) {
+            console.log(`[Payment] Enrollment for order ${razorpay_order_id} already exists. Returning existing.`);
+            return res.json({ success: true, enrollment: existingEnrollments[0] });
+        }
+
+        // ── Fetch actual amount from Razorpay (don't trust frontend) ─────────
+        let amountInRupees: number;
+        try {
+            const razorpayInstance = getRazorpay();
+            if (razorpayInstance) {
+                const orderDetails = await razorpayInstance.orders.fetch(razorpay_order_id);
+                amountInRupees = Number(orderDetails.amount) / 100;
+            } else {
+                amountInRupees = Number(req.body.amount) / 100;
+            }
+        } catch {
+            // Fallback to frontend amount if Razorpay API call fails
+            amountInRupees = Number(req.body.amount) / 100;
+        }
+
         // Create enrollment record with expiry based on course duration
         const enrolledCourse = await getItem<any>(TABLES.COURSES, { id: courseId });
         const enrolledAt = new Date().toISOString();
-        const amountInRupees = Number(req.body.amount) / 100; // Razorpay uses paise, we store rupees
 
         const enrollment = {
             enrollmentId: generateId(),
