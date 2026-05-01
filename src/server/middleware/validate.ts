@@ -45,6 +45,7 @@ export const loginSchema = z.object({
 export const otpRequestSchema = z.object({
     email: z.string().email("Invalid email format"),
     purpose: z.string().max(100).optional(),
+    role: z.enum(["student", "admin"]).optional(),
 });
 
 export const otpVerifySchema = z.object({
@@ -56,6 +57,7 @@ export const resetPasswordSchema = z.object({
     email: z.string().email("Invalid email format"),
     otp: z.string().length(6, "OTP must be 6 digits"),
     newPassword: z.string().min(6, "Password must be at least 6 characters").max(128),
+    role: z.enum(["student", "admin"]).optional(),
 });
 
 // ─── Chat Schema ──────────────────────────────────────────────────────────────
