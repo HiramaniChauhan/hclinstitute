@@ -30,6 +30,7 @@ export interface Test {
   startTime?: string;
   endDate?: string;
   endTime?: string;
+  isPremium?: boolean;
 }
 
 export const dummyQuestions: Record<string, Question[]> = {

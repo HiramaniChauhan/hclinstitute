@@ -35,6 +35,7 @@ interface TestData {
     endDate?: string;
     endTime?: string;
     updatedAt?: string;
+    isPremium?: boolean;
 }
 
 // GET all tests
@@ -154,6 +155,7 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
             startTime: data.startTime,
             endDate: data.endDate,
             endTime: data.endTime,
+            isPremium: data.isPremium || false,
             createdAt: new Date().toISOString(),
             createdBy: req.user?.id || "",
             isActive: true,

@@ -14,13 +14,14 @@ import { Badge } from "@/components/ui/badge"; import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, FileText, Clock, Users, Calendar, Target, Award, Edit, Trash2, Image as ImageIcon, X, Copy, Search, Trophy, Medal, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, FileText, Clock, Users, Calendar, Target, Award, Edit, Trash2, Image as ImageIcon, X, Copy, Search, Trophy, Medal, ChevronRight, Loader2, Crown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Test, Question, TestSection } from "@/data/testData";
 import { useEffect } from "react";
 import { Latex } from "@/components/ui/latex";
 import { StudentDetail } from "../student-management/StudentDetail";
+import { Switch } from "@/components/ui/switch";
 
 
 
@@ -83,6 +84,7 @@ export const TestCreation = () => {
     startTime: "",
     endDate: "",
     endTime: "",
+    isPremium: false,
     sections: [] as TestSection[]
   });
 
@@ -118,6 +120,7 @@ export const TestCreation = () => {
       startTime: "",
       endDate: "",
       endTime: "",
+      isPremium: false,
       sections: []
     });
     setActiveSectionId("");
@@ -137,6 +140,7 @@ export const TestCreation = () => {
       startTime: test.startTime || "",
       endDate: test.endDate || "",
       endTime: test.endTime || "",
+      isPremium: test.isPremium || false,
       sections: test.sections || []
     });
     if (test.sections && test.sections.length > 0) {
@@ -666,6 +670,29 @@ export const TestCreation = () => {
                   <Label>End Time</Label>
                   <Input type="time" value={testFormData.endTime} onChange={(e) => setTestFormData({ ...testFormData, endTime: e.target.value })} />
                 </div>
+              </div>
+
+              {/* Premium Toggle */}
+              <div className="flex items-center justify-between border-t pt-4 px-1">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${testFormData.isPremium ? 'bg-amber-500 shadow-md shadow-amber-200' : 'bg-slate-200'}`}>
+                    <Crown className={`h-5 w-5 transition-colors ${testFormData.isPremium ? 'text-white' : 'text-slate-400'}`} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-bold text-slate-800">Premium Test</Label>
+                    <p className="text-xs text-slate-500">
+                      {testFormData.isPremium
+                        ? 'Students must be enrolled in a course to attempt this test'
+                        : 'Any registered student can attempt this test for free'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={testFormData.isPremium}
+                  onCheckedChange={(checked) => setTestFormData({ ...testFormData, isPremium: checked })}
+                  className="data-[state=checked]:bg-amber-500"
+                />
               </div>
 
               {/* Sections Management Section */}
@@ -1321,6 +1348,15 @@ export const TestCreation = () => {
                             {isEnded && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Completed/Ended</Badge>}
                             {!isEnded && isScheduled && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active/Scheduled</Badge>}
                             {!isScheduled && <Badge variant="outline" className="text-gray-400">Draft/No Schedule</Badge>}
+                            {test.isPremium ? (
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold">
+                                <Crown className="h-3 w-3 mr-0.5" /> PREMIUM
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
+                                FREE
+                              </Badge>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">

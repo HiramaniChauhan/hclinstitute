@@ -14,6 +14,7 @@ export const testSchema = z.object({
     startTime: z.string().optional(),
     endDate: z.string().optional(),
     endTime: z.string().optional(),
+    isPremium: z.boolean().optional(),
 });
 
 export function validateInput<T>(schema: z.ZodSchema<T>, data: any): T {

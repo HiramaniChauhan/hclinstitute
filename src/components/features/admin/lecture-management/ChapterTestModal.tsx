@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, Save, Target, Clock, FileText, X, Image as ImageIcon, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit, Save, Target, Clock, FileText, X, Image as ImageIcon, ChevronRight, Crown } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Question, TestSection } from "@/data/testData";
 import { Latex } from "@/components/ui/latex";
@@ -27,6 +28,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
         id: "",
         title: `${chapterName}`,
         duration: 30,
+        isPremium: false,
         sections: [] as TestSection[]
     });
 
@@ -49,6 +51,7 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                     id: `ctest_${Date.now()}`,
                     title: `${chapterName}`,
                     duration: 30,
+                    isPremium: false,
                     sections: [] as TestSection[]
                 });
                 setActiveSectionId("");
@@ -193,7 +196,8 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                         id: testData.id,
                         title: testData.title,
                         duration: testData.duration || 30,
-                        totalQuestions: totalQuestions
+                        totalQuestions: totalQuestions,
+                        isPremium: testData.isPremium || false
                     });
                 }
 
@@ -246,6 +250,29 @@ export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, t
                                 />
                             </div>
                         </div>
+                    </div>
+
+                    {/* Premium Toggle */}
+                    <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-3xl border border-amber-200/60 shadow-sm">
+                        <div className="flex items-center gap-4">
+                            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all ${testData.isPremium ? 'bg-amber-500 shadow-lg shadow-amber-200' : 'bg-slate-200'}`}>
+                                <Crown className={`h-6 w-6 transition-colors ${testData.isPremium ? 'text-white' : 'text-slate-400'}`} />
+                            </div>
+                            <div>
+                                <Label className="text-base font-black text-slate-800">Premium Test</Label>
+                                <p className="text-sm text-slate-500 font-medium mt-0.5">
+                                    {testData.isPremium
+                                        ? 'Students must be enrolled in a course to attempt this test'
+                                        : 'Any registered student can attempt this test for free'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={testData.isPremium || false}
+                            onCheckedChange={(checked) => setTestData({ ...testData, isPremium: checked })}
+                            className="data-[state=checked]:bg-amber-500 scale-125"
+                        />
                     </div>
 
                     {/* Section Builder (Matches TestCreation.tsx) */}

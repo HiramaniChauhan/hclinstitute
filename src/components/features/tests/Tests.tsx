@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Clock, Target, Search, Calendar, Award, AlertCircle, Info, BookOpen, CheckCircle } from "lucide-react";
+import { Clock, Target, Search, Calendar, Award, AlertCircle, Info, BookOpen, CheckCircle, Crown, Lock } from "lucide-react";
 import { dummyTests, Test } from "@/data/testData";
 import { TestInterface } from "./TestInterface";
 import { toast } from "sonner";
@@ -22,10 +22,28 @@ export const Tests = () => {
   const [initialAttemptIdx, setInitialAttemptIdx] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [instructionsTest, setInstructionsTest] = useState<Test | null>(null); // test pending instructions
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     fetchData();
+    checkEnrollment();
   }, []);
+
+  const checkEnrollment = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const features = data.accessFeatures || [];
+        setIsEnrolled(features.includes('Tests'));
+      }
+    } catch (err) {
+      console.error('[Tests] Failed to check enrollment', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -114,16 +132,20 @@ export const Tests = () => {
   const handleStartTest = async (test: Test, isScheduled = false) => {
     try {
       const token = sessionStorage.getItem('token');
-      const accessRes = await fetch('/api/enrollments/my-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (accessRes.ok) {
-        const accessData = await accessRes.json();
-        const accessFeatures = accessData.accessFeatures || [];
-        if (!accessFeatures.includes('Tests')) {
-          toast.error("You need to enroll in a course to attempt tests.");
-          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
-          return;
+      
+      // Only check enrollment for premium tests
+      if (test.isPremium) {
+        const accessRes = await fetch('/api/enrollments/my-access', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (accessRes.ok) {
+          const accessData = await accessRes.json();
+          const accessFeatures = accessData.accessFeatures || [];
+          if (!accessFeatures.includes('Tests')) {
+            toast.error("This is a premium test. You need to enroll in a course to attempt it.");
+            window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+            return;
+          }
         }
       }
     } catch (e) {
@@ -232,6 +254,15 @@ export const Tests = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg">{test.title}</h3>
+                          {test.isPremium ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold flex items-center gap-0.5">
+                              <Crown className="h-3 w-3" /> PREMIUM
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
+                              FREE
+                            </Badge>
+                          )}
                           {completed && <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Completed ({relatedResults.length}/2)</Badge>}
                         </div>
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
@@ -306,10 +337,11 @@ export const Tests = () => {
                         {/* Start / Retake / Disabled button */}
                         <Button
                           size="sm"
-                          className={completed ? "bg-gray-500 hover:bg-gray-600" : "bg-blue-600 hover:bg-blue-700"}
+                          className={`${(test.isPremium && !isEnrolled) ? 'bg-amber-500 hover:bg-amber-600' : completed ? 'bg-gray-500 hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                           onClick={() => handleStartTest(test, true)}
                           disabled={relatedResults.length >= 2}
                         >
+                          {test.isPremium && !isEnrolled && <Lock className="h-3.5 w-3.5 mr-1.5" />}
                           {relatedResults.length >= 2
                             ? "Max Attempts (2/2)"
                             : completed ? "Retake Test" : "Start Test"}
@@ -357,7 +389,18 @@ export const Tests = () => {
                     <Badge className={`absolute top-2 right-2 ${completed ? 'bg-green-100 text-green-700' : isPast ? 'bg-slate-100 text-slate-600' : 'bg-blue-100 text-blue-700'}`}>
                       {completed ? `Completed (${relatedResults.length}/2 attempts)` : isPast ? 'Ended' : 'Practice'}
                     </Badge>
-                    <h3 className="font-semibold text-lg mb-2 pr-24">{test.title}</h3>
+                    <div className="flex items-center gap-2 mb-2 pr-24">
+                      <h3 className="font-semibold text-lg">{test.title}</h3>
+                      {test.isPremium ? (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold flex items-center gap-0.5">
+                          <Crown className="h-3 w-3" /> PREMIUM
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
+                          FREE
+                        </Badge>
+                      )}
+                    </div>
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex flex-wrap gap-3">
                         <span className="flex items-center gap-1">
@@ -438,10 +481,11 @@ export const Tests = () => {
                         <Button
                           variant={completed ? "secondary" : "outline"}
                           size="sm"
-                          className={completed ? "" : "text-blue-600 border-blue-600 hover:bg-blue-50"}
+                          className={`${(test.isPremium && !isEnrolled) ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500' : completed ? '' : 'text-blue-600 border-blue-600 hover:bg-blue-50'}`}
                           onClick={() => handleStartTest(test)}
                           disabled={relatedResults.length >= 2}
                         >
+                          {test.isPremium && !isEnrolled && <Lock className="h-3.5 w-3.5 mr-1.5" />}
                           {relatedResults.length >= 2
                             ? "Max Attempts Reached (2/2)"
                             : completed ? "Retake Practice" : isPast ? "Start Practice" : "Take Test"}

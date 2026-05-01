@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Clock, BookOpen, CheckCircle, ChevronRight, ChevronDown, FileText, Download, Youtube, Trophy, RotateCcw, X, Target, Award, AlertCircle } from "lucide-react";
+import { Play, Clock, BookOpen, CheckCircle, ChevronRight, ChevronDown, FileText, Download, Youtube, Trophy, RotateCcw, X, Target, Award, AlertCircle, Crown, Lock } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { ChapterTestInterface } from "@/components/features/lectures/ChapterTestInterface";
@@ -17,6 +17,7 @@ export const Lectures = () => {
   const [lectureStructure, setLectureStructure] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [completedLectures, setCompletedLectures] = useState<string[]>([]);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   // Helper to initialize from sessionStorage
   const initStorage = (key: string, defaultVal: any) => {
@@ -52,7 +53,24 @@ export const Lectures = () => {
   useEffect(() => {
     fetchData();
     fetchProgress();
+    checkEnrollment();
   }, []);
+
+  const checkEnrollment = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch('/api/enrollments/my-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const features = data.accessFeatures || [];
+        setIsEnrolled(features.includes('Lectures'));
+      }
+    } catch (err) {
+      console.error('[Lectures] Failed to check enrollment', err);
+    }
+  };
 
   const fetchProgress = async () => {
     try {
@@ -115,20 +133,23 @@ export const Lectures = () => {
     }
   };
 
-  const handleStartTest = async (testId: string | number) => {
+  const handleStartTest = async (testId: string | number, isPremium?: boolean) => {
     try {
       const token = sessionStorage.getItem('token');
       
-      const accessRes = await fetch('/api/enrollments/my-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (accessRes.ok) {
-        const accessData = await accessRes.json();
-        const accessFeatures = accessData.accessFeatures || [];
-        if (!accessFeatures.includes('Lectures')) {
-          toast.error("You need to enroll in a course to attempt chapter tests.");
-          window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
-          return;
+      // Only check enrollment for premium tests
+      if (isPremium) {
+        const accessRes = await fetch('/api/enrollments/my-access', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (accessRes.ok) {
+          const accessData = await accessRes.json();
+          const accessFeatures = accessData.accessFeatures || [];
+          if (!accessFeatures.includes('Lectures')) {
+            toast.error("This is a premium test. You need to enroll in a course to attempt it.");
+            window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+            return;
+          }
         }
       }
 
@@ -137,6 +158,22 @@ export const Lectures = () => {
       });
       if (!resp.ok) throw new Error("No practice test found");
       const testData = await resp.json();
+
+      // Double-check premium status from server data
+      if (testData.isPremium) {
+        const accessRes = await fetch('/api/enrollments/my-access', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (accessRes.ok) {
+          const accessData = await accessRes.json();
+          const accessFeatures = accessData.accessFeatures || [];
+          if (!accessFeatures.includes('Lectures')) {
+            toast.error("This is a premium test. You need to enroll in a course to attempt it.");
+            window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: 'courses' }));
+            return;
+          }
+        }
+      }
 
       if (!testData.id && !testData.chapterId) testData.id = testId;
       if (!testData.chapterId) testData.chapterId = testId;
@@ -365,75 +402,83 @@ export const Lectures = () => {
                                 </h4>
                                 <div className="grid gap-2">
                                   {chapter.chapterTestId && (!chapter.chapterTests || chapter.chapterTests.length === 0) && (
-                                    <div className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
-                                      <div className="flex items-center gap-4">
+                                    <div className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-3">
+                                      <div className="flex items-start gap-3">
                                         <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                                           <FileText className="h-5 w-5 text-green-500" />
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                           <div className="font-bold text-slate-800">Chapter Support Test</div>
-                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
+                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3 mt-1">
                                             <span>Practice Mode</span>
                                             <span>•</span>
                                             <span>Unlimited Attempts</span>
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-2 justify-end">
-                                        <div className="flex gap-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                            onClick={() => handleReviewTest(chapter.chapterTestId)}
-                                          >
-                                            Review Last
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
-                                            onClick={() => handleStartTest(chapter.chapterTestId)}
-                                          >
-                                            Start Practice
-                                          </Button>
-                                        </div>
+                                      <div className="flex items-center gap-2 justify-end flex-wrap">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
+                                          onClick={() => handleReviewTest(chapter.chapterTestId)}
+                                        >
+                                          Review Last
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
+                                          onClick={() => handleStartTest(chapter.chapterTestId)}
+                                        >
+                                          Start Practice
+                                        </Button>
                                       </div>
                                     </div>
                                   )}
 
                                   {[...(chapter.chapterTests || [])].sort((a: any, b: any) => (a.title || "").localeCompare(b.title || "")).map((test: any, idx: number) => (
-                                    <div key={test.id} className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col md:flex-row md:items-center justify-between group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-4">
-                                      <div className="flex items-center gap-4">
+                                    <div key={test.id} className="p-4 bg-white rounded-2xl border border-white shadow-sm flex flex-col group hover:border-green-400 hover:shadow-lg hover:shadow-green-50 transition-all gap-3">
+                                      <div className="flex items-start gap-3">
                                         <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                                           <FileText className="h-5 w-5 text-green-500" />
                                         </div>
-                                        <div>
-                                          <div className="font-bold text-slate-800">{test.title || `Practice Test ${idx + 1}`}</div>
-                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="font-bold text-slate-800 flex flex-wrap items-center gap-1.5">
+                                            <span className="break-words">{test.title || `Practice Test ${idx + 1}`}</span>
+                                            {test.isPremium ? (
+                                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-black flex items-center gap-0.5 flex-shrink-0">
+                                                <Crown className="h-3 w-3" /> PREMIUM
+                                              </Badge>
+                                            ) : (
+                                              <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-black flex-shrink-0">
+                                                FREE
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-slate-400 font-bold flex items-center gap-3 mt-1">
                                             <span>{test.totalQuestions || 0} Questions</span>
                                             <span>•</span>
                                             <span>{test.duration || 30} min</span>
                                           </div>
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-2 justify-end">
-                                        <div className="flex gap-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
-                                            onClick={() => handleReviewTest(test.id)}
-                                          >
-                                            Review Last
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            className="h-9 rounded-xl font-bold px-5 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
-                                            onClick={() => handleStartTest(test.id)}
-                                          >
-                                            Start Practice
-                                          </Button>
-                                        </div>
+                                      <div className="flex items-center gap-2 justify-end flex-wrap">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-9 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50"
+                                          onClick={() => handleReviewTest(test.id)}
+                                        >
+                                          Review Last
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          className={`h-9 rounded-xl font-bold px-5 shadow-lg ${(test.isPremium && !isEnrolled) ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-green-600 hover:bg-green-700 shadow-green-100'}`}
+                                          onClick={() => handleStartTest(test.id, test.isPremium)}
+                                        >
+                                          {test.isPremium && !isEnrolled && <Lock className="h-3.5 w-3.5 mr-1.5" />}
+                                          Start Practice
+                                        </Button>
                                       </div>
                                     </div>
                                   ))}

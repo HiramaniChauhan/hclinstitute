@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Video, FileText, BookOpen, ChevronRight, Save, X, ExternalLink, Youtube, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Video, FileText, BookOpen, ChevronRight, Save, X, ExternalLink, Youtube, Clock, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -547,7 +547,7 @@ export const LectureManagement = () => {
                                           <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0 group-hover:bg-green-500 transition-colors">
                                             <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
                                           </div>
-                                          <div className="truncate">
+                                            <div className="truncate">
                                             <div className="font-bold text-slate-700 truncate">Chapter Practice Test</div>
                                             <div className="text-xs text-slate-400 font-medium">
                                               Dedicated Chapter Test • Unlimited Attempts
@@ -569,7 +569,19 @@ export const LectureManagement = () => {
                                             <FileText className="h-5 w-5 text-green-600 group-hover:text-white transition-colors" />
                                           </div>
                                           <div className="truncate">
-                                            <div className="font-bold text-slate-700 truncate">{test.title || `Practice Test ${idx + 1}`}</div>
+                                            <div className="font-bold text-slate-700 truncate flex items-center gap-2">
+                                              {test.title || `Practice Test ${idx + 1}`}
+                                              {test.isPremium && (
+                                                <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-black">
+                                                  <Crown className="h-3 w-3 mr-0.5" /> PREMIUM
+                                                </Badge>
+                                              )}
+                                              {!test.isPremium && (
+                                                <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-black">
+                                                  FREE
+                                                </Badge>
+                                              )}
+                                            </div>
                                             <div className="text-xs text-slate-400 font-medium flex gap-2">
                                               <span>{test.totalQuestions || 0} Questions</span>
                                               <span>•</span>
