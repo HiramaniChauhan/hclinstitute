@@ -114,7 +114,7 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
             pinned: !!pinned,
             status: status || "published",
             readBy: [], // Array of user IDs who have read this
-            author: req.user.firstName || req.user.email || "Admin",
+            author: req.user.firstName || "Admin",
             createdAt: new Date().toISOString(),
             views: 0,
         };
