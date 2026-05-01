@@ -87,25 +87,46 @@ export const PaymentModal = ({ open, course, onClose, onSuccess }: PaymentModalP
                 image: logoUrl,
                 order_id: orderData.orderId,
                 handler: async (response: any) => {
-                    const verifyRes = await fetch("/api/payments/verify", {
-                        method: "POST",
-                        headers,
-                        body: JSON.stringify({
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature,
+                    try {
+                        setLoading(true);
+                        toast.info("Verifying your payment, please wait...");
+                        console.log("[Payment] Razorpay handler fired. Verifying...", {
+                            order_id: response.razorpay_order_id,
+                            payment_id: response.razorpay_payment_id,
                             courseId: course.id,
-                            amount: orderData.amount,
-                        }),
-                    });
-                    const verifyData = await verifyRes.json();
-                    if (verifyRes.ok && verifyData.success) {
-                        toast.success("Payment successful! You are now enrolled. 🎉");
-                        window.dispatchEvent(new CustomEvent("enrollment-updated"));
-                        onSuccess();
-                        onClose();
-                    } else {
-                        toast.error(verifyData.error || "Payment verification failed. Contact support.");
+                        });
+
+                        const verifyRes = await fetch("/api/payments/verify", {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                courseId: course.id,
+                                amount: orderData.amount,
+                            }),
+                        });
+
+                        const verifyData = await verifyRes.json();
+                        console.log("[Payment] Verify response:", verifyRes.status, verifyData);
+
+                        if (verifyRes.ok && verifyData.success) {
+                            toast.success("Payment successful! You are now enrolled. 🎉");
+                            window.dispatchEvent(new CustomEvent("enrollment-updated"));
+                            // Small delay to let the DB write propagate before re-fetching
+                            await new Promise(r => setTimeout(r, 500));
+                            onSuccess();
+                            onClose();
+                        } else {
+                            console.error("[Payment] Verification failed:", verifyData);
+                            toast.error(verifyData.error || "Payment verification failed. Contact support.");
+                        }
+                    } catch (error) {
+                        console.error("[Payment] Verification network error:", error);
+                        toast.error("Failed to reach server for verification. Please contact support with your payment ID.");
+                    } finally {
+                        setLoading(false);
                     }
                 },
                 prefill: {
@@ -124,6 +145,10 @@ export const PaymentModal = ({ open, course, onClose, onSuccess }: PaymentModalP
             };
 
             const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                console.error("Razorpay payment failed:", response.error);
+                toast.error(response.error?.description || "Payment failed at gateway. Please try again.");
+            });
             rzp.open();
 
         } catch (err) {

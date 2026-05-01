@@ -92,6 +92,7 @@ router.post("/create-order", verifyToken, async (req: AuthRequest, res: Response
             amount: priceInPaise,
             currency: "INR",
             receipt: receipt,
+            payment_capture: 1 as any,
             notes: {
                 // Student details
                 studentName: user?.name || user?.firstName || req.user.email,
@@ -142,8 +143,11 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
             .digest("hex");
 
         if (expectedSignature !== razorpay_signature) {
+            console.error(`[Payment] Signature mismatch for order ${razorpay_order_id}. Expected: ${expectedSignature.substring(0,10)}... Got: ${razorpay_signature.substring(0,10)}...`);
             return res.status(400).json({ error: "Invalid payment signature. Payment verification failed." });
         }
+
+        console.log(`[Payment] Signature verified for order ${razorpay_order_id}, payment ${razorpay_payment_id}`);
 
         // Create enrollment record with expiry based on course duration
         const enrolledCourse = await getItem<any>(TABLES.COURSES, { id: courseId });
@@ -210,6 +214,97 @@ router.post("/verify", verifyToken, async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error("Verify payment error:", error);
         res.status(500).json({ error: error.message || "Failed to verify payment" });
+    }
+});
+
+// POST /api/payments/webhook
+// Razorpay Webhook listener for delayed/background payment capture
+router.post("/webhook", async (req: AuthRequest, res: Response) => {
+    try {
+        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        if (!webhookSecret) {
+            console.warn("[Webhook] Razorpay webhook called but no RAZORPAY_WEBHOOK_SECRET configured.");
+            return res.status(400).json({ error: "Webhook secret not configured" });
+        }
+
+        const signature = req.headers["x-razorpay-signature"] as string;
+        if (!signature) {
+            return res.status(400).json({ error: "Missing signature" });
+        }
+
+        const payload = JSON.stringify(req.body);
+        const expectedSignature = crypto
+            .createHmac("sha256", webhookSecret)
+            .update(payload)
+            .digest("hex");
+
+        if (expectedSignature !== signature) {
+            return res.status(400).json({ error: "Invalid webhook signature" });
+        }
+
+        const event = req.body.event;
+        if (event === "order.paid" || event === "payment.captured") {
+            const payment = req.body.payload.payment.entity;
+            const orderId = payment.order_id;
+            const paymentId = payment.id;
+            const amountInRupees = payment.amount / 100;
+            const notes = payment.notes || {};
+            const courseId = notes.courseId;
+            const userId = notes.userId;
+
+            if (!courseId || !userId) {
+                console.warn(`[Webhook] Ignored payment ${paymentId} - missing courseId or userId in notes`);
+                return res.status(200).json({ status: "ignored" });
+            }
+
+            // Check if enrollment already exists (to prevent duplicates if frontend handler also fired)
+            const existingEnrollments = await getAllItems<any>(TABLES.ENROLLMENTS, "orderId = :orderId", { ":orderId": orderId });
+            if (existingEnrollments.length > 0) {
+                console.log(`[Webhook] Enrollment for order ${orderId} already exists. Skipping.`);
+                return res.status(200).json({ status: "already_processed" });
+            }
+
+            const enrolledCourse = await getItem<any>(TABLES.COURSES, { id: courseId });
+            const enrolledAt = new Date().toISOString();
+
+            const enrollment = {
+                enrollmentId: generateId(),
+                userId,
+                courseId,
+                enrolledAt,
+                expiresAt: enrolledCourse ? parseDuration(enrolledCourse.duration) : null,
+                status: "active",
+                paymentId,
+                orderId,
+                amount: amountInRupees,
+                batchId: "payment",
+            };
+            await createItem(TABLES.ENROLLMENTS, enrollment);
+
+            const paymentRecord = {
+                feeId: generateId("fee"),
+                userId,
+                courseId,
+                description: `Payment for course: ${enrolledCourse?.title || 'Unknown Course'}`,
+                amount: amountInRupees,
+                status: "paid",
+                category: "tuition",
+                paymentId,
+                orderId,
+                paidAt: enrolledAt,
+                createdAt: enrolledAt,
+                createdBy: userId,
+                dueDate: enrolledAt,
+            };
+            await createItem(TABLES.FEES, paymentRecord);
+
+            console.log(`[Webhook] Successfully enrolled user ${userId} to course ${courseId} via webhook.`);
+        }
+
+        res.status(200).json({ status: "ok" });
+    } catch (error) {
+        console.error("Webhook processing error:", error);
+        res.status(500).json({ error: "Webhook processing failed" });
     }
 });
 
