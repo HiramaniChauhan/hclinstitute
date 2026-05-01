@@ -717,7 +717,8 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
             "email = :email",
             { ":email": email }
         );
-        const user = users[0]; // For Google, we usually don't have multiple roles per direct login
+        const requestedRole = role || "student";
+        const user = users.find((u: any) => u.role === requestedRole);
 
         if (user && user.isDeleted) {
             return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });
@@ -727,8 +728,6 @@ app.post("/api/auth/google", loginLimiter, async (req, res) => {
             console.warn(`[Google Auth] SECURITY BLOCK: Admin user ${email} attempted login via Google OAuth(Requested Role: ${role})`);
             return res.status(403).json({ error: "Google login is strictly prohibited for administrator accounts for security reasons." });
         }
-
-        const requestedRole = role || "student";
 
         if (!user) {
             // If user doesn't exist and it's a signup request, return the info to pre-fill the form
