@@ -76,32 +76,35 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // ── Rate Limiters ─────────────────────────────────────────────────────────────
-// Global: max 100 requests per minute per IP across all API routes
+// Global: max 500 requests per minute per IP across all API routes
 const globalLimiter = rateLimit({
     windowMs: 1 * 60 * 1000,
-    max: 100,
+    max: 500,
     message: { error: "Too many requests. Please slow down." },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => process.env.NODE_ENV !== 'production',
 });
 app.use('/api', globalLimiter);
 
-// Login: max 10 attempts per 15 minutes per IP
+// Login: max 100 attempts per 5 minutes per IP
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: { error: "Too many login attempts. Please try again in 15 minutes." },
+    windowMs: 5 * 60 * 1000,
+    max: 100,
+    message: { error: "Too many login attempts. Please try again in 5 minutes." },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => process.env.NODE_ENV !== 'production',
 });
 
-// OTP / Registration: max 5 per 10 minutes per IP
+// OTP / Registration: max 50 per 5 minutes per IP
 const otpLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000,
-    max: 5,
-    message: { error: "Too many requests. Please try again in 10 minutes." },
+    windowMs: 5 * 60 * 1000,
+    max: 50,
+    message: { error: "Too many requests. Please try again in 5 minutes." },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: () => process.env.NODE_ENV !== 'production',
 });
 
 import fs from 'fs';
