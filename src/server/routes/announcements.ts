@@ -3,6 +3,7 @@ import { verifyToken, requireAdmin, AuthRequest } from "../middleware/auth";
 import { createItem, getAllItems, deleteItem, generateId } from "../utils/db-helpers";
 import { TABLES } from "../db-wrapper";
 import { Response } from "express";
+import { sendAnnouncementEmailBatch } from "../utils/send-announcement-email";
 
 const router = Router();
 
@@ -54,6 +55,47 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
     }
 });
 
+/**
+ * Resolve the list of student emails that should receive the announcement.
+ *
+ * - If targetCourseIds is empty or contains "all" → ALL registered students
+ * - If targetCourseIds has specific course IDs → only students enrolled in those courses
+ */
+async function resolveTargetStudentEmails(targetCourseIds: string[]): Promise<string[]> {
+    const allUsers = await getAllItems<any>(TABLES.USERS);
+    const students = allUsers.filter(u => u.role === "student" && !u.isDeleted && u.email);
+
+    const isAllStudents =
+        !targetCourseIds ||
+        targetCourseIds.length === 0 ||
+        targetCourseIds.includes("all");
+
+    if (isAllStudents) {
+        // Return every student's email
+        return students.map(s => s.email);
+    }
+
+    // Course-specific: find enrolled students
+    const allEnrollments = await getAllItems<any>(TABLES.ENROLLMENTS);
+    const now = new Date();
+    const targetCourseSet = new Set(targetCourseIds);
+
+    const enrolledUserIds = new Set(
+        allEnrollments
+            .filter(e =>
+                e.status === "active" &&
+                !!e.courseId &&
+                targetCourseSet.has(e.courseId) &&
+                (!e.expiresAt || new Date(e.expiresAt) > now)
+            )
+            .map(e => e.userId)
+    );
+
+    return students
+        .filter(s => enrolledUserIds.has(s.id))
+        .map(s => s.email);
+}
+
 // POST create announcement (Admin)
 router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
@@ -78,6 +120,33 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
         };
 
         await createItem(TABLES.ANNOUNCEMENTS, announcement);
+
+        // ── Send announcement emails asynchronously (fire-and-forget) ─────────
+        // Only send emails for "published" announcements (not drafts)
+        if (announcement.status === "published") {
+            // Run in background — don't await so the API response stays fast
+            (async () => {
+                try {
+                    const emails = await resolveTargetStudentEmails(announcement.targetCourseIds);
+                    if (emails.length > 0) {
+                        console.log(`[Announcement] Sending email to ${emails.length} student(s) for: "${announcement.title}"`);
+                        const result = await sendAnnouncementEmailBatch(emails, {
+                            title: announcement.title,
+                            content: announcement.content,
+                            priority: announcement.priority,
+                            category: announcement.category,
+                            author: announcement.author,
+                        });
+                        console.log(`[Announcement] Email dispatch done: ${result.sent} sent, ${result.failed} failed`);
+                    } else {
+                        console.log(`[Announcement] No target students found for: "${announcement.title}"`);
+                    }
+                } catch (emailErr) {
+                    console.error("[Announcement] Background email dispatch error:", emailErr);
+                }
+            })();
+        }
+
         res.status(201).json(announcement);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
