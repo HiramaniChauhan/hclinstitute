@@ -84,6 +84,7 @@ export const TestCreation = () => {
     startTime: "",
     endDate: "",
     endTime: "",
+    subject: "",
     isPremium: false,
     sections: [] as TestSection[]
   });
@@ -120,6 +121,7 @@ export const TestCreation = () => {
       startTime: "",
       endDate: "",
       endTime: "",
+      subject: "",
       isPremium: false,
       sections: []
     });
@@ -140,6 +142,7 @@ export const TestCreation = () => {
       startTime: test.startTime || "",
       endDate: test.endDate || "",
       endTime: test.endTime || "",
+      subject: test.subject || "",
       isPremium: test.isPremium || false,
       sections: test.sections || []
     });
@@ -405,7 +408,7 @@ export const TestCreation = () => {
         totalQuestions: testFormData.sections.reduce((acc, s) => acc + s.questions.length, 0),
         totalMarks: testFormData.sections.reduce((acc, s) => acc + (s.questions.length * s.marksPerQuestion), 0),
         courseId: "default-course",
-        subject: "General"
+        subject: testFormData.subject || "General"
       };
 
 
@@ -475,7 +478,7 @@ export const TestCreation = () => {
         totalQuestions: testFormData.sections.reduce((acc, s) => acc + s.questions.length, 0),
         totalMarks: testFormData.sections.reduce((acc, s) => acc + (s.questions.length * s.marksPerQuestion), 0),
         courseId: "default-course",
-        subject: "General"
+        subject: testFormData.subject || "General"
       };
 
       const resp = await fetch("/api/tests", {
@@ -566,7 +569,7 @@ export const TestCreation = () => {
       totalQuestions: updatedSections.reduce((acc, s) => acc + s.questions.length, 0),
       totalMarks: updatedSections.reduce((acc, s) => acc + (s.questions.length * s.marksPerQuestion), 0),
       courseId: "default-course",
-      subject: "General"
+      subject: viewingTestQuestions.subject || "General"
     };
 
     try {
@@ -626,6 +629,15 @@ export const TestCreation = () => {
                     value={testFormData.title}
                     onChange={(e) => setTestFormData({ ...testFormData, title: e.target.value })}
                     placeholder="Enter test name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={testFormData.subject}
+                    onChange={(e) => setTestFormData({ ...testFormData, subject: e.target.value })}
+                    placeholder="e.g. Physics, Math, General"
                   />
                 </div>
 

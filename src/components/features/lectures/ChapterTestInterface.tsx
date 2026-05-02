@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,8 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     );
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [tabSwitchCount, setTabSwitchCount] = useState(0);
+    const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -195,6 +197,77 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
             setIsSubmitting(false);
         }
     }, [test, savedAnswers, isSubmitting, onComplete, storageKey]);
+
+    // Anti-cheating: detect window switch, leave duration, and refresh/close
+    useEffect(() => {
+        if (reviewMode) return;
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                // Tab switch logic
+                setTabSwitchCount(prev => {
+                    const next = prev + 1;
+                    if (next >= 3) {
+                        toast.error("Suspicious activity detected! (3/3 tab switches). Auto-submitting test.");
+                        handleSubmit();
+                    } else {
+                        toast.warning(`Warning: Please don't switch tabs/windows (${next}/3)`);
+                    }
+                    return next;
+                });
+
+                // Start 1 minute auto-submit timer
+                if (!leaveTimerRef.current) {
+                    leaveTimerRef.current = setTimeout(() => {
+                        toast.error("You have been away for more than 1 minute. Test auto-submitted.");
+                        handleSubmit();
+                    }, 60000);
+                }
+            } else {
+                // Come back logic
+                if (leaveTimerRef.current) {
+                    clearTimeout(leaveTimerRef.current);
+                    leaveTimerRef.current = null;
+                }
+            }
+        };
+
+        const handleBlur = () => {
+            // Window lost focus (e.g., student clicked another app or window)
+            if (!leaveTimerRef.current) {
+                leaveTimerRef.current = setTimeout(() => {
+                    toast.error("You left the test window for too long. Test auto-submitted.");
+                    handleSubmit();
+                }, 60000);
+            }
+        };
+
+        const handleFocus = () => {
+            // Student came back to the window
+            if (leaveTimerRef.current) {
+                clearTimeout(leaveTimerRef.current);
+                leaveTimerRef.current = null;
+            }
+        };
+
+        const handleBeforeUnload = () => {
+            // Student is refreshing or closing the tab
+            handleSubmit();
+        };
+
+        window.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+        };
+    }, [reviewMode, handleSubmit]);
 
     // Fullscreen logic
     useEffect(() => {

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -206,7 +206,8 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${currentToken}`
                 },
-                body: JSON.stringify(results)
+                body: JSON.stringify(results),
+                keepalive: true // Ensure request completes even if page is closed/refreshed
             });
 
             if (resp.ok) {
@@ -226,25 +227,77 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
         }
     }, [test, savedAnswers, tabSwitchCount, onComplete, isSubmitting, startTime]);
 
-    // Anti-cheating: detect window switch
+    const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Anti-cheating: detect window switch, leave duration, and refresh/close
     useEffect(() => {
+        if (reviewMode) return;
+
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'hidden' && !reviewMode) {
+            if (document.visibilityState === 'hidden') {
+                // Tab switch count logic
                 setTabSwitchCount(prev => {
                     const next = prev + 1;
                     if (next >= 3) {
-                        toast.error("Suspicious activity detected! Auto-submitting test.");
+                        toast.error("Suspicious activity detected! (3/3 tab switches). Auto-submitting test.");
                         handleSubmit();
                     } else {
                         toast.warning(`Warning: Please don't switch tabs/windows (${next}/3)`);
                     }
                     return next;
                 });
+
+                // Start 1 minute "Away" timer
+                if (!leaveTimerRef.current) {
+                    leaveTimerRef.current = setTimeout(() => {
+                        toast.error("You have been away for more than 1 minute. Test auto-submitted.");
+                        handleSubmit();
+                    }, 60000);
+                }
+            } else {
+                // Student returned - clear the 1-minute timer
+                if (leaveTimerRef.current) {
+                    clearTimeout(leaveTimerRef.current);
+                    leaveTimerRef.current = null;
+                }
             }
         };
 
+        const handleBlur = () => {
+            // Window lost focus (e.g., student clicked another app or window)
+            if (!leaveTimerRef.current) {
+                leaveTimerRef.current = setTimeout(() => {
+                    toast.error("You left the test window for too long. Test auto-submitted.");
+                    handleSubmit();
+                }, 60000);
+            }
+        };
+
+        const handleFocus = () => {
+            // Student came back to the window
+            if (leaveTimerRef.current) {
+                clearTimeout(leaveTimerRef.current);
+                leaveTimerRef.current = null;
+            }
+        };
+
+        const handleBeforeUnload = () => {
+            // Student is refreshing or closing the tab
+            handleSubmit();
+        };
+
         window.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => window.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+        };
     }, [reviewMode, handleSubmit]);
 
     // Fetch leaderboard data in review mode

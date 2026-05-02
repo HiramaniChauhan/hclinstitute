@@ -239,18 +239,17 @@ router.get("/leaderboard/:testId", verifyToken, async (req: AuthRequest, res: Re
             return res.json({ leaderboard: [], userRank: null, totalParticipants: 0 });
         }
 
-        // 2. Filter for BEST result per unique student (highest score, then lowest duration)
-        const bestResultsByUser: Record<string, ResultData> = {};
+        // 2. Filter for the FIRST (Live) result per unique student (earliest submission)
+        const firstAttemptResultsByUser: Record<string, ResultData> = {};
         allResults.forEach(res => {
-            const existing = bestResultsByUser[res.userId];
-            if (!existing ||
-                res.score > existing.score ||
-                (res.score === existing.score && res.duration < existing.duration)) {
-                bestResultsByUser[res.userId] = res;
+            const existing = firstAttemptResultsByUser[res.userId];
+            // If no result for this user yet, or this one is earlier than the one we have
+            if (!existing || new Date(res.submittedAt) < new Date(existing.submittedAt)) {
+                firstAttemptResultsByUser[res.userId] = res;
             }
         });
 
-        const uniqueResults = Object.values(bestResultsByUser);
+        const uniqueResults = Object.values(firstAttemptResultsByUser);
 
         // 3. Sort unique results: Score (desc), then duration (asc)
         const sortedResults = uniqueResults.sort((a, b) => {
