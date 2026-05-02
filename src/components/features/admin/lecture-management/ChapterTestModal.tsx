@@ -19,7 +19,7 @@ interface ChapterTestModalProps {
     chapterId: string | number;
     chapterName: string;
     testId?: string | null;
-    onSaveSuccess?: (testMeta: { id: string, title: string, duration: number, totalQuestions: number }) => void;
+    onSaveSuccess?: (testMeta: { id: string, title: string, duration: number, totalQuestions: number, isPremium?: boolean }) => void;
 }
 
 export const ChapterTestModal = ({ open, onOpenChange, chapterId, chapterName, testId, onSaveSuccess }: ChapterTestModalProps) => {

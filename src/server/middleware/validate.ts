@@ -103,7 +103,7 @@ export const submitReviewSchema = z.object({
 export const reviewQuestionSchema = z.object({
     id: z.string().optional(),
     text: z.string().min(1, "Question text is required").max(500),
-    type: z.enum(["test", "lecture"]),
+    type: z.string().min(1, "Type is required").max(200),
     isActive: z.boolean().optional().default(true),
 });
 

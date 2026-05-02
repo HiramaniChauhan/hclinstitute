@@ -160,7 +160,7 @@ export const GiveReview = () => {
                         <div className="space-y-6">
                             {questions.map((q) => (
                                 <div key={q.id} className="space-y-2 border-b pb-4 last:border-0 last:pb-0">
-                                    <label className="text-sm font-medium">{q.type}</label>
+                                    <label className="text-sm font-medium">{q.text}</label>
                                     <StarRating
                                         rating={answers[q.id] || 0}
                                         onChange={(r) => handleRating(q.id, r)}
