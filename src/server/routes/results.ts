@@ -139,7 +139,10 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
                     for (const question of section.questions) {
                         totalQuestions++;
                         const questionId = question.id || question.questionId;
-                        const studentAnswer = userAnswers[questionId];
+                        // Frontend stores answers with composite key: "sectionId_questionId"
+                        const compositeKey = `${section.id}_${questionId}`;
+                        // Try composite key first (normal flow), fall back to plain questionId
+                        const studentAnswer = userAnswers[compositeKey] ?? userAnswers[questionId];
 
                         if (studentAnswer !== undefined && studentAnswer !== null &&
                             String(studentAnswer) === String(question.correctAnswer)) {
