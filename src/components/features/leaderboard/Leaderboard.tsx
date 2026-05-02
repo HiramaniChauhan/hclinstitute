@@ -16,7 +16,7 @@ export const Leaderboard = () => {
     },
     {
       rank: 2,
-      name: "Sarah Johnson", 
+      name: "Sarah Johnson",
       score: 2691,
       change: "+5",
       avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b882?w=32&h=32&fit=crop&crop=face",
@@ -113,9 +113,8 @@ export const Leaderboard = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-lg">{user.score.toLocaleString()}</span>
-                  <div className={`flex items-center text-sm ${
-                    user.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <div className={`flex items-center text-sm ${user.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     <TrendingUp className="h-4 w-4 mr-1" />
                     {user.change}
                   </div>

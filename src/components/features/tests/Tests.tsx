@@ -8,6 +8,7 @@ import { Clock, Target, Search, Calendar, Award, AlertCircle, Info, BookOpen, Ch
 import { dummyTests, Test } from "@/data/testData";
 import { TestInterface } from "./TestInterface";
 import { toast } from "sonner";
+import { fetchTestById } from "@/api/portalApi";
 
 import { useEffect } from "react";
 
@@ -307,12 +308,17 @@ export const Tests = () => {
                             variant="outline"
                             size="sm"
                             className="text-amber-600 border-amber-600 hover:bg-amber-50"
-                            onClick={() => {
-                              setAllAttempts(relatedResults);
-                              setSelectedResult(relatedResults[0]);
-                              setInitialAttemptIdx(0);
-                              setActiveTest(test);
-                              setReviewMode(true);
+                            onClick={async () => {
+                              try {
+                                const fullTest = await fetchTestById(String(test.testId || test.id), true);
+                                setAllAttempts(relatedResults);
+                                setSelectedResult(relatedResults[0]);
+                                setInitialAttemptIdx(0);
+                                setActiveTest(fullTest);
+                                setReviewMode(true);
+                              } catch (e) {
+                                toast.error("Failed to load test details");
+                              }
                             }}
                           >
                             Review Original
@@ -323,12 +329,17 @@ export const Tests = () => {
                             variant="outline"
                             size="sm"
                             className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                            onClick={() => {
-                              setAllAttempts(relatedResults);
-                              setSelectedResult(relatedResults[1]);
-                              setInitialAttemptIdx(1);
-                              setActiveTest(test);
-                              setReviewMode(true);
+                            onClick={async () => {
+                              try {
+                                const fullTest = await fetchTestById(String(test.testId || test.id), true);
+                                setAllAttempts(relatedResults);
+                                setSelectedResult(relatedResults[1]);
+                                setInitialAttemptIdx(1);
+                                setActiveTest(fullTest);
+                                setReviewMode(true);
+                              } catch (e) {
+                                toast.error("Failed to load test details");
+                              }
                             }}
                           >
                             Review Retaken
@@ -450,12 +461,17 @@ export const Tests = () => {
                               variant="outline"
                               size="sm"
                               className="text-amber-600 border-amber-600 hover:bg-amber-50"
-                              onClick={() => {
-                                setAllAttempts(relatedResults);
-                                setSelectedResult(relatedResults[0]);
-                                setInitialAttemptIdx(0);
-                                setActiveTest(test);
-                                setReviewMode(true);
+                              onClick={async () => {
+                                try {
+                                  const fullTest = await fetchTestById(String(test.testId || test.id), true);
+                                  setAllAttempts(relatedResults);
+                                  setSelectedResult(relatedResults[0]);
+                                  setInitialAttemptIdx(0);
+                                  setActiveTest(fullTest);
+                                  setReviewMode(true);
+                                } catch (e) {
+                                  toast.error("Failed to load test details");
+                                }
                               }}
                             >
                               Review Original
@@ -465,12 +481,17 @@ export const Tests = () => {
                                 variant="outline"
                                 size="sm"
                                 className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                                onClick={() => {
-                                  setAllAttempts(relatedResults);
-                                  setSelectedResult(relatedResults[1]);
-                                  setInitialAttemptIdx(1);
-                                  setActiveTest(test);
-                                  setReviewMode(true);
+                                onClick={async () => {
+                                  try {
+                                    const fullTest = await fetchTestById(String(test.testId || test.id), true);
+                                    setAllAttempts(relatedResults);
+                                    setSelectedResult(relatedResults[1]);
+                                    setInitialAttemptIdx(1);
+                                    setActiveTest(fullTest);
+                                    setReviewMode(true);
+                                  } catch (e) {
+                                    toast.error("Failed to load test details");
+                                  }
                                 }}
                               >
                                 Review Retaken

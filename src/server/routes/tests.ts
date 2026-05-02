@@ -79,6 +79,15 @@ router.get("/", verifyToken, async (req: AuthRequest, res: Response) => {
                 }
                 return true;
             });
+
+            // Strip correct answers and explanations for students
+            tests = tests.map(test => ({
+                ...test,
+                sections: test.sections?.map(s => ({
+                    ...s,
+                    questions: s.questions?.map(({ correctAnswer, explanation, ...q }: any) => q)
+                }))
+            }));
         }
 
         res.json(tests);
@@ -118,13 +127,28 @@ router.get("/:testId", verifyToken, async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: "Test not found" });
         }
 
-        // Strip correct answers for students to prevent cheating
-        if (req.user?.role !== "admin") {
+        let includeAnswers = false;
+        if (req.user?.role === "admin") {
+            includeAnswers = true;
+        } else if (req.query.review === "true" && req.user) {
+            // Verify if student has actually submitted this test
+            const existingResults = await getAllItems<any>(
+                TABLES.RESULTS,
+                "userId = :userId AND testId = :testId",
+                { ":userId": req.user.id, ":testId": testId }
+            );
+            if (existingResults && existingResults.length > 0) {
+                includeAnswers = true;
+            }
+        }
+
+        // Strip correct answers and explanations for students to prevent cheating
+        if (!includeAnswers) {
             const safeTest = {
                 ...test,
                 sections: test.sections?.map(s => ({
                     ...s,
-                    questions: s.questions?.map(({ correctAnswer, ...q }: any) => q)
+                    questions: s.questions?.map(({ correctAnswer, explanation, ...q }: any) => q)
                 }))
             };
             return res.json(safeTest);

@@ -349,8 +349,9 @@ export const fetchStudentResults = async (userId: string) => {
     return res.json();
 };
 
-export const fetchTestById = async (testId: string) => {
-    const res = await fetch(`${API_BASE}/tests/${testId}`, {
+export const fetchTestById = async (testId: string, review?: boolean) => {
+    const url = review ? `${API_BASE}/tests/${testId}?review=true` : `${API_BASE}/tests/${testId}`;
+    const res = await fetch(url, {
         headers: getHeaders(),
     });
     if (!res.ok) throw new Error(await res.text());

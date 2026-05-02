@@ -15,7 +15,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ChevronLeft, ChevronRight, Save, Send, AlertCircle, Award, Trophy, ListOrdered, Target, X, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Save, Send, AlertCircle, Award, Trophy, ListOrdered, Target, X, PanelRightClose, PanelRightOpen, Loader2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -60,6 +60,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
     );
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -250,6 +251,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
     useEffect(() => {
         const fetchLeaderboard = async () => {
             if (!reviewMode) return;
+            setLeaderboardLoading(true);
             try {
                 const token = sessionStorage.getItem('token');
                 const testId = test.testId || test.id;
@@ -258,12 +260,14 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                 });
                 if (resp.ok) {
                     const data = await resp.json();
-                    setLeaderboardData(data.leaderboard);
+                    setLeaderboardData(data.leaderboard || []);
                     setUserRank(data.userRank);
                     setTotalParticipants(data.totalParticipants);
                 }
             } catch (err) {
                 console.error("Failed to fetch leaderboard:", err);
+            } finally {
+                setLeaderboardLoading(false);
             }
         };
 
@@ -449,7 +453,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
     }, [reviewMode, currentAttempt, savedAnswers, test.sections]);
 
     return createPortal(
-        <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[200] overflow-hidden flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
+        <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[10000] overflow-hidden flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
             <div className="max-w-7xl w-full mx-auto h-full flex flex-col space-y-3 md:space-y-6">
                 <div className={`flex-shrink-0 flex ${reviewMode ? 'flex-col sm:flex-row items-start sm:items-center flex-wrap gap-y-3' : 'items-center'} justify-between bg-white/90 backdrop-blur-md z-10 p-3 md:p-4 border-b rounded-xl shadow-sm mb-2 lg:mb-4`}>
                     <div className={reviewMode ? 'w-full sm:w-auto flex items-center justify-between' : ''}>
@@ -526,7 +530,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                             <span className="md:hidden">Ranks</span>
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto z-[250]">
+                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto z-[10001]">
                                         <DialogHeader>
                                             <DialogTitle className="flex items-center gap-2 text-2xl">
                                                 <Trophy className="text-amber-500" />
@@ -547,28 +551,38 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {leaderboardData.map((entry) => (
-                                                    <TableRow key={entry.userId} className={entry.isCurrentUser ? "bg-blue-50" : ""}>
-                                                        <TableCell className="font-medium flex items-center gap-2">
-                                                            {entry.rank === 1 && "🥇"}
-                                                            {entry.rank === 2 && "🥈"}
-                                                            {entry.rank === 3 && "🥉"}
-                                                            {entry.rank}
+                                                {leaderboardLoading ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} className="text-center py-12">
+                                                            <div className="flex flex-col items-center gap-2">
+                                                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                                                <p className="text-sm text-gray-500 font-medium">Loading leaderboard data...</p>
+                                                            </div>
                                                         </TableCell>
-                                                        <TableCell className="font-medium">
-                                                            {entry.name}
-                                                            {entry.isCurrentUser && <Badge className="ml-2 bg-blue-100 text-blue-700">You</Badge>}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">{entry.score}</TableCell>
-                                                        <TableCell className="text-right">{entry.percentage}%</TableCell>
                                                     </TableRow>
-                                                ))}
-                                                {leaderboardData.length === 0 && (
+                                                ) : leaderboardData.length === 0 ? (
                                                     <TableRow>
                                                         <TableCell colSpan={4} className="text-center py-8 text-gray-400">
                                                             No results yet
                                                         </TableCell>
                                                     </TableRow>
+                                                ) : (
+                                                    leaderboardData.map((entry) => (
+                                                        <TableRow key={entry.userId} className={entry.isCurrentUser ? "bg-blue-50" : ""}>
+                                                            <TableCell className="font-medium flex items-center gap-2">
+                                                                {entry.rank === 1 && "🥇"}
+                                                                {entry.rank === 2 && "🥈"}
+                                                                {entry.rank === 3 && "🥉"}
+                                                                {entry.rank}
+                                                            </TableCell>
+                                                            <TableCell className="font-medium">
+                                                                {entry.name}
+                                                                {entry.isCurrentUser && <Badge className="ml-2 bg-blue-100 text-blue-700">You</Badge>}
+                                                            </TableCell>
+                                                            <TableCell className="text-right">{entry.score}</TableCell>
+                                                            <TableCell className="text-right">{entry.percentage}%</TableCell>
+                                                        </TableRow>
+                                                    ))
                                                 )}
                                             </TableBody>
                                         </Table>
@@ -596,7 +610,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                             <span className="hidden md:inline">Submit Test</span><span className="md:hidden ml-1">Submit</span>
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent className="z-[250] w-[95vw] md:w-full">
+                                    <AlertDialogContent className="z-[10001] w-[95vw] md:w-full">
                                         <AlertDialogHeader>
                                             <AlertDialogTitle>Submit Test?</AlertDialogTitle>
                                             <AlertDialogDescription>
@@ -767,7 +781,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
 
                             {/* Section change confirmation dialog */}
                             <AlertDialog open={showSectionChangeDialog} onOpenChange={setShowSectionChangeDialog}>
-                                <AlertDialogContent className="z-[250]">
+                                <AlertDialogContent className="z-[10001]">
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Change Section?</AlertDialogTitle>
                                         <AlertDialogDescription>
@@ -793,8 +807,8 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                     {/* Sidebar Navigation */}
                     {isPanelOpen && (
                         <>
-                            <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[210] animate-in fade-in" onClick={() => setIsPanelOpen(false)} />
-                            <div className="w-[85vw] sm:w-[320px] lg:w-80 flex-shrink-0 flex flex-col h-[100dvh] lg:h-full space-y-4 lg:space-y-6 pb-4 fixed right-0 top-0 lg:static z-[220] lg:z-auto bg-slate-50 lg:bg-transparent shadow-2xl lg:shadow-none animate-in slide-in-from-right lg:animate-none p-3 lg:p-0">
+                            <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[10001] animate-in fade-in" onClick={() => setIsPanelOpen(false)} />
+                            <div className="w-[85vw] sm:w-[320px] lg:w-80 flex-shrink-0 flex flex-col h-[100dvh] lg:h-full space-y-4 lg:space-y-6 pb-4 fixed right-0 top-0 lg:static z-[10002] lg:z-auto bg-slate-50 lg:bg-transparent shadow-2xl lg:shadow-none animate-in slide-in-from-right lg:animate-none p-3 lg:p-0">
                                 <div className="flex justify-between items-center lg:hidden bg-white p-3 rounded-xl shadow-sm -mt-1 mx-1 border border-slate-100">
                                     <h3 className="font-bold text-slate-700">Question Palette</h3>
                                     <Button variant="ghost" size="sm" onClick={() => setIsPanelOpen(false)} className="h-8 w-8 p-0">

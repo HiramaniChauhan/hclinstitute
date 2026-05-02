@@ -227,12 +227,13 @@ router.get("/leaderboard/:testId", verifyToken, async (req: AuthRequest, res: Re
     try {
         const { testId } = req.params;
 
-        // 1. Get all results for this test
-        const allResults = await getAllItems<ResultData>(
-            TABLES.RESULTS,
-            "testId = :testId",
-            { ":testId": testId }
-        );
+        // 1. Get all results for this test using GSI (TestIdIndex) for performance
+        let allResults = await queryByField<ResultData>(TABLES.RESULTS, "testId", testId);
+        
+        // Fallback for numeric IDs (common in dummy data)
+        if (allResults.length === 0 && !isNaN(Number(testId))) {
+            allResults = await queryByField<ResultData>(TABLES.RESULTS, "testId", Number(testId));
+        }
 
         if (allResults.length === 0) {
             return res.json({ leaderboard: [], userRank: null, totalParticipants: 0 });

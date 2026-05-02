@@ -101,7 +101,7 @@ export const Profile = () => {
   const handleReviewTest = async (result: any) => {
     setLoadingReview(true);
     try {
-      const test = await fetchTestById(result.testId);
+      const test = await fetchTestById(result.testId, true);
 
       // Find all attempts for this specific test
       const allAttempts = testResults
