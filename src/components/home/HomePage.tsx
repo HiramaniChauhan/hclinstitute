@@ -77,7 +77,9 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
     contactEmail: "hclinstitute.official@gmail.com",
     establishedYear: "2025",
     additionalLinks: [],
-    siteNotices: []
+    siteNotices: [],
+    welcomeVideoUrl: "",
+    wallOfFameBottomImage: ""
   });
 
   useEffect(() => {
@@ -103,6 +105,8 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             directorInstagram: 'contactInstagram',
             directorEmail: 'contactEmail',
             additionalLinks: 'additionalLinks',
+            welcomeVideoUrl: 'welcomeVideoUrl',
+            wallOfFameBottomImage: 'wallOfFameBottomImage',
           };
 
           setAbout(prevAbout => {
@@ -271,6 +275,43 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             </div>
           </div>
 
+          {/* Welcome Video Section (Optional) */}
+          {about.welcomeVideoUrl && (
+            <div className="mb-16 w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-2xl border border-white/10 aspect-video bg-[#242428]">
+              {about.welcomeVideoUrl.includes('youtube.com') || about.welcomeVideoUrl.includes('youtu.be') ? (
+                <iframe
+                  className="w-full h-full"
+                  src={(() => {
+                    let videoId = "";
+                    if (about.welcomeVideoUrl.includes('v=')) {
+                      videoId = about.welcomeVideoUrl.split('v=')[1].split('&')[0];
+                    } else if (about.welcomeVideoUrl.includes('youtu.be/')) {
+                      videoId = about.welcomeVideoUrl.split('youtu.be/')[1].split('?')[0];
+                    } else if (about.welcomeVideoUrl.includes('embed/')) {
+                      videoId = about.welcomeVideoUrl.split('embed/')[1].split('?')[0];
+                    } else if (about.welcomeVideoUrl.includes('shorts/')) {
+                      videoId = about.welcomeVideoUrl.split('shorts/')[1].split('?')[0];
+                    } else if (about.welcomeVideoUrl.includes('live/')) {
+                      videoId = about.welcomeVideoUrl.split('live/')[1].split('?')[0];
+                    }
+                    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : about.welcomeVideoUrl;
+                  })()}
+                  title="Welcome Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <video 
+                  src={about.welcomeVideoUrl} 
+                  autoPlay 
+                  loop 
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {featureCards.map((feature) => (
               <Card key={feature.id} className="bg-[#242428] border-none hover:bg-[#2a2a2e] transition-all duration-300 group rounded-xl overflow-hidden shadow-xl">
@@ -350,8 +391,23 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
         </div>
       </section>
 
+      {/* Standalone Achievement/Banner Image (Optional) */}
+      {about.wallOfFameBottomImage && (
+        <section className="py-12 bg-[#141416]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-2xl border border-white/5">
+              <img 
+                src={about.wallOfFameBottomImage} 
+                alt="Institute Achievements" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Courses Section */}
-      <section className="py-24 bg-black">
+      <section className="py-24 bg-[#0A0A0B]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="text-left">

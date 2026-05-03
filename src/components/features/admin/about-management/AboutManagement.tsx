@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram, Plus, Trash2, Link as LinkIcon, Pencil, X, AlertTriangle } from "lucide-react";
+import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram, Plus, Trash2, Link as LinkIcon, Pencil, X, AlertTriangle, Video } from "lucide-react";
 import { useState, useEffect, ChangeEvent } from "react";
 import { fetchAboutInfo, updateAboutInfo } from "@/api/portalApi";
 import { toast } from "sonner";
@@ -33,14 +33,16 @@ export const AboutManagement = () => {
     instituteAchievements: "",
     directorAchievements: "",
     additionalLinks: [],
-    siteNotices: [] as string[]
+    siteNotices: [] as string[],
+    welcomeVideoUrl: "",
+    wallOfFameBottomImage: ""
   });
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingNotice, setEditingNotice] = useState(false);
   const [noticeLoading, setNoticeLoading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [cropTarget, setCropTarget] = useState<'directorPhoto' | 'instituteLogo' | null>(null);
+  const [cropTarget, setCropTarget] = useState<'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage' | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
@@ -99,7 +101,7 @@ export const AboutManagement = () => {
     setAboutData((prev: any) => ({ ...prev, additionalLinks: newLinks }));
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldName: 'directorPhoto' | 'instituteLogo') => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldName: 'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -460,6 +462,81 @@ export const AboutManagement = () => {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Welcome Video Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="h-5 w-5" />
+            Home Page Welcome Video (Optional)
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">This video will appear above the feature cards on the home page and autoplay.</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-gray-500" />
+            <Input 
+              placeholder="YouTube Embed URL or Direct MP4 Link" 
+              name="welcomeVideoUrl" 
+              value={aboutData.welcomeVideoUrl || ""} 
+              onChange={handleChange} 
+              disabled={!editing} 
+              className={!editing ? "bg-gray-50 cursor-not-allowed" : ""} 
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Wall of Fame Bottom Image Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Wall of Fame Footer Image (Optional)
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">This image will appear directly below the Wall of Fame student cards.</p>
+        </CardHeader>
+        <CardContent>
+          <div className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative overflow-hidden group ${!editing ? 'opacity-70 pointer-events-none' : ''}`}>
+            <input
+              type="file"
+              accept="image/png, image/jpeg"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              onChange={(e) => handleFileChange(e, 'wallOfFameBottomImage')}
+              disabled={!editing}
+            />
+            {aboutData.wallOfFameBottomImage ? (
+              <div className="relative h-48 w-full">
+                <img src={aboutData.wallOfFameBottomImage} alt="Wall of Fame Footer Image Preview" className="h-full w-full object-contain" />
+                {editing && (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                    <Upload className="h-6 w-6 mb-1" />
+                    <span className="text-sm">Change Image</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                <p className="text-gray-600">Upload Image</p>
+                <p className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG files only</p>
+              </div>
+            )}
+          </div>
+          {aboutData.wallOfFameBottomImage && editing && (
+            <div className="mt-4 flex justify-end">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                onClick={() => setAboutData((prev: any) => ({ ...prev, wallOfFameBottomImage: "" }))}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Remove Image
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
