@@ -124,7 +124,7 @@ export const AdminPortal = () => {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           onProfileClick={() => handleTabChange('profile')}
         />
-        <main className="p-6">
+        <main className={activeTab === 'chat' ? 'h-[calc(100vh-73px)] overflow-hidden p-0' : 'p-6'}>
           {renderContent()}
         </main>
       </div>

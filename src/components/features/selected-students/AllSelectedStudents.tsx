@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trophy, Search, Star, Loader2, ArrowLeft, Linkedin, X } from "lucide-react";
+import { Trophy, Search, Star, Loader2, ArrowLeft, Linkedin, X, Youtube } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -91,7 +91,7 @@ export const AllSelectedStudents = () => {
                         <span className="font-semibold" style={{ color: '#3d3830' }}>Total Selections: {filteredStudents.length}</span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 justify-items-center">
                         {filteredStudents
                             .sort((a, b) => {
                                 const yearA = parseInt(a.year) || 0;
@@ -103,7 +103,7 @@ export const AllSelectedStudents = () => {
                                 return rankA - rankB;
                             })
                             .map((student) => (
-                                <Card key={student.id} className="group hover:shadow-2xl transition-all duration-300 border-none overflow-hidden rounded-2xl" style={{ background: '#fff', boxShadow: '0 2px 12px rgba(61,56,48,0.08)', border: '1px solid rgba(74,124,89,0.15)' }}>
+                                <Card key={student.id} className="group hover:shadow-2xl transition-all duration-300 border-none overflow-hidden rounded-2xl w-full max-w-[280px]" style={{ background: '#fff', boxShadow: '0 2px 12px rgba(61,56,48,0.08)', border: '1px solid rgba(74,124,89,0.15)' }}>
                                     <div className="h-2" style={{ background: 'linear-gradient(to right, #c17f24, #b8860b, #4a7c59)' }} />
                                     <CardContent className="p-6">
                                         <div className="flex flex-col items-center text-center space-y-4">
@@ -114,11 +114,7 @@ export const AllSelectedStudents = () => {
                                                     alt={student.name}
                                                     className="w-24 h-24 rounded-full object-cover relative ring-4 ring-white shadow-lg"
                                                 />
-                                                <div className="absolute -bottom-2 -right-2">
-                                                    <Badge className="h-8 w-8 rounded-full border-2 border-white shadow-md flex items-center justify-center p-0" style={{ background: '#c17f24', color: '#fff' }}>
-                                                        <Star size={14} fill="currentColor" />
-                                                    </Badge>
-                                                </div>
+
                                             </div>
 
                                             <div className="space-y-1 w-full">
@@ -141,20 +137,32 @@ export const AllSelectedStudents = () => {
                                                     <p className="text-sm font-bold leading-tight truncate" style={{ color: '#3d3830' }}>{student.collegeAllotted}</p>
                                                 </div>
 
-                                                <div className="flex items-center rounded-lg p-2 gap-2" style={{ background: 'rgba(74,124,89,0.05)' }}>
-                                                    <Badge variant="secondary" className="flex-1 shadow-sm text-[10px] py-1" style={{ background: '#fff', border: '1px solid rgba(74,124,89,0.12)' }}>
+                                                <div className="flex items-center justify-between rounded-lg p-2 gap-2" style={{ background: 'rgba(74,124,89,0.05)' }}>
+                                                    <Badge variant="secondary" className="shadow-sm text-[10px] py-0.5 px-2 max-w-[150px] truncate" style={{ background: '#fff', border: '1px solid rgba(74,124,89,0.12)' }}>
                                                         {student.batch}
                                                     </Badge>
-                                                    {student.linkedinId && (
-                                                        <a
-                                                            href={student.linkedinId}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="w-8 h-8 flex items-center justify-center rounded-full transition-all shadow-sm" style={{ background: 'rgba(74,124,89,0.1)', color: '#4a7c59' }}
-                                                        >
-                                                            <Linkedin size={14} />
-                                                        </a>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        {student.linkedinId && (
+                                                            <a
+                                                                href={student.linkedinId.startsWith('http') ? student.linkedinId : `https://${student.linkedinId}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="w-7 h-7 flex items-center justify-center rounded-full transition-all shadow-sm hover:bg-[#4a7c59] hover:text-white" style={{ background: 'rgba(74,124,89,0.1)', color: '#4a7c59' }}
+                                                            >
+                                                                <Linkedin size={13} />
+                                                            </a>
+                                                        )}
+                                                        {student.additionalLink && (
+                                                            <a
+                                                                href={student.additionalLink.startsWith('http') ? student.additionalLink : `https://${student.additionalLink}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="w-7 h-7 flex items-center justify-center rounded-full transition-all shadow-sm hover:bg-red-600 hover:text-white" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                                                            >
+                                                                <Youtube size={13} />
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

@@ -130,11 +130,13 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
         // Collect all questions with their correct answers from every section
         let totalQuestions = 0;
         let correctAnswers = 0;
+        let incorrectAnswers = 0;
         let totalScore = 0;
 
         if (test.sections && Array.isArray(test.sections)) {
             for (const section of test.sections) {
-                const marksPerQuestion = section.marksPerQuestion || 1;
+                const marksPerQuestion = Number(section.marksPerQuestion) || 1;
+                const negativeMarks = Number(section.negativeMarks) || 0;
                 if (section.questions && Array.isArray(section.questions)) {
                     for (const question of section.questions) {
                         totalQuestions++;
@@ -144,10 +146,14 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
                         // Try composite key first (normal flow), fall back to plain questionId
                         const studentAnswer = userAnswers[compositeKey] ?? userAnswers[questionId];
 
-                        if (studentAnswer !== undefined && studentAnswer !== null &&
-                            String(studentAnswer) === String(question.correctAnswer)) {
-                            correctAnswers++;
-                            totalScore += marksPerQuestion;
+                        if (studentAnswer !== undefined && studentAnswer !== null) {
+                            if (String(studentAnswer) === String(question.correctAnswer)) {
+                                correctAnswers++;
+                                totalScore += marksPerQuestion;
+                            } else {
+                                incorrectAnswers++;
+                                totalScore -= negativeMarks;
+                            }
                         }
                     }
                 }
@@ -156,7 +162,11 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
 
         const finalCourseId = courseId || test?.subject || "General";
         const finalDuration = duration || 0;
-        const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+        const totalPossibleMarks = (test.sections || []).reduce(
+            (acc: number, s: any) => acc + ((s.questions?.length || 0) * (Number(s.marksPerQuestion) || 1)),
+            0
+        );
+        const percentage = totalPossibleMarks > 0 ? (totalScore / totalPossibleMarks) * 100 : 0;
         const status = percentage >= (test?.passingScore || 40) ? "passed" : "failed";
 
         const result: ResultData = {

@@ -14,7 +14,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ChevronLeft, ChevronRight, Save, Send, AlertCircle, Award, Trophy, ListOrdered, Target, X, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Save, Send, AlertCircle, Award, Trophy, ListOrdered, Target, X, PanelRightClose, PanelRightOpen, Maximize } from "lucide-react";
 import { Test, Question, TestSection } from "@/data/testData";
 import { toast } from "sonner";
 import { Latex } from "@/components/ui/latex";
@@ -60,6 +60,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [tabSwitchCount, setTabSwitchCount] = useState(0);
+    const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
     const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -269,25 +270,40 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
         };
     }, [reviewMode, handleSubmit]);
 
-    // Fullscreen logic
+    // Fullscreen logic — detect when student exits fullscreen and show popup
+    const enterFullscreen = useCallback(() => {
+        const element = document.documentElement;
+        if (element.requestFullscreen) {
+            element.requestFullscreen().then(() => {
+                setShowFullscreenPopup(false);
+            }).catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        }
+    }, []);
+
     useEffect(() => {
         if (!reviewMode) {
-            const element = document.documentElement;
-            if (element.requestFullscreen) {
-                element.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-            }
+            enterFullscreen();
         }
 
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && !reviewMode) {
+                setShowFullscreenPopup(true);
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+
         return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(err => {
                     console.error(`Error attempting to exit full-screen mode: ${err.message}`);
                 });
             }
         };
-    }, [reviewMode]);
+    }, [reviewMode, enterFullscreen]);
 
     // Timer logic
     useEffect(() => {
@@ -429,6 +445,29 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
 
     return createPortal(
         <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[200] overflow-hidden flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
+            {/* Fullscreen Exit Warning Popup */}
+            {showFullscreenPopup && !reviewMode && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 md:p-8 max-w-md w-[90vw] flex flex-col items-center gap-5 animate-in zoom-in-95 duration-300">
+                        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                            <AlertCircle className="w-8 h-8 text-amber-600" />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-slate-800">Fullscreen Required</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed">
+                                You have exited fullscreen mode. The test must be taken in fullscreen to prevent unfair practices. Please return to fullscreen to continue.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={enterFullscreen}
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 flex items-center justify-center gap-2 text-base"
+                        >
+                            <Maximize size={20} />
+                            Return to Fullscreen
+                        </Button>
+                    </div>
+                </div>
+            )}
             <div className="max-w-7xl w-full mx-auto h-full flex flex-col space-y-3 md:space-y-6">
                 <div className="flex-shrink-0 flex items-center justify-between bg-white z-10 p-3 md:p-4 border-b rounded-xl shadow-sm mb-2 lg:mb-4">
                     <div>

@@ -130,7 +130,7 @@ export const StudentPortal = () => {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           onProfileClick={() => setActiveTab('profile')}
         />
-        <main className="p-6">
+        <main className={activeTab === 'chat' ? 'h-[calc(100vh-73px)] overflow-hidden p-0' : 'p-3 sm:p-4 md:p-6'}>
           {renderContent()}
         </main>
       </div>

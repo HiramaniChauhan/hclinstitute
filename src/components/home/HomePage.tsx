@@ -18,7 +18,8 @@ import {
   Calculator,
   CheckCircle2,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  Youtube
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchAboutInfo, fetchCourses, fetchSelectedStudents } from "@/api/portalApi";
@@ -136,7 +137,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             const yearB = parseInt(b.year) || 0;
             return yearB - yearA;
           });
-          setSelectedStudents(sortedStudents.slice(0, 3));
+          setSelectedStudents(sortedStudents.slice(0, 4));
         }
       } catch (err) {
         console.error("Failed to load homepage data", err);
@@ -282,11 +283,6 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                 <CardContent>
                   <p className="text-gray-400 mb-6 text-sm leading-relaxed">{feature.description}</p>
 
-                  {/* Mock graphic for the card */}
-                  <div className="h-40 w-full bg-[#1a1a1d] rounded-lg mt-4 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                    <div className="absolute w-24 h-24 bg-[#ef5350]/20 rounded-full blur-xl"></div>
-                    <Calculator className={`w-16 h-16 ${feature.color} z-10 opacity-50`} />
-                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -312,9 +308,9 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 justify-items-center">
             {selectedStudents.length > 0 ? selectedStudents.map((student, index) => (
-              <div key={index} className={`bg-[#242428] border-none p-8 rounded-xl text-center shadow-xl group hover:-translate-y-2 transition-transform duration-300`}>
+              <div key={index} className={`bg-[#242428] border-none p-6 md:p-8 rounded-xl text-center shadow-xl group hover:-translate-y-2 transition-transform duration-300 w-full max-w-[300px]`}>
                 <div className="mx-auto w-52 h-52 mb-6 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/10 bg-[#1a1a1d] shadow-lg">
                   {student.photo ? (
                     <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
@@ -336,6 +332,11 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                   {student.linkedinId && (
                     <a href={student.linkedinId.startsWith('http') ? student.linkedinId : `https://${student.linkedinId}`} target="_blank" rel="noopener noreferrer" className="ml-2 w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 hover:bg-blue-600 hover:text-white transition-all">
                       <Linkedin className="w-4 h-4" />
+                    </a>
+                  )}
+                  {student.additionalLink && (
+                    <a href={student.additionalLink.startsWith('http') ? student.additionalLink : `https://${student.additionalLink}`} target="_blank" rel="noopener noreferrer" className="ml-1 w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-red-500 hover:bg-red-600 hover:text-white transition-all">
+                      <Youtube className="w-4 h-4" />
                     </a>
                   )}
                 </div>
@@ -436,7 +437,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
       {/* About Director */}
       <section className="py-24 relative overflow-hidden bg-[#1A1A1D]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-[#242428] rounded-2xl p-8 md:p-12 overflow-hidden shadow-2xl border border-white/5">
+          <div className="relative bg-[#242428] rounded-2xl p-4 sm:p-6 md:p-12 overflow-hidden shadow-2xl border border-white/5">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#ef5350]/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 hidden"></div>
 
             <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
@@ -456,7 +457,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                 <p className="text-gray-400 text-base leading-relaxed mb-8 max-w-2xl whitespace-pre-line">
                   {about.directorBio}
                 </p>
-                <div className="flex items-center justify-center md:justify-start gap-4">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4">
                   {about.contactLinkedin && about.contactLinkedin !== "#" && (
                     <a href={about.contactLinkedin.startsWith('http') ? about.contactLinkedin : `https://${about.contactLinkedin}`} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" className="border-white/10 text-black hover:bg-[#ef5350] hover:text-white transition-all rounded">

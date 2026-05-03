@@ -12,6 +12,7 @@ interface SelectedStudent {
     rank: number;
     collegeAllotted: string;
     linkedinId?: string;
+    additionalLink?: string;
     batch: string;
     year: string;
     createdAt: string;

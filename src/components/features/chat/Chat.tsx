@@ -295,7 +295,7 @@ export const Chat = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-12rem)] flex gap-6">
+    <div className="h-full w-full flex bg-white">
       <input
         type="file"
         ref={fileInputRef}
@@ -305,7 +305,7 @@ export const Chat = () => {
 
       {/* Chat List (Admin Only) */}
       {user?.role === 'admin' && (
-        <Card className="w-1/3">
+        <Card className="w-1/3 rounded-none border-y-0 border-l-0 border-r rounded-r-none">
           <CardHeader>
             <CardTitle className="flex items-center">
               <MessageCircle className="w-5 h-5 mr-2" />
@@ -352,7 +352,7 @@ export const Chat = () => {
       )}
 
       {/* Chat Messages */}
-      <Card className={`${user?.role === 'admin' ? 'flex-1' : 'w-full'}`}>
+      <Card className={`${user?.role === 'admin' ? 'flex-1 rounded-none border-0' : 'w-full rounded-none border-0'}`}>
         {selectedChat || user?.role === 'student' ? (
           <div className="flex flex-col h-full">
             <CardHeader className="border-b shrink-0">
@@ -454,7 +454,7 @@ export const Chat = () => {
               <div ref={messagesEndRef} />
             </CardContent>
 
-            <div className="border-t p-4 shrink-0 bg-white rounded-b-xl">
+            <div className="border-t p-4 shrink-0 bg-white">
               {pendingAttachment && (
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-center justify-between border border-blue-100">
                   <div className="flex items-center gap-3">
@@ -495,11 +495,7 @@ export const Chat = () => {
                   <Send size={18} />
                 </Button>
               </div>
-              <p className="text-[10px] text-gray-500 mt-2 text-center italic">
-                {user?.role === 'admin'
-                  ? "Respond securely to student requests."
-                  : `One shared support line for all admins. Messages are saved securely with ${aboutConfig?.instituteName || "the institute"}.`}
-              </p>
+
             </div>
           </div>
         ) : (

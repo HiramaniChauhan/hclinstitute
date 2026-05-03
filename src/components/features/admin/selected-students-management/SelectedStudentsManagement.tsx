@@ -11,7 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Trophy, Plus, Trash2, Upload, Loader2, X, Linkedin, School, Search, Users, Star, Pencil } from "lucide-react";
+import { Trophy, Plus, Trash2, Upload, Loader2, X, Linkedin, School, Search, Users, Star, Pencil, Youtube } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ export const SelectedStudentsManagement = () => {
     rank: "",
     collegeAllotted: "",
     linkedinId: "",
+    additionalLink: "",
     batch: "",
     year: new Date().getFullYear().toString(),
     photo: ""
@@ -113,6 +114,7 @@ export const SelectedStudentsManagement = () => {
           rank: "",
           collegeAllotted: "",
           linkedinId: "",
+          additionalLink: "",
           batch: "",
           year: selectedYear,
           photo: ""
@@ -133,6 +135,7 @@ export const SelectedStudentsManagement = () => {
       rank: student.rank.toString(),
       collegeAllotted: student.collegeAllotted,
       linkedinId: student.linkedinId || "",
+      additionalLink: student.additionalLink || "",
       batch: student.batch,
       year: student.year,
       photo: student.photo || ""
@@ -217,6 +220,7 @@ export const SelectedStudentsManagement = () => {
                 rank: "",
                 collegeAllotted: "",
                 linkedinId: "",
+                additionalLink: "",
                 batch: "",
                 year: selectedYear,
                 photo: ""
@@ -245,7 +249,8 @@ export const SelectedStudentsManagement = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input placeholder="Batch" value={newStudent.batch} onChange={e => setNewStudent({ ...newStudent, batch: e.target.value })} />
-                  <div className="space-y-1">
+                  <Input placeholder="YouTube Interview Link (Optional)" value={newStudent.additionalLink} onChange={e => setNewStudent({ ...newStudent, additionalLink: e.target.value })} />
+                  <div className="space-y-1 md:col-span-2">
                     <label className="text-xs font-medium text-gray-500">Selected Year</label>
                     <select
                       className="px-3 py-2 border rounded-lg w-full bg-white text-gray-900"
@@ -379,8 +384,13 @@ export const SelectedStudentsManagement = () => {
                                     </Badge>
                                   )}
                                   {student.linkedinId && (
-                                    <a href={student.linkedinId} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                                    <a href={student.linkedinId.startsWith('http') ? student.linkedinId : `https://${student.linkedinId}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
                                       <Linkedin size={16} />
+                                    </a>
+                                  )}
+                                  {student.additionalLink && (
+                                    <a href={student.additionalLink.startsWith('http') ? student.additionalLink : `https://${student.additionalLink}`} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-800">
+                                      <Youtube size={16} />
                                     </a>
                                   )}
                                 </div>
