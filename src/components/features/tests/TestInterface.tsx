@@ -659,7 +659,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
-                                                    leaderboardData.map((entry) => (
+                                                    leaderboardData.slice(0, 10).map((entry) => (
                                                         <TableRow key={entry.userId} className={entry.isCurrentUser ? "bg-blue-50" : ""}>
                                                             <TableCell className="font-medium flex items-center gap-2">
                                                                 {entry.rank === 1 && "🥇"}
