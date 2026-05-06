@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {
 import {
     Search, Trash2, ShieldCheck, ShieldOff, Users, Activity,
     CheckCircle, XCircle, Mail, UserCog, Bell, RefreshCw, FileText,
-    BookOpen, Plus, Loader2
+    BookOpen, Plus, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from "lucide-react";
 import { StudentDetail } from "./StudentDetail";
 import {
@@ -54,6 +54,7 @@ export const StudentManagement = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [suspendDialog, setSuspendDialog] = useState<Student | null>(null);
@@ -68,26 +69,42 @@ export const StudentManagement = () => {
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [enrollLoading, setEnrollLoading] = useState(false);
     const [viewMode, setViewMode] = useState<"active" | "deleted">("active");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
+    const [stats, setStats] = useState({ totalAll: 0, verifiedCount: 0, suspendedCount: 0 });
     const { toast } = useToast();
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const load = useCallback(async () => {
+    // Debounce search input
+    useEffect(() => {
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setCurrentPage(1); // Reset to page 1 on new search
+        }, 400);
+        return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+    }, [searchTerm]);
+
+    const load = useCallback(async (page = currentPage, search = debouncedSearch) => {
         setLoading(true);
         try {
-            const data = await fetchAllStudents();
-            setStudents(data);
+            const data = await fetchAllStudents({ page, limit: 50, search: search || undefined });
+            setStudents(data.students);
+            setPagination(data.pagination);
+            if (data.stats) setStats(data.stats);
         } catch {
             toast({ title: "Error", description: "Failed to load students", variant: "destructive" });
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [toast, currentPage, debouncedSearch]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { load(currentPage, debouncedSearch); }, [currentPage, debouncedSearch]);
 
+    // Filter by viewMode client-side (active vs deleted) from the current page
     const filtered = students.filter(s => {
-        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesView = viewMode === "active" ? !s.isDeleted : !!s.isDeleted;
-        return matchesSearch && matchesView;
+        return matchesView;
     });
 
     const doVerify = async (student: Student) => {
@@ -95,7 +112,7 @@ export const StudentManagement = () => {
         try {
             await verifyStudent(student.id);
             toast({ title: `${student.name} verified!` });
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -108,7 +125,7 @@ export const StudentManagement = () => {
         try {
             await unverifyStudent(student.id);
             toast({ title: `${student.name} unverified.` });
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -124,7 +141,7 @@ export const StudentManagement = () => {
             toast({ title: `${suspendDialog.name} suspended` });
             setSuspendDialog(null);
             setSuspendReason("");
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -137,7 +154,7 @@ export const StudentManagement = () => {
         try {
             await unsuspendStudent(student.id);
             toast({ title: `${student.name} reinstated` });
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -152,7 +169,7 @@ export const StudentManagement = () => {
             await deleteStudent(deleteDialog.id);
             toast({ title: `${deleteDialog.name} moved to deleted accounts` });
             setDeleteDialog(null);
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -167,7 +184,7 @@ export const StudentManagement = () => {
             await permanentlyDeleteStudent(permanentDeleteDialog.id);
             toast({ title: `${permanentDeleteDialog.name} permanently deleted` });
             setPermanentDeleteDialog(null);
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -180,7 +197,7 @@ export const StudentManagement = () => {
         try {
             await restoreStudent(student.id);
             toast({ title: `${student.name} restored` });
-            load();
+            load(currentPage, debouncedSearch);
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
         } finally {
@@ -253,13 +270,13 @@ export const StudentManagement = () => {
         }
     };
 
-    const verified = students.filter(s => s.isVerified && !s.isDeleted).length;
-    const suspended = students.filter(s => s.isSuspended && !s.isDeleted).length;
+    const verified = stats.verifiedCount;
+    const suspended = stats.suspendedCount;
 
     const handleBack = useCallback(() => {
         setSelectedStudentId(null);
-        load();
-    }, [load]);
+        load(currentPage, debouncedSearch);
+    }, [load, currentPage, debouncedSearch]);
 
     if (selectedStudentId) {
         return <StudentDetail studentId={selectedStudentId} onBack={handleBack} />;
@@ -274,7 +291,7 @@ export const StudentManagement = () => {
                     <h1 className="text-2xl font-bold">Student Management</h1>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={load}>
+                    <Button variant="outline" size="sm" onClick={() => load(currentPage, debouncedSearch)}>
                         <RefreshCw className="h-4 w-4 mr-2" /> Refresh
                     </Button>
                     <Button size="sm" onClick={() => setBroadcastDialog(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -288,7 +305,7 @@ export const StudentManagement = () => {
                 <Card className="border-l-4 border-l-indigo-500">
                     <CardContent className="p-4 flex items-center gap-3">
                         <Users className="h-8 w-8 text-indigo-400" />
-                        <div><p className="text-xs text-gray-500">Total Students</p><p className="text-2xl font-bold">{students.length}</p></div>
+                        <div><p className="text-xs text-gray-500">Total Students</p><p className="text-2xl font-bold">{stats.totalAll}</p></div>
                     </CardContent>
                 </Card>
                 <Card className="border-l-4 border-l-green-500">
@@ -310,7 +327,7 @@ export const StudentManagement = () => {
                 <CardHeader>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-4">
-                            <CardTitle>Students</CardTitle>
+                            <CardTitle>Students {debouncedSearch && <span className="text-sm font-normal text-gray-500 ml-2">({pagination.total} results for "{debouncedSearch}")</span>}</CardTitle>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
                                 <Button
                                     size="sm"
@@ -332,8 +349,9 @@ export const StudentManagement = () => {
                         </div>
                         <div className="relative w-64">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                            {searchTerm && loading && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 animate-spin" />}
                             <Input
-                                placeholder="Search by name or email"
+                                placeholder="Search all students by name or email..."
                                 className="pl-8"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -348,9 +366,11 @@ export const StudentManagement = () => {
                         </div>
                     ) : filtered.length === 0 ? (
                         <div className="text-center py-12 text-gray-500">
-                            {students.length === 0
+                            {pagination.total === 0 && !debouncedSearch
                                 ? "No students registered yet. Students who register will appear here."
-                                : `No students matching "${searchTerm}"`}
+                                : debouncedSearch
+                                    ? `No students matching "${debouncedSearch}" across all records`
+                                    : `No ${viewMode} students on this page`}
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -499,6 +519,85 @@ export const StudentManagement = () => {
                                 </div>
                             ))}
                         </div>
+                    )}
+
+                    {/* Pagination Controls */}
+                    {pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-6 border-t mt-6">
+                            <p className="text-sm text-gray-500">
+                                Showing {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} students
+                                {debouncedSearch && ` matching "${debouncedSearch}"`}
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1 || loading}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronsLeft className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1 || loading}
+                                    className="h-8 px-3"
+                                >
+                                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                                </Button>
+                                <div className="flex items-center gap-1 px-2">
+                                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                                        let pageNum: number;
+                                        if (pagination.totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= pagination.totalPages - 2) {
+                                            pageNum = pagination.totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={pageNum === currentPage ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                disabled={loading}
+                                                className={`h-8 w-8 p-0 ${pageNum === currentPage ? "bg-indigo-600 text-white hover:bg-indigo-700" : ""}`}
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                                    disabled={currentPage === pagination.totalPages || loading}
+                                    className="h-8 px-3"
+                                >
+                                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(pagination.totalPages)}
+                                    disabled={currentPage === pagination.totalPages || loading}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronsRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    {pagination.totalPages <= 1 && pagination.total > 0 && (
+                        <p className="text-sm text-gray-400 text-center pt-4">
+                            Showing all {pagination.total} students
+                        </p>
                     )}
                 </CardContent>
             </Card>

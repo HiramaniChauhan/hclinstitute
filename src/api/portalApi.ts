@@ -40,12 +40,22 @@ export const deleteAdminWithOtp = async (adminId: string, otp: string) => {
 };
 
 // ─────────────── Student Management ────────────────────────────────────────
-export const fetchAllStudents = async () => {
-    const res = await fetch(`${API_BASE}/admin/students`, { headers: getHeaders() });
+export const fetchAllStudents = async (params?: { page?: number; limit?: number; search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    const qs = query.toString();
+    const url = `${API_BASE}/admin/students${qs ? `?${qs}` : ""}`;
+    const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    // Support both paginated { students, pagination } and legacy array format
-    return data.students || (Array.isArray(data) ? data : []);
+    // Return the full response with pagination + stats
+    if (data.students && data.pagination) {
+        return data;
+    }
+    // Legacy fallback
+    return { students: Array.isArray(data) ? data : [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }, stats: { totalAll: 0, verifiedCount: 0, suspendedCount: 0 } };
 };
 
 export const fetchStudentProfile = async (id: string) => {

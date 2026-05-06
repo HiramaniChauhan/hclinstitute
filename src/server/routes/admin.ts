@@ -48,14 +48,15 @@ router.get("/dashboard", verifyToken, requireAdmin, async (req: AuthRequest, res
 
 // ─── Student Management ───────────────────────────────────────────────────────
 
-// GET all students (supports pagination: ?page=1&limit=50)
+// GET all students (supports pagination: ?page=1&limit=50&search=term)
 router.get("/students", verifyToken, requireAdmin, async (req: AuthRequest, res: Response) => {
     try {
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+        const search = ((req.query.search as string) || "").trim().toLowerCase();
 
         const users = await getAllItems<any>(TABLES.USERS);
-        const students = users
+        let students = users
             .filter((u: any) => u.role === "student")
             .map(({ password, ...rest }: any) => rest)
             .sort((a: any, b: any) => {
@@ -64,13 +65,27 @@ router.get("/students", verifyToken, requireAdmin, async (req: AuthRequest, res:
                 return dateB - dateA; // Newest first
             });
 
+        // Total count BEFORE search filtering (for stats)
+        const totalAll = students.length;
+        const verifiedCount = students.filter((s: any) => s.isVerified && !s.isDeleted).length;
+        const suspendedCount = students.filter((s: any) => s.isSuspended && !s.isDeleted).length;
+
+        // Apply search filter across ALL students (server-side)
+        if (search) {
+            students = students.filter((s: any) =>
+                (s.name || "").toLowerCase().includes(search) ||
+                (s.email || "").toLowerCase().includes(search)
+            );
+        }
+
         const total = students.length;
         const start = (page - 1) * limit;
         const paginated = students.slice(start, start + limit);
 
         res.json({
             students: paginated,
-            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+            stats: { totalAll, verifiedCount, suspendedCount }
         });
     } catch (error: any) {
         res.status(500).json({ error: error.message });

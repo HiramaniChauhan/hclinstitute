@@ -17,8 +17,16 @@ export async function getAllItems<T>(tableName: string, filterExpression?: strin
         params.FilterExpression = filterExpression;
         params.ExpressionAttributeValues = expressionAttributeValues;
     }
-    const result = await docClient.send(new ScanCommand(params));
-    return (result.Items as T[]) || [];
+    // DynamoDB Scan has a 1MB per-request limit — paginate with LastEvaluatedKey
+    const allItems: T[] = [];
+    let lastKey: any = undefined;
+    do {
+        if (lastKey) params.ExclusiveStartKey = lastKey;
+        const result = await docClient.send(new ScanCommand(params));
+        if (result.Items) allItems.push(...(result.Items as T[]));
+        lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return allItems;
 }
 
 /**

@@ -13,16 +13,11 @@ export const AdminDashboard = () => {
         const token = sessionStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
 
-        // Fetch Total Students
-        const studentsResp = await fetch('/api/admin/students', { headers });
-        if (studentsResp.ok) {
-          const studentsData = await studentsResp.json();
-          // Support both paginated { students, pagination } and legacy array format
-          if (studentsData.pagination) {
-            setTotalStudents(studentsData.pagination.total);
-          } else {
-            setTotalStudents(Array.isArray(studentsData) ? studentsData.length : 0);
-          }
+        // Fetch Total Students from dashboard stats (efficient — no student data transferred)
+        const dashResp = await fetch('/api/admin/dashboard', { headers });
+        if (dashResp.ok) {
+          const dashData = await dashResp.json();
+          setTotalStudents(dashData.totalStudents || 0);
         }
 
         // Fetch Active Tests
