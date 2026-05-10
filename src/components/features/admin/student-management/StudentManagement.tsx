@@ -18,6 +18,7 @@ import {
     deleteStudent, broadcastNotification, fetchStudentEnrollments, adminEnrollStudent, unenroll, fetchCourses, restoreStudent, permanentlyDeleteStudent
 } from "@/api/portalApi";
 import { useToast } from "@/hooks/use-toast";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 interface Course {
     id: string;
@@ -74,6 +75,13 @@ export const StudentManagement = () => {
     const [stats, setStats] = useState({ totalAll: 0, verifiedCount: 0, suspendedCount: 0 });
     const { toast } = useToast();
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Delete confirmation state
+    const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
+    const [permanentDeleteConfirmInput, setPermanentDeleteConfirmInput] = useState("");
+    // Unenroll confirmation
+    const [unenrollConfirmOpen, setUnenrollConfirmOpen] = useState(false);
+    const [pendingUnenroll, setPendingUnenroll] = useState<{ enrollmentId: string; courseName: string } | null>(null);
 
     // Debounce search input
     useEffect(() => {
@@ -255,9 +263,13 @@ export const StudentManagement = () => {
         }
     };
 
+    const requestUnenroll = (enrollmentId: string, courseName: string) => {
+        setPendingUnenroll({ enrollmentId, courseName });
+        setUnenrollConfirmOpen(true);
+    };
+
     const doUnenroll = async (enrollmentId: string) => {
         if (!courseDialogStudent) return;
-        if (!confirm("Are you sure you want to remove this course?")) return;
         setEnrollLoading(true);
         try {
             await unenroll(enrollmentId);
@@ -622,29 +634,85 @@ export const StudentManagement = () => {
             </Dialog>
 
             {/* Delete Dialog */}
-            <Dialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <DialogContent>
+            <Dialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) { setDeleteDialog(null); setDeleteConfirmInput(""); } }}>
+                <DialogContent className="rounded-3xl border-none shadow-2xl max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Remove {deleteDialog?.name}?</DialogTitle>
+                        <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                            <div className="p-2.5 bg-red-100 rounded-2xl">
+                                <Trash2 className="text-red-600 h-6 w-6" />
+                            </div>
+                            Remove {deleteDialog?.name}?
+                        </DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-gray-500">This will move the student's account to the Deleted Accounts list.</p>
+                    <p className="text-sm text-gray-500">This will move the student's account to the Deleted Accounts list. Type the student's name to confirm.</p>
+                    <div className="py-3 space-y-3">
+                        <div className="bg-red-50 border-2 border-dashed border-red-200 rounded-2xl px-5 py-3 text-center">
+                            <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-1">Type this to confirm</p>
+                            <p className="text-xl font-black text-red-700 tracking-tight">{deleteDialog?.name}</p>
+                        </div>
+                        <Input
+                            placeholder={`Type "${deleteDialog?.name}" to confirm`}
+                            value={deleteConfirmInput}
+                            onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                            className={`h-14 rounded-2xl text-lg font-bold transition-all ${
+                                deleteConfirmInput && deleteConfirmInput === deleteDialog?.name
+                                    ? 'border-green-400 bg-green-50 ring-2 ring-green-200 text-green-800'
+                                    : deleteConfirmInput
+                                    ? 'border-red-300 bg-red-50/50 text-red-700'
+                                    : 'border-slate-200 bg-slate-50'
+                            }`}
+                            autoFocus
+                        />
+                    </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialog(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={doDelete}>Yes, Remove</Button>
+                        <Button variant="outline" onClick={() => { setDeleteDialog(null); setDeleteConfirmInput(""); }}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            disabled={deleteConfirmInput !== deleteDialog?.name}
+                            onClick={() => { doDelete(); setDeleteConfirmInput(""); }}
+                        >Yes, Remove</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Permanent Delete Dialog */}
-            <Dialog open={!!permanentDeleteDialog} onOpenChange={(open) => !open && setPermanentDeleteDialog(null)}>
-                <DialogContent>
+            <Dialog open={!!permanentDeleteDialog} onOpenChange={(open) => { if (!open) { setPermanentDeleteDialog(null); setPermanentDeleteConfirmInput(""); } }}>
+                <DialogContent className="rounded-3xl border-none shadow-2xl max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Permanently Delete {permanentDeleteDialog?.name}?</DialogTitle>
+                        <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                            <div className="p-2.5 bg-red-100 rounded-2xl">
+                                <Trash2 className="text-red-600 h-6 w-6" />
+                            </div>
+                            Permanently Delete {permanentDeleteDialog?.name}?
+                        </DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-red-600 font-semibold">Warning: This action is irreversible. It will permanently remove the student and all associated data from the database.</p>
+                    <p className="text-sm text-red-600 font-semibold">Warning: This action is irreversible. It will permanently remove the student and all associated data. Type the student's name to confirm.</p>
+                    <div className="py-3 space-y-3">
+                        <div className="bg-red-50 border-2 border-dashed border-red-200 rounded-2xl px-5 py-3 text-center">
+                            <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-1">Type this to confirm</p>
+                            <p className="text-xl font-black text-red-700 tracking-tight">{permanentDeleteDialog?.name}</p>
+                        </div>
+                        <Input
+                            placeholder={`Type "${permanentDeleteDialog?.name}" to confirm`}
+                            value={permanentDeleteConfirmInput}
+                            onChange={(e) => setPermanentDeleteConfirmInput(e.target.value)}
+                            className={`h-14 rounded-2xl text-lg font-bold transition-all ${
+                                permanentDeleteConfirmInput && permanentDeleteConfirmInput === permanentDeleteDialog?.name
+                                    ? 'border-green-400 bg-green-50 ring-2 ring-green-200 text-green-800'
+                                    : permanentDeleteConfirmInput
+                                    ? 'border-red-300 bg-red-50/50 text-red-700'
+                                    : 'border-slate-200 bg-slate-50'
+                            }`}
+                            autoFocus
+                        />
+                    </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setPermanentDeleteDialog(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={doPermanentDelete}>Yes, Delete Permanently</Button>
+                        <Button variant="outline" onClick={() => { setPermanentDeleteDialog(null); setPermanentDeleteConfirmInput(""); }}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            disabled={permanentDeleteConfirmInput !== permanentDeleteDialog?.name}
+                            onClick={() => { doPermanentDelete(); setPermanentDeleteConfirmInput(""); }}
+                        >Yes, Delete Permanently</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -732,7 +800,10 @@ export const StudentManagement = () => {
                                                         size="sm"
                                                         variant="ghost"
                                                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        onClick={() => doUnenroll(en.enrollmentId)}
+                                                        onClick={() => {
+                                                            const courseName = course?.title || 'this course';
+                                                            requestUnenroll(en.enrollmentId, courseName);
+                                                        }}
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-1" /> Remove
                                                     </Button>
@@ -775,6 +846,17 @@ export const StudentManagement = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Unenroll Confirmation Dialog */}
+            <DeleteConfirmDialog
+                open={unenrollConfirmOpen}
+                onOpenChange={(val) => { setUnenrollConfirmOpen(val); if (!val) setPendingUnenroll(null); }}
+                itemName={pendingUnenroll?.courseName || ""}
+                itemType="course enrollment"
+                onConfirm={() => {
+                    if (pendingUnenroll) doUnenroll(pendingUnenroll.enrollmentId);
+                }}
+            />
 
         </div>
     );

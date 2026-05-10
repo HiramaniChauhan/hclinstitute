@@ -6,6 +6,7 @@ import { Upload, FileText, Edit, Trash2, Download, Calendar, Search } from "luci
 import { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 export const NotesManagement = () => {
   const [notes, setNotes] = useState<any[]>([]);
@@ -14,6 +15,10 @@ export const NotesManagement = () => {
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingNote, setEditingNote] = useState<any>(null);
+
+  // Delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState<{ id: string; title: string } | null>(null);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -148,9 +153,12 @@ export const NotesManagement = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this note?")) return;
+  const requestDeleteNote = (note: any) => {
+    setPendingDeleteNote({ id: note.id, title: note.title });
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleDelete = async (id: string) => {
     try {
       const token = sessionStorage.getItem('token');
       const response = await fetch(`/api/notes/${id}`, {
@@ -323,7 +331,7 @@ export const NotesManagement = () => {
                         <Edit size={14} className="mr-1" />
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(note.id)}>
+                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => requestDeleteNote(note)}>
                         <Trash2 size={14} className="mr-1" />
                         Delete
                       </Button>
@@ -335,6 +343,17 @@ export const NotesManagement = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+
+    {/* Delete Confirmation Dialog */}
+    <DeleteConfirmDialog
+      open={deleteConfirmOpen}
+      onOpenChange={(val) => { setDeleteConfirmOpen(val); if (!val) setPendingDeleteNote(null); }}
+      itemName={pendingDeleteNote?.title || ""}
+      itemType="note"
+      onConfirm={() => {
+        if (pendingDeleteNote) handleDelete(pendingDeleteNote.id);
+      }}
+    />
+  </div>
   );
 };

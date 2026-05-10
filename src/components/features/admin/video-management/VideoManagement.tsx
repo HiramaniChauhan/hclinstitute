@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Upload, Video, Eye, Youtube, Plus, Calendar, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 export const VideoManagement = () => {
     const [videos, setVideos] = useState<any[]>([]);
@@ -23,6 +24,10 @@ export const VideoManagement = () => {
     const [subject, setSubject] = useState("");
     const [description, setDescription] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Delete confirmation
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [pendingDeleteVideo, setPendingDeleteVideo] = useState<{ id: string; title: string } | null>(null);
 
     // Live Class state
     const [liveTitle, setLiveTitle] = useState("");
@@ -196,9 +201,12 @@ export const VideoManagement = () => {
         setEditSubject(video.subject);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Are you sure you want to delete this video?")) return;
+    const requestDeleteVideo = (video: any) => {
+        setPendingDeleteVideo({ id: video.id, title: video.title });
+        setDeleteConfirmOpen(true);
+    };
 
+    const handleDelete = async (id: string) => {
         try {
             const token = sessionStorage.getItem('token');
             const response = await fetch(`/api/videos/${id}`, {
@@ -361,7 +369,7 @@ export const VideoManagement = () => {
                                                                 size="sm"
                                                                 variant="destructive"
                                                                 className="bg-red-50 text-red-600 hover:bg-red-100 border-none shadow-none"
-                                                                onClick={() => handleDelete(video.id)}
+                                                                onClick={() => requestDeleteVideo(video)}
                                                             >
                                                                 <Trash2 size={14} className="mr-1" />
                                                                 Delete
@@ -564,6 +572,17 @@ export const VideoManagement = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmDialog
+                open={deleteConfirmOpen}
+                onOpenChange={(val) => { setDeleteConfirmOpen(val); if (!val) setPendingDeleteVideo(null); }}
+                itemName={pendingDeleteVideo?.title || ""}
+                itemType="video"
+                onConfirm={() => {
+                    if (pendingDeleteVideo) handleDelete(pendingDeleteVideo.id);
+                }}
+            />
         </div>
     );
 };

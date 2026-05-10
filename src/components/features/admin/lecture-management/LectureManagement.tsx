@@ -4,6 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Video, FileText, BookOpen, ChevronRight, Save, X, ExternalLink, Youtube, Clock, Crown } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,18 @@ export const LectureManagement = () => {
   const [selectedPortionId, setSelectedPortionId] = useState<string | null>(null);
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [activeChapterForTest, setActiveChapterForTest] = useState<{ id: string | number, name: string, testId?: string } | null>(null);
+
+  // Delete Confirmation State
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    type: 'subject' | 'portion' | 'chapter' | 'lecture' | 'test';
+    name: string;
+    subjectKey?: string;
+    portionId?: string;
+    chapterId?: number;
+    lectureId?: number;
+    testId?: string;
+  } | null>(null);
 
   // Edit States
   const [editingPortion, setEditingPortion] = useState<any>(null);
@@ -142,11 +155,20 @@ export const LectureManagement = () => {
     });
   };
 
-  const handleDeleteSubject = async (subjectToDelete: string) => {
-    if (confirm(`Are you sure you want to delete ${subjectToDelete} and all of its contents? This cannot be undone.`)) {
+  const openDeleteConfirm = (type: 'subject' | 'portion' | 'chapter' | 'lecture' | 'test', name: string, extra?: { portionId?: string; chapterId?: number; lectureId?: number; testId?: string }) => {
+    setPendingDelete({ type, name, subjectKey: selectedSubject, ...extra });
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeConfirmedDelete = async () => {
+    if (!pendingDelete) return;
+
+    const { type, name, subjectKey, portionId, chapterId } = pendingDelete;
+
+    if (type === 'subject') {
       const newStructure = { ...lectureStructure };
-      const subjectData = newStructure[subjectToDelete];
-      
+      const subjectData = newStructure[name];
+
       // Cascade delete all tests in this subject
       if (subjectData && subjectData.portions) {
         subjectData.portions.forEach((portion: any) => {
@@ -156,18 +178,90 @@ export const LectureManagement = () => {
         });
       }
 
-      delete newStructure[subjectToDelete];
-
-      const newSubjects = subjects.filter(s => s !== subjectToDelete);
+      delete newStructure[name];
+      const newSubjects = subjects.filter(s => s !== name);
       setSubjects(newSubjects);
 
-      if (selectedSubject === subjectToDelete) {
+      if (selectedSubject === name) {
         setSelectedSubject(newSubjects.length > 0 ? newSubjects[0] : "");
       }
 
       await saveStructure(newStructure);
-      toast.success(`Subject ${subjectToDelete} deleted`);
+      toast.success(`Subject "${name}" deleted`);
     }
+
+    if (type === 'portion' && portionId && subjectKey) {
+      const newStructure = { ...lectureStructure };
+      const portion = newStructure[subjectKey]?.portions?.find((p: any) => p.id === portionId);
+
+      if (portion) {
+        portion.chapters?.forEach((chapter: any) => {
+          deleteChapterTestsForChapter(chapter);
+        });
+      }
+
+      newStructure[subjectKey].portions = newStructure[subjectKey].portions.filter((p: any) => p.id !== portionId);
+      await saveStructure(newStructure);
+      toast.success(`Portion "${name}" deleted`);
+    }
+
+    if (type === 'chapter' && portionId && chapterId !== undefined && subjectKey) {
+      const newStructure = { ...lectureStructure };
+      const portion = newStructure[subjectKey]?.portions?.find((p: any) => p.id === portionId);
+      if (portion) {
+        const chapter = portion.chapters.find((c: any) => c.id === chapterId);
+        if (chapter) {
+          deleteChapterTestsForChapter(chapter);
+        }
+        portion.chapters = portion.chapters.filter((c: any) => c.id !== chapterId);
+        await saveStructure(newStructure);
+        toast.success(`Chapter "${name}" deleted`);
+      }
+    }
+
+    if (type === 'lecture' && portionId && chapterId !== undefined && pendingDelete?.lectureId !== undefined && subjectKey) {
+      const newStructure = { ...lectureStructure };
+      const portion = newStructure[subjectKey]?.portions?.find((p: any) => p.id === portionId);
+      const chapter = portion?.chapters?.find((c: any) => c.id === chapterId);
+      if (chapter) {
+        chapter.lectures = chapter.lectures.filter((l: any) => l.id !== pendingDelete.lectureId);
+        await saveStructure(newStructure);
+        toast.success(`Lecture "${name}" deleted`);
+      }
+    }
+
+    if (type === 'test' && portionId && chapterId !== undefined && pendingDelete?.testId && subjectKey) {
+      try {
+        const token = sessionStorage.getItem('token');
+        await fetch(`/api/chapter-tests/${pendingDelete.testId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const newStructure = { ...lectureStructure };
+        const portion = newStructure[subjectKey]?.portions?.find((p: any) => p.id === portionId);
+        const chapter = portion?.chapters?.find((c: any) => c.id === chapterId);
+        if (chapter) {
+          if (Array.isArray(chapter.chapterTests)) {
+            chapter.chapterTests = chapter.chapterTests.filter((t: any) => t.id !== pendingDelete.testId);
+          } else if (chapter.chapterTestId === pendingDelete.testId) {
+            chapter.chapterTestId = null;
+          }
+          await saveStructure(newStructure);
+          toast.success(`Chapter test "${name}" deleted`);
+        }
+      } catch(err) {
+        console.error("Test delete error", err);
+        toast.error("Failed to completely delete test data");
+      }
+    }
+
+    setDeleteConfirmOpen(false);
+    setPendingDelete(null);
+  };
+
+  const handleDeleteSubject = (subjectToDelete: string) => {
+    openDeleteConfirm('subject', subjectToDelete);
   };
 
   // HANDLERS
@@ -270,79 +364,37 @@ export const LectureManagement = () => {
   };
 
   const deletePortion = (id: string) => {
-    if (confirm("Are you sure you want to delete this portion and all its chapters? This cannot be undone.")) {
-      const newStructure = { ...lectureStructure };
-      const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === id);
-      
-      if (portion) {
-        // Cascade delete all tests in this portion
-        portion.chapters?.forEach((chapter: any) => {
-          deleteChapterTestsForChapter(chapter);
-        });
-      }
-      
-      newStructure[selectedSubject].portions = newStructure[selectedSubject].portions.filter((p: any) => p.id !== id);
-      saveStructure(newStructure);
-      toast.success("Portion deleted");
+    const portion = lectureStructure[selectedSubject]?.portions?.find((p: any) => p.id === id);
+    if (portion) {
+      openDeleteConfirm('portion', portion.name, { portionId: id });
     }
   };
 
   const deleteChapter = (portionId: string, chapterId: number) => {
-    if (confirm("Are you sure you want to delete this chapter and all its lectures/tests?")) {
-      const newStructure = { ...lectureStructure };
-      const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
-      if (portion) {
-        const chapter = portion.chapters.find((c: any) => c.id === chapterId);
-        if (chapter) {
-          deleteChapterTestsForChapter(chapter);
-        }
-
-        portion.chapters = portion.chapters.filter((c: any) => c.id !== chapterId);
-        saveStructure(newStructure);
-        toast.success("Chapter deleted");
-      }
+    const portion = lectureStructure[selectedSubject]?.portions?.find((p: any) => p.id === portionId);
+    const chapter = portion?.chapters?.find((c: any) => c.id === chapterId);
+    if (chapter) {
+      openDeleteConfirm('chapter', chapter.name, { portionId, chapterId });
     }
   };
 
   const deleteLecture = (portionId: string, chapterId: number, lectureId: number) => {
-    if (confirm("Are you sure you want to delete this video lecture?")) {
-      const newStructure = { ...lectureStructure };
-      const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
-      const chapter = portion?.chapters.find((c: any) => c.id === chapterId);
-      if (chapter) {
-        chapter.lectures = chapter.lectures.filter((l: any) => l.id !== lectureId);
-        saveStructure(newStructure);
-        toast.success("Lecture deleted");
-      }
-    }
+    const portion = lectureStructure[selectedSubject]?.portions?.find((p: any) => p.id === portionId);
+    const chapter = portion?.chapters?.find((c: any) => c.id === chapterId);
+    const lecture = chapter?.lectures?.find((l: any) => l.id === lectureId);
+    const lectureName = lecture?.name || lecture?.title || `Lecture #${lectureId}`;
+    openDeleteConfirm('lecture', lectureName, { portionId, chapterId, lectureId });
   };
 
-  const deleteTest = async (portionId: string, chapterId: number, testId: string) => {
-    if (confirm("Are you sure you want to delete this practice test?")) {
-      try {
-        const token = sessionStorage.getItem('token');
-        await fetch(`/api/chapter-tests/${testId}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        const newStructure = { ...lectureStructure };
-        const portion = newStructure[selectedSubject].portions.find((p: any) => p.id === portionId);
-        const chapter = portion?.chapters.find((c: any) => c.id === chapterId);
-        if (chapter) {
-          if (Array.isArray(chapter.chapterTests)) {
-            chapter.chapterTests = chapter.chapterTests.filter((t: any) => t.id !== testId);
-          } else if (chapter.chapterTestId === testId) {
-            chapter.chapterTestId = null; // Clean up old singular test if legacy
-          }
-          saveStructure(newStructure);
-          toast.success("Chapter test deleted");
-        }
-      } catch(err) {
-        console.error("Test delete error", err);
-        toast.error("Failed to completely delete test data");
-      }
+  const deleteTest = (portionId: string, chapterId: number, testId: string) => {
+    const portion = lectureStructure[selectedSubject]?.portions?.find((p: any) => p.id === portionId);
+    const chapter = portion?.chapters?.find((c: any) => c.id === chapterId);
+    let testName = `Test #${testId}`;
+    if (Array.isArray(chapter?.chapterTests)) {
+      const t = chapter.chapterTests.find((t: any) => t.id === testId);
+      if (t) testName = t.name || t.title || testName;
     }
+    openDeleteConfirm('test', testName, { portionId, chapterId, testId });
   };
 
   return (
@@ -791,6 +843,22 @@ export const LectureManagement = () => {
           }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(val) => { setDeleteConfirmOpen(val); if (!val) setPendingDelete(null); }}
+        itemName={pendingDelete?.name || ""}
+        itemType={pendingDelete?.type || "item"}
+        cascadeDescription={
+          pendingDelete?.type === 'subject' ? 'All its portions, chapters, lectures & tests will be removed'
+          : pendingDelete?.type === 'portion' ? 'All its chapters, lectures & tests will be removed'
+          : pendingDelete?.type === 'chapter' ? 'All its lectures & tests will be removed'
+          : pendingDelete?.type === 'test' ? 'All its results will be removed'
+          : undefined
+        }
+        onConfirm={executeConfirmedDelete}
+      />
     </div>
   );
 };

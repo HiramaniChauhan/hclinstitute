@@ -51,7 +51,7 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow server-to-server (no origin header) — e.g. curl, mobile apps
         if (!origin) return callback(null, true);
-        
+
         // Strip trailing slash from origin just in case
         const cleanOrigin = origin.replace(/\/$/, "");
 
@@ -61,7 +61,7 @@ app.use(cors({
                 return callback(null, true);
             }
         }
-        
+
         // Allow if exact match with one of the configured origins
         if (allowedOrigins.includes(cleanOrigin)) {
             return callback(null, true);

@@ -24,6 +24,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ImageCropDialog } from "./ImageCropDialog";
 import { fetchCourseStudents } from "@/api/portalApi";
 import { StudentDetail } from "../student-management/StudentDetail";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 export const CourseManagement = () => {
   const [courses, setCourses] = useState<any[]>([]);
@@ -38,6 +39,10 @@ export const CourseManagement = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearchTerm, setStudentSearchTerm] = useState("");
   const [selectedStudentFromCourse, setSelectedStudentFromCourse] = useState<string | null>(null);
+
+  // Delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteCourse, setPendingDeleteCourse] = useState<{ id: string; title: string } | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -150,8 +155,12 @@ export const CourseManagement = () => {
     setOpen(true);
   };
 
+  const requestDeleteCourse = (course: any) => {
+    setPendingDeleteCourse({ id: course.id, title: course.title });
+    setDeleteConfirmOpen(true);
+  };
+
   const handleDelete = async (courseId: string) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
     try {
       const token = sessionStorage.getItem('token');
       const response = await fetch(`/api/courses/${courseId}`, {
@@ -468,7 +477,7 @@ export const CourseManagement = () => {
                               <Edit size={14} className="mr-1" />
                               Edit
                             </Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(course.id)}>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => requestDeleteCourse(course)}>
                               <Trash2 size={14} className="mr-1" />
                               Delete
                             </Button>
@@ -607,6 +616,18 @@ export const CourseManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(val) => { setDeleteConfirmOpen(val); if (!val) setPendingDeleteCourse(null); }}
+        itemName={pendingDeleteCourse?.title || ""}
+        itemType="course"
+        cascadeDescription="All enrolled students will lose access to this course"
+        onConfirm={() => {
+          if (pendingDeleteCourse) handleDelete(pendingDeleteCourse.id);
+        }}
+      />
     </div>
   );
 };

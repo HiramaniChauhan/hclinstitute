@@ -22,6 +22,7 @@ import { useEffect } from "react";
 import { Latex } from "@/components/ui/latex";
 import { StudentDetail } from "../student-management/StudentDetail";
 import { Switch } from "@/components/ui/switch";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 
 
@@ -45,6 +46,10 @@ export const TestCreation = () => {
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [statsFilter, setStatsFilter] = useState<'all' | 'active' | 'completed' | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ type: 'section' | 'question' | 'test'; name: string; id: string | number; sectionId?: string; silent?: boolean } | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -208,7 +213,11 @@ export const TestCreation = () => {
 
   const handleDeleteSection = (sectionId: string) => {
     const sectionName = testFormData.sections.find(s => s.id === sectionId)?.name || 'this section';
-    if (!confirm(`Are you sure you want to delete "${sectionName}"? This will remove all questions in this section.`)) return;
+    setPendingDelete({ type: 'section', name: sectionName, id: sectionId });
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDeleteSection = (sectionId: string) => {
     setTestFormData(prev => ({
       ...prev,
       sections: prev.sections.filter(s => s.id !== sectionId)
@@ -337,8 +346,15 @@ export const TestCreation = () => {
     if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const requestDeleteQuestion = (questionId: string | number, sectionId: string) => {
+    const section = testFormData.sections.find(s => s.id === sectionId) || viewingTestQuestions?.sections.find(s => s.id === sectionId);
+    const question = section?.questions.find(q => q.id === questionId);
+    const qName = question?.question ? (question.question.length > 50 ? question.question.slice(0, 50) + '...' : question.question) : `Question #${questionId}`;
+    setPendingDelete({ type: 'question', name: qName, id: questionId, sectionId });
+    setDeleteConfirmOpen(true);
+  };
+
   const handleDeleteQuestion = async (questionId: string | number, sectionId: string) => {
-    if (!confirm('Are you sure you want to delete this question? This action cannot be undone.')) return;
     // 1. Update the main form data (for when editing the full test)
     const updatedSectionsForm = testFormData.sections.map(s =>
       s.id === sectionId
@@ -445,8 +461,12 @@ export const TestCreation = () => {
     }
   };
 
+  const requestDeleteTest = (test: Test) => {
+    setPendingDelete({ type: 'test', name: test.title, id: test.testId || test.id });
+    setDeleteConfirmOpen(true);
+  };
+
   const handleDeleteTest = async (testId: string | number, silent = false) => {
-    if (!silent && !confirm("Are you sure you want to delete this test?")) return;
     try {
       const token = sessionStorage.getItem('token');
       const resp = await fetch(`/api/tests/${testId}`, {
@@ -962,7 +982,7 @@ export const TestCreation = () => {
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:bg-blue-50" onClick={() => handleEditQuestion(q)}>
                                   <Edit className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50" onClick={() => activeSectionId && handleDeleteQuestion(q.id, activeSectionId)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50" onClick={() => activeSectionId && requestDeleteQuestion(q.id, activeSectionId)}>
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
@@ -1142,7 +1162,7 @@ export const TestCreation = () => {
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => { setActiveSectionId(section.id); handleEditQuestion(q); }}>
                                     <Edit className="w-4 h-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDeleteQuestion(q.id, section.id)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => requestDeleteQuestion(q.id, section.id)}>
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -1411,7 +1431,7 @@ export const TestCreation = () => {
                               <Edit size={14} className="mr-1" />
                               Edit
                             </Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => testId && handleDeleteTest(testId)}>
+                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => requestDeleteTest(test)}>
                               <Trash2 size={14} className="mr-1" />
                               Delete
                             </Button>
@@ -1540,6 +1560,28 @@ export const TestCreation = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(val) => { setDeleteConfirmOpen(val); if (!val) setPendingDelete(null); }}
+        itemName={pendingDelete?.name || ""}
+        itemType={pendingDelete?.type || "item"}
+        cascadeDescription={
+          pendingDelete?.type === 'section' ? 'This will remove all questions in this section'
+          : pendingDelete?.type === 'test' ? 'This will permanently remove the test and all its data'
+          : undefined
+        }
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          if (pendingDelete.type === 'section') {
+            executeDeleteSection(pendingDelete.id as string);
+          } else if (pendingDelete.type === 'question' && pendingDelete.sectionId) {
+            handleDeleteQuestion(pendingDelete.id, pendingDelete.sectionId);
+          } else if (pendingDelete.type === 'test') {
+            handleDeleteTest(pendingDelete.id);
+          }
+        }}
+      />
     </div>
   );
 };
