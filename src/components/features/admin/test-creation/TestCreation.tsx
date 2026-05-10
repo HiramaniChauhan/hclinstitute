@@ -969,11 +969,11 @@ export const TestCreation = () => {
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex-1">
-                                <p className="text-sm font-medium mb-1"><span className="text-gray-400 mr-2">{i + 1}.</span>{q.question}</p>
+                                <div className="text-sm font-medium mb-1 flex items-start gap-1"><span className="text-gray-400 mr-2 shrink-0">{i + 1}.</span><Latex content={q.question} /></div>
                                 <div className="flex flex-wrap gap-2">
                                   {q.options.map((opt, idx) => (
-                                    <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full border ${q.correctAnswer === idx ? 'bg-green-100 border-green-200 text-green-700 font-bold' : 'bg-gray-50 text-gray-500'}`}>
-                                      {String.fromCharCode(65 + idx)}. {opt}
+                                    <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${q.correctAnswer === idx ? 'bg-green-100 border-green-200 text-green-700 font-bold' : 'bg-gray-50 text-gray-500'}`}>
+                                      {String.fromCharCode(65 + idx)}. <Latex content={opt} />
                                     </span>
                                   ))}
                                 </div>
@@ -1146,14 +1146,14 @@ export const TestCreation = () => {
                             <CardContent className="p-4">
                               <div className="flex justify-between items-start gap-4">
                                 <div className="flex-1">
-                                  <p className="font-medium mb-2"><span className="font-bold text-gray-500 mr-2">Q{i + 1}.</span>{q.question}</p>
+                                  <div className="font-medium mb-2 flex items-start gap-1"><span className="font-bold text-gray-500 mr-2 shrink-0">Q{i + 1}.</span><Latex content={q.question} /></div>
                                   <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 pl-6">
                                     {q.options.map((opt: string, idx: number) => (
                                       <div key={idx} className="flex items-center gap-2">
                                         <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${q.correctAnswer === idx ? 'bg-green-100 border-green-500 text-green-700 font-bold' : ''}`}>
                                           {String.fromCharCode(65 + idx)}
                                         </span>
-                                        {opt}
+                                        <Latex content={opt} />
                                       </div>
                                     ))}
                                   </div>
