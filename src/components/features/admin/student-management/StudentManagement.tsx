@@ -70,6 +70,7 @@ export const StudentManagement = () => {
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [enrollLoading, setEnrollLoading] = useState(false);
     const [viewMode, setViewMode] = useState<"active" | "deleted">("active");
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
     const [stats, setStats] = useState({ totalAll: 0, verifiedCount: 0, suspendedCount: 0 });
@@ -371,6 +372,127 @@ export const StudentManagement = () => {
                         </div>
                     </div>
                 </CardHeader>
+
+                {/* Action Toolbar for selected student */}
+                {selectedStudent && (
+                    <div className="px-6 pb-3">
+                        <div className="flex items-center gap-2 flex-wrap p-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
+                            <span className="text-sm font-medium text-indigo-700 mr-2">
+                                Actions for: <strong>{selectedStudent.name}</strong>
+                            </span>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedStudentId(selectedStudent.id)}
+                                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                            >
+                                <FileText className="h-4 w-4 mr-1" /> Details
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openCourseDialog(selectedStudent)}
+                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                            >
+                                <BookOpen className="h-4 w-4 mr-1" /> Courses
+                            </Button>
+                            {selectedStudent.aadharPhoto && !selectedStudent.isVerified && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setPhotoDialog({ title: "Aadhar Photo", url: selectedStudent.aadharPhoto! })}
+                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                >
+                                    View Aadhar
+                                </Button>
+                            )}
+                            {selectedStudent.marksheet10th && !selectedStudent.isVerified && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setPhotoDialog({ title: "10th Marksheet", url: selectedStudent.marksheet10th! })}
+                                    className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                >
+                                    View 10th Result
+                                </Button>
+                            )}
+                            {!selectedStudent.isDeleted && !selectedStudent.isVerified && (
+                                <Button
+                                    size="sm"
+                                    onClick={() => doVerify(selectedStudent)}
+                                    disabled={actionLoading === selectedStudent.id}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    <ShieldCheck className="h-4 w-4 mr-1" />
+                                    {actionLoading === selectedStudent.id ? "..." : "Verify"}
+                                </Button>
+                            )}
+                            {!selectedStudent.isDeleted && selectedStudent.isVerified && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => doUnverify(selectedStudent)}
+                                    disabled={actionLoading === selectedStudent.id}
+                                    className="border-yellow-200 text-yellow-600 hover:bg-yellow-50"
+                                >
+                                    <ShieldOff className="h-4 w-4 mr-1" /> Unverify
+                                </Button>
+                            )}
+                            {!selectedStudent.isDeleted && !selectedStudent.isSuspended && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSuspendDialog(selectedStudent)}
+                                    disabled={actionLoading === selectedStudent.id}
+                                    className="border-red-200 text-red-600 hover:bg-red-50"
+                                >
+                                    <ShieldOff className="h-4 w-4 mr-1" /> Suspend
+                                </Button>
+                            )}
+                            {!selectedStudent.isDeleted && selectedStudent.isSuspended && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => doUnsuspend(selectedStudent)}
+                                    disabled={actionLoading === selectedStudent.id}
+                                    className="border-green-200 text-green-600 hover:bg-green-50"
+                                >
+                                    <ShieldCheck className="h-4 w-4 mr-1" /> Reinstate
+                                </Button>
+                            )}
+                            {selectedStudent.isDeleted ? (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => doRestore(selectedStudent)}
+                                        disabled={actionLoading === selectedStudent.id}
+                                        className="border-green-200 text-green-600 hover:bg-green-50"
+                                    >
+                                        <RefreshCw className="h-4 w-4 mr-1" /> Restore
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => setPermanentDeleteDialog(selectedStudent)}
+                                        disabled={actionLoading === selectedStudent.id}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-1" /> Delete Permanently
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => setDeleteDialog(selectedStudent)}
+                                    disabled={actionLoading === selectedStudent.id}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
                 <CardContent>
                     {loading ? (
                         <div className="space-y-3">
@@ -387,14 +509,27 @@ export const StudentManagement = () => {
                     ) : (
                         <div className="space-y-3">
                             {filtered.map(student => (
-                                <div key={student.id} className="p-4 border rounded-xl hover:bg-gray-50 transition-colors">
-                                    <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div
+                                    key={student.id}
+                                    className={`p-4 border-2 rounded-xl transition-all cursor-pointer ${
+                                        selectedStudent?.id === student.id
+                                            ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
+                                            : "border-transparent hover:bg-gray-50 hover:border-gray-200"
+                                    }`}
+                                    onClick={() => setSelectedStudent(selectedStudent?.id === student.id ? null : student)}
+                                >
+                                    <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
                                                 {student.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-semibold">{student.name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold">{student.name}</p>
+                                                    {selectedStudent?.id === student.id && (
+                                                        <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-1 text-sm text-gray-500">
                                                     <Mail className="h-3 w-3" />{student.email}
                                                 </div>
@@ -413,119 +548,6 @@ export const StudentManagement = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => setSelectedStudentId(student.id)}
-                                                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                                            >
-                                                <FileText className="h-4 w-4 mr-1" /> Details
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => openCourseDialog(student)}
-                                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                                            >
-                                                <BookOpen className="h-4 w-4 mr-1" /> Courses
-                                            </Button>
-                                            {student.aadharPhoto && !student.isVerified && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => setPhotoDialog({ title: "Aadhar Photo", url: student.aadharPhoto! })}
-                                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                                                >
-                                                    View Aadhar
-                                                </Button>
-                                            )}
-                                            {student.marksheet10th && !student.isVerified && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => setPhotoDialog({ title: "10th Marksheet", url: student.marksheet10th! })}
-                                                    className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                                                >
-                                                    View 10th Result
-                                                </Button>
-                                            )}
-                                            {!student.isDeleted && !student.isVerified && (
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => doVerify(student)}
-                                                    disabled={actionLoading === student.id}
-                                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                                >
-                                                    <ShieldCheck className="h-4 w-4 mr-1" />
-                                                    {actionLoading === student.id ? "..." : "Verify"}
-                                                </Button>
-                                            )}
-                                            {!student.isDeleted && student.isVerified && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => doUnverify(student)}
-                                                    disabled={actionLoading === student.id}
-                                                    className="border-yellow-200 text-yellow-600 hover:bg-yellow-50"
-                                                >
-                                                    <ShieldOff className="h-4 w-4 mr-1" /> Unverify
-                                                </Button>
-                                            )}
-                                            {!student.isDeleted && !student.isSuspended && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => setSuspendDialog(student)}
-                                                    disabled={actionLoading === student.id}
-                                                    className="border-red-200 text-red-600 hover:bg-red-50"
-                                                >
-                                                    <ShieldOff className="h-4 w-4 mr-1" /> Suspend
-                                                </Button>
-                                            )}
-                                            {!student.isDeleted && student.isSuspended && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => doUnsuspend(student)}
-                                                    disabled={actionLoading === student.id}
-                                                    className="border-green-200 text-green-600 hover:bg-green-50"
-                                                >
-                                                    <ShieldCheck className="h-4 w-4 mr-1" /> Reinstate
-                                                </Button>
-                                            )}
-                                            {student.isDeleted ? (
-                                                <>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => doRestore(student)}
-                                                        disabled={actionLoading === student.id}
-                                                        className="border-green-200 text-green-600 hover:bg-green-50"
-                                                    >
-                                                        <RefreshCw className="h-4 w-4 mr-1" /> Restore
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        onClick={() => setPermanentDeleteDialog(student)}
-                                                        disabled={actionLoading === student.id}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-1" /> Delete Permanently
-                                                    </Button>
-                                                </>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    onClick={() => setDeleteDialog(student)}
-                                                    disabled={actionLoading === student.id}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
-                                                </Button>
-                                            )}
                                         </div>
                                     </div>
                                 </div>

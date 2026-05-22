@@ -12,6 +12,7 @@ export const VideoManagement = () => {
     const [videos, setVideos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
 
     // Inline edit state
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -281,8 +282,59 @@ export const VideoManagement = () => {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Video Library</CardTitle>
-                            <CardDescription>Manage your video content</CardDescription>
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div>
+                                    <CardTitle>Video Library</CardTitle>
+                                    <CardDescription>Manage your video content</CardDescription>
+                                </div>
+                                {/* Action Toolbar */}
+                                <div className="flex items-center gap-2">
+                                    {selectedVideoId && (
+                                        <span className="text-sm text-indigo-600 font-medium mr-2">
+                                            Selected: {videos.find(v => v.id === selectedVideoId)?.title}
+                                        </span>
+                                    )}
+                                    {editingId === selectedVideoId && selectedVideoId ? (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="bg-green-50 text-green-600 hover:bg-green-100"
+                                            onClick={() => {
+                                                const video = videos.find(v => v.id === selectedVideoId);
+                                                if (video) handleSaveEdit(selectedVideoId, video);
+                                            }}
+                                        >
+                                            Save
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={!selectedVideoId}
+                                            className={`bg-blue-50 text-blue-600 hover:bg-blue-100 ${!selectedVideoId ? "opacity-50" : ""}`}
+                                            onClick={() => {
+                                                const video = videos.find(v => v.id === selectedVideoId);
+                                                if (video) handleEditClick(video);
+                                            }}
+                                        >
+                                            Edit
+                                        </Button>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!selectedVideoId}
+                                        className={`text-red-600 hover:bg-red-100 ${!selectedVideoId ? "opacity-50" : ""}`}
+                                        onClick={() => {
+                                            const video = videos.find(v => v.id === selectedVideoId);
+                                            if (video) requestDeleteVideo(video);
+                                        }}
+                                    >
+                                        <Trash2 size={14} className="mr-1" />
+                                        Delete
+                                    </Button>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -293,17 +345,24 @@ export const VideoManagement = () => {
                                             <th className="text-left p-2">Subject</th>
                                             <th className="text-left p-2">Type</th>
                                             <th className="text-left p-2">Status</th>
-                                            <th className="text-left p-2 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan={5} className="text-center p-4">Loading videos...</td></tr>
+                                            <tr><td colSpan={4} className="text-center p-4">Loading videos...</td></tr>
                                         ) : libraryVideos.length === 0 ? (
-                                            <tr><td colSpan={5} className="text-center p-4 text-gray-500">No videos found.</td></tr>
+                                            <tr><td colSpan={4} className="text-center p-4 text-gray-500">No videos found.</td></tr>
                                         ) : (
                                             libraryVideos.map((video) => (
-                                                <tr key={video.id} className="border-b">
+                                                <tr
+                                                    key={video.id}
+                                                    className={`border-b cursor-pointer transition-all ${
+                                                        selectedVideoId === video.id
+                                                            ? "bg-indigo-50 ring-1 ring-indigo-200"
+                                                            : "hover:bg-gray-50"
+                                                    }`}
+                                                    onClick={() => setSelectedVideoId(selectedVideoId === video.id ? null : video.id)}
+                                                >
                                                     <td className="p-2 font-medium">
                                                         {editingId === video.id ? (
                                                             <Input
@@ -311,9 +370,15 @@ export const VideoManagement = () => {
                                                                 onChange={(e) => setEditTitle(e.target.value)}
                                                                 className="h-8 max-w-[200px]"
                                                                 autoFocus
+                                                                onClick={(e) => e.stopPropagation()}
                                                             />
                                                         ) : (
-                                                            video.title
+                                                            <span className="flex items-center gap-2">
+                                                                {video.title}
+                                                                {selectedVideoId === video.id && (
+                                                                    <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">Selected</span>
+                                                                )}
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="p-2">
@@ -322,6 +387,7 @@ export const VideoManagement = () => {
                                                                 value={editSubject}
                                                                 onChange={(e) => setEditSubject(e.target.value)}
                                                                 className="h-8 max-w-[150px]"
+                                                                onClick={(e) => e.stopPropagation()}
                                                             />
                                                         ) : (
                                                             video.subject
@@ -343,38 +409,6 @@ export const VideoManagement = () => {
                                                             }`}>
                                                             {video.status}
                                                         </span>
-                                                    </td>
-                                                    <td className="p-2 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            {editingId === video.id ? (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="bg-green-50 text-green-600 hover:bg-green-100 border-none shadow-none"
-                                                                    onClick={() => handleSaveEdit(video.id, video)}
-                                                                >
-                                                                    Save
-                                                                </Button>
-                                                            ) : (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-none shadow-none"
-                                                                    onClick={() => handleEditClick(video)}
-                                                                >
-                                                                    Edit
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                size="sm"
-                                                                variant="destructive"
-                                                                className="bg-red-50 text-red-600 hover:bg-red-100 border-none shadow-none"
-                                                                onClick={() => requestDeleteVideo(video)}
-                                                            >
-                                                                <Trash2 size={14} className="mr-1" />
-                                                                Delete
-                                                            </Button>
-                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))

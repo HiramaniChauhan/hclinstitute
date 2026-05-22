@@ -39,6 +39,7 @@ export const CourseManagement = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentSearchTerm, setStudentSearchTerm] = useState("");
   const [selectedStudentFromCourse, setSelectedStudentFromCourse] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   // Delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -445,7 +446,56 @@ export const CourseManagement = () => {
       {/* Course List */}
       <Card>
         <CardHeader>
-          <CardTitle>All Courses</CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle>All Courses</CardTitle>
+            {/* Action Toolbar */}
+            <div className="flex items-center gap-2">
+              {selectedCourseId && (
+                <span className="text-sm text-indigo-600 font-medium mr-2">
+                  Selected: {courses.find(c => c.id === selectedCourseId)?.title}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedCourseId}
+                onClick={() => {
+                  const course = courses.find(c => c.id === selectedCourseId);
+                  if (course) handleEditOpen(course);
+                }}
+                className={!selectedCourseId ? "opacity-50" : ""}
+              >
+                <Edit size={14} className="mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedCourseId}
+                onClick={() => {
+                  const course = courses.find(c => c.id === selectedCourseId);
+                  if (course) requestDeleteCourse(course);
+                }}
+                className={`text-red-600 hover:bg-red-50 hover:text-red-700 ${!selectedCourseId ? "opacity-50" : ""}`}
+              >
+                <Trash2 size={14} className="mr-1" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedCourseId}
+                onClick={() => {
+                  const course = courses.find(c => c.id === selectedCourseId);
+                  if (course) handleViewStudents(course);
+                }}
+                className={`text-indigo-600 border-indigo-200 hover:bg-indigo-50 ${!selectedCourseId ? "opacity-50" : ""}`}
+              >
+                <Users size={14} className="mr-1" />
+                Students
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -455,7 +505,15 @@ export const CourseManagement = () => {
               <p className="text-center p-4 text-gray-500">No courses available.</p>
             ) : (
               courses.map((course) => (
-                <div key={course.id} className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+                <div
+                  key={course.id}
+                  className={`p-4 border-2 rounded-lg bg-white shadow-sm hover:shadow-md transition-all cursor-pointer ${
+                    selectedCourseId === course.id
+                      ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
+                      : "border-transparent hover:border-gray-200"
+                  }`}
+                  onClick={() => setSelectedCourseId(selectedCourseId === course.id ? null : course.id)}
+                >
                   <div className="flex flex-col md:flex-row gap-6">
                     {course.profilePicData ? (
                       <div className="w-full md:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border">
@@ -472,20 +530,9 @@ export const CourseManagement = () => {
                       <div>
                         <div className="flex items-start justify-between">
                           <h3 className="font-semibold text-lg">{course.title}</h3>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditOpen(course)}>
-                              <Edit size={14} className="mr-1" />
-                              Edit
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => requestDeleteCourse(course)}>
-                              <Trash2 size={14} className="mr-1" />
-                              Delete
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-indigo-600 border-indigo-200 hover:bg-indigo-50" onClick={() => handleViewStudents(course)}>
-                              <Users size={14} className="mr-1" />
-                              Students
-                            </Button>
-                          </div>
+                          {selectedCourseId === course.id && (
+                            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
+                          )}
                         </div>
                         <p className="text-gray-600 text-sm mt-1 line-clamp-2">{course.description}</p>
                       </div>

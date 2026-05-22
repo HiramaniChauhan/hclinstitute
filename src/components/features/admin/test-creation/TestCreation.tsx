@@ -46,6 +46,7 @@ export const TestCreation = () => {
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [statsFilter, setStatsFilter] = useState<'all' | 'active' | 'completed' | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
 
   // Delete confirmation state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -1344,16 +1345,93 @@ export const TestCreation = () => {
         </Dialog>
       )}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Existing Tests</CardTitle>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search tests..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
-            />
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle>Existing Tests</CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedTestId && (
+                <span className="text-sm text-indigo-600 font-medium mr-2">
+                  Selected: {tests.find(t => (t.testId || t.id) === selectedTestId)?.title}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedTestId}
+                onClick={() => {
+                  const test = tests.find(t => (t.testId || t.id) === selectedTestId);
+                  if (test) handleEditTest(test);
+                }}
+                className={!selectedTestId ? "opacity-50" : ""}
+              >
+                <Edit size={14} className="mr-1" />
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedTestId}
+                onClick={() => {
+                  const test = tests.find(t => (t.testId || t.id) === selectedTestId);
+                  if (test) requestDeleteTest(test);
+                }}
+                className={`text-red-600 hover:bg-red-50 hover:text-red-700 ${!selectedTestId ? "opacity-50" : ""}`}
+              >
+                <Trash2 size={14} className="mr-1" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedTestId}
+                onClick={() => {
+                  const test = tests.find(t => (t.testId || t.id) === selectedTestId);
+                  if (test) handleViewQuestions(test);
+                }}
+                className={!selectedTestId ? "opacity-50" : ""}
+              >
+                <FileText size={14} className="mr-1" />
+                Questions
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedTestId}
+                onClick={() => {
+                  const test = tests.find(t => (t.testId || t.id) === selectedTestId);
+                  if (test) handleViewResults(test);
+                }}
+                className={`text-amber-600 border-amber-200 hover:bg-amber-50 ${!selectedTestId ? "opacity-50" : ""}`}
+              >
+                <Trophy size={14} className="mr-1" />
+                Results
+              </Button>
+              {(() => {
+                const selectedTest = tests.find(t => (t.testId || t.id) === selectedTestId);
+                const isScheduled = selectedTest?.startDate && selectedTest?.startTime && selectedTest?.endDate && selectedTest?.endTime;
+                const isEnded = isScheduled && new Date(`${selectedTest.endDate}T${selectedTest.endTime}`) < new Date();
+                return isEnded ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { if (selectedTest) handleEditTest(selectedTest, true); }}
+                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                  >
+                    <Calendar size={14} className="mr-1" />
+                    Reschedule
+                  </Button>
+                ) : null;
+              })()}
+              <div className="relative w-52 ml-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search tests..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -1372,86 +1450,69 @@ export const TestCreation = () => {
                   const isEnded = isScheduled && new Date(`${test.endDate}T${test.endTime}`) < new Date();
 
                   return (
-                    <div key={testId} className={`p-4 border rounded-lg transition-all ${isEnded ? 'bg-gray-50 border-gray-200' : 'bg-white'}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{test.title}</h3>
-                            {isEnded && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Completed/Ended</Badge>}
-                            {!isEnded && isScheduled && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active/Scheduled</Badge>}
-                            {!isScheduled && <Badge variant="outline" className="text-gray-400">Draft/No Schedule</Badge>}
-                            {test.isPremium ? (
-                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold">
-                                <Crown className="h-3 w-3 mr-0.5" /> PREMIUM
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
-                                FREE
-                              </Badge>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                            <span className="flex items-center gap-1">
-                              <Target size={14} />
-                              {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock size={14} />
-                              {test.duration} minutes
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Users size={14} />
-                              {test.sections.length} sections
-                            </span>
-                          </div>
-
-                          {isScheduled && (
-                            <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 font-medium">
-                              <Calendar size={12} />
-                              <span>{test.startDate} {test.startTime} to {test.endDate} {test.endTime}</span>
-                            </div>
+                    <div
+                      key={testId}
+                      className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
+                        isEnded ? 'bg-gray-50' : 'bg-white'
+                      } ${
+                        selectedTestId === testId
+                          ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200'
+                          : 'border-transparent hover:border-gray-200'
+                      }`}
+                      onClick={() => setSelectedTestId(selectedTestId === testId ? null : testId)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{test.title}</h3>
+                          {selectedTestId === testId && (
+                            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
                           )}
-
-                          <div className="flex items-center gap-2 mt-3">
-                            <Badge variant="secondary">{test.subject}</Badge>
-                            <div className="flex gap-1">
-                              {test.sections.map(s => (
-                                <Badge key={s.id} variant="outline" className="text-[10px] px-1 py-0">{s.name}</Badge>
-                              ))}
-                            </div>
-                            <Badge variant={test.difficulty === 'Easy' ? 'default' : test.difficulty === 'Medium' ? 'secondary' : 'destructive'}>
-                              {test.difficulty}
+                          {isEnded && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Completed/Ended</Badge>}
+                          {!isEnded && isScheduled && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active/Scheduled</Badge>}
+                          {!isScheduled && <Badge variant="outline" className="text-gray-400">Draft/No Schedule</Badge>}
+                          {test.isPremium ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold">
+                              <Crown className="h-3 w-3 mr-0.5" /> PREMIUM
                             </Badge>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditTest(test)}>
-                              <Edit size={14} className="mr-1" />
-                              Edit
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => requestDeleteTest(test)}>
-                              <Trash2 size={14} className="mr-1" />
-                              Delete
-                            </Button>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewQuestions(test)}>
-                              <FileText size={14} className="mr-1" />
-                              Questions
-                            </Button>
-                            <Button variant="outline" size="sm" className="flex-1 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleViewResults(test)}>
-                              <Trophy size={14} className="mr-1" />
-                              Results
-                            </Button>
-                          </div>
-                          {isEnded && (
-                            <Button variant="secondary" size="sm" className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200" onClick={() => handleEditTest(test, true)}>
-                              <Calendar size={14} className="mr-1" />
-                              Reschedule
-                            </Button>
+                          ) : (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
+                              FREE
+                            </Badge>
                           )}
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <Target size={14} />
+                            {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={14} />
+                            {test.duration} minutes
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users size={14} />
+                            {test.sections.length} sections
+                          </span>
+                        </div>
+
+                        {isScheduled && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 font-medium">
+                            <Calendar size={12} />
+                            <span>{test.startDate} {test.startTime} to {test.endDate} {test.endTime}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-3">
+                          <Badge variant="secondary">{test.subject}</Badge>
+                          <div className="flex gap-1">
+                            {test.sections.map(s => (
+                              <Badge key={s.id} variant="outline" className="text-[10px] px-1 py-0">{s.name}</Badge>
+                            ))}
+                          </div>
+                          <Badge variant={test.difficulty === 'Easy' ? 'default' : test.difficulty === 'Medium' ? 'secondary' : 'destructive'}>
+                            {test.difficulty}
+                          </Badge>
                         </div>
                       </div>
                     </div>

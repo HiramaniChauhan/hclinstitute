@@ -15,6 +15,7 @@ export const NotesManagement = () => {
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingNote, setEditingNote] = useState<any>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   // Delete confirmation
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -292,7 +293,56 @@ export const NotesManagement = () => {
       {/* Notes List */}
       <Card>
         <CardHeader>
-          <CardTitle>Uploaded Notes</CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle>Uploaded Notes</CardTitle>
+            {/* Action Toolbar */}
+            <div className="flex items-center gap-2">
+              {selectedNoteId && (
+                <span className="text-sm text-indigo-600 font-medium mr-2">
+                  Selected: {notes.find(n => n.id === selectedNoteId)?.title}
+                </span>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedNoteId}
+                onClick={() => {
+                  const note = notes.find(n => n.id === selectedNoteId);
+                  if (note) handleDownload(note);
+                }}
+                className={!selectedNoteId ? "opacity-50" : ""}
+              >
+                <Download size={14} className="mr-1" />
+                Download
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedNoteId}
+                onClick={() => {
+                  const note = notes.find(n => n.id === selectedNoteId);
+                  if (note) openEditModal(note);
+                }}
+                className={`text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 ${!selectedNoteId ? "opacity-50" : ""}`}
+              >
+                <Edit size={14} className="mr-1" />
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedNoteId}
+                onClick={() => {
+                  const note = notes.find(n => n.id === selectedNoteId);
+                  if (note) requestDeleteNote(note);
+                }}
+                className={`text-red-600 hover:text-red-700 hover:bg-red-50 ${!selectedNoteId ? "opacity-50" : ""}`}
+              >
+                <Trash2 size={14} className="mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -302,12 +352,25 @@ export const NotesManagement = () => {
               <p className="text-center p-4 text-gray-500">No notes found.</p>
             ) : (
               filteredNotes.map((note) => (
-                <div key={note.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div
+                  key={note.id}
+                  className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
+                    selectedNoteId === note.id
+                      ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
+                      : "border-transparent hover:bg-gray-50 hover:border-gray-200"
+                  }`}
+                  onClick={() => setSelectedNoteId(selectedNoteId === note.id ? null : note.id)}
+                >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-start gap-3">
                       <FileText className="h-8 w-8 text-blue-500 mt-1 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold">{note.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{note.title}</h3>
+                          {selectedNoteId === note.id && (
+                            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <Badge variant="outline">{note.subject}</Badge>
                           <Badge variant="secondary">{note.chapter}</Badge>
@@ -321,20 +384,6 @@ export const NotesManagement = () => {
                           <span>{note.downloads} downloads</span>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-11 md:ml-0">
-                      <Button size="sm" variant="outline" onClick={() => handleDownload(note)}>
-                        <Download size={14} className="mr-1" />
-                        Download
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50" onClick={() => openEditModal(note)}>
-                        <Edit size={14} className="mr-1" />
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => requestDeleteNote(note)}>
-                        <Trash2 size={14} className="mr-1" />
-                        Delete
-                      </Button>
                     </div>
                   </div>
                 </div>

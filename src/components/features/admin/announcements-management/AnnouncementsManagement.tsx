@@ -21,6 +21,7 @@ export const AnnouncementsManagement = () => {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -279,7 +280,42 @@ export const AnnouncementsManagement = () => {
       {/* List */}
       <Card>
         <CardHeader>
-          <CardTitle>All Announcements ({announcements.length})</CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle>All Announcements ({announcements.length})</CardTitle>
+            {/* Action Toolbar */}
+            <div className="flex items-center gap-2">
+              {selectedAnnouncementId && (
+                <span className="text-sm text-indigo-600 font-medium mr-2">
+                  Selected: {announcements.find(a => a.id === selectedAnnouncementId)?.title}
+                </span>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedAnnouncementId}
+                onClick={() => {
+                  const a = announcements.find(a => a.id === selectedAnnouncementId);
+                  if (a) handleEdit(a);
+                }}
+                className={`text-blue-500 hover:text-blue-700 hover:bg-blue-50 ${!selectedAnnouncementId ? "opacity-50" : ""}`}
+              >
+                <Edit size={14} className="mr-1" />
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!selectedAnnouncementId}
+                onClick={() => {
+                  if (selectedAnnouncementId) handleDelete(selectedAnnouncementId);
+                }}
+                className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${!selectedAnnouncementId ? "opacity-50" : ""}`}
+              >
+                <Trash2 size={14} className="mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -289,7 +325,17 @@ export const AnnouncementsManagement = () => {
           ) : (
             <div className="space-y-3">
               {announcements.map(a => (
-                <div key={a.id} className={`p-4 border rounded-lg hover:bg-gray-50 ${a.pinned ? "border-l-4 border-l-blue-500" : ""}`}>
+                <div
+                  key={a.id}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    a.pinned ? "border-l-4 border-l-blue-500" : ""
+                  } ${
+                    selectedAnnouncementId === a.id
+                      ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
+                      : "border-transparent hover:bg-gray-50 hover:border-gray-200"
+                  }`}
+                  onClick={() => setSelectedAnnouncementId(selectedAnnouncementId === a.id ? null : a.id)}
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -298,6 +344,9 @@ export const AnnouncementsManagement = () => {
                         <Badge className={getPriorityColor(a.priority)}>{a.priority}</Badge>
                         <Badge variant={a.status === "published" ? "default" : "secondary"}>{a.status}</Badge>
                         {a.category && <Badge variant="outline">{a.category}</Badge>}
+                        {selectedAnnouncementId === a.id && (
+                          <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-600 mb-2 line-clamp-2">{a.content}</p>
                       <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -311,24 +360,6 @@ export const AnnouncementsManagement = () => {
                         </span>
                         <span>by {a.author}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 ml-4 justify-end">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
-                        onClick={() => handleEdit(a)}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
-                        onClick={() => handleDelete(a.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
                     </div>
                   </div>
                 </div>
