@@ -19,6 +19,7 @@ export const Chat = () => {
   const [editingMessage, setEditingMessage] = useState<any>(null);
   const [editValue, setEditValue] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<{ file: File, base64: string, type: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [aboutConfig, setAboutConfig] = useState<any>(null);
@@ -313,12 +314,19 @@ export const Chat = () => {
             </CardTitle>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <Input placeholder="Search students..." className="pl-10" />
+              <Input
+                placeholder="Search students..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-y-auto max-h-[calc(100%-80px)]">
             <div className="space-y-1">
-              {conversations.map((chat) => (
+              {conversations
+                .filter((chat) => chat.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((chat) => (
                 <div
                   key={chat.id}
                   className={`p-4 cursor-pointer hover:bg-gray-50 border-b transition-colors ${selectedChat === chat.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
@@ -346,6 +354,12 @@ export const Chat = () => {
                   </div>
                 </div>
               ))}
+              {searchQuery && conversations.filter((chat) => chat.name?.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <div className="p-6 text-center text-gray-400">
+                  <Search size={32} className="mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No students found for "{searchQuery}"</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

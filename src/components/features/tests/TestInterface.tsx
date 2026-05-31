@@ -575,9 +575,21 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
 
                     <div className={`flex flex-wrap items-center gap-2 md:gap-4 ${reviewMode ? 'justify-end w-full sm:w-auto' : ''}`}>
                         {!reviewMode ? (
-                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
-                                <Clock size={16} className="md:w-5 md:h-5" />
-                                <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                            <div className="flex items-center gap-2 md:gap-3">
+                                {/* Change Section button - moved to header, left of clock */}
+                                {activeSectionIdx < test.sections.length - 1 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleChangeSectionRequest}
+                                        className="border-orange-400 text-orange-600 hover:bg-orange-50 font-bold px-3 md:px-5 text-xs md:text-sm h-9 md:h-10"
+                                    >
+                                        <span className="hidden sm:inline">Change Section</span><span className="sm:hidden">Next Sec</span> →
+                                    </Button>
+                                )}
+                                <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
+                                    <Clock size={16} className="md:w-5 md:h-5" />
+                                    <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 md:gap-4">
@@ -859,16 +871,7 @@ export const TestInterface = ({ test, onComplete, onCancel, reviewMode = false, 
                                     {reviewMode ? "Next" : "Save & Next"}
                                     <ChevronRight size={18} className="ml-1 md:ml-2" />
                                 </Button>
-                                {/* Change Section button - only shown in exam mode when more sections remain */}
-                                {!reviewMode && activeSectionIdx < test.sections.length - 1 && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleChangeSectionRequest}
-                                        className="border-orange-400 text-orange-600 hover:bg-orange-50 font-bold px-4 md:px-6 text-xs md:text-sm h-9 md:h-12"
-                                    >
-                                        <span className="hidden sm:inline">Change Section</span><span className="sm:hidden">Next Sec</span> →
-                                    </Button>
-                                )}
+
                             </div>
 
                             {/* Section change confirmation dialog */}

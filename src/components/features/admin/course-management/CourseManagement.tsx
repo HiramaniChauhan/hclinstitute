@@ -48,12 +48,14 @@ export const CourseManagement = () => {
   const [formData, setFormData] = useState({
     title: "",
     price: "",
+    originalPrice: "",
     duration: "",
     maxStudents: "",
     description: "",
     profilePicData: "", // Base64 string for image
     accessFeatures: [] as string[],
-    pointableFeatures: [] as string[]
+    pointableFeatures: [] as string[],
+    excludedFeatures: [] as string[]
   });
   const [newPointableFeature, setNewPointableFeature] = useState("");
 
@@ -71,6 +73,25 @@ export const CourseManagement = () => {
     setFormData(prev => ({
       ...prev,
       pointableFeatures: prev.pointableFeatures.filter((_, i) => i !== index)
+    }));
+  };
+
+  const [newExcludedFeature, setNewExcludedFeature] = useState("");
+
+  const addExcludedFeature = () => {
+    if (newExcludedFeature.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        excludedFeatures: [...prev.excludedFeatures, newExcludedFeature.trim()]
+      }));
+      setNewExcludedFeature("");
+    }
+  };
+
+  const removeExcludedFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      excludedFeatures: prev.excludedFeatures.filter((_, i) => i !== index)
     }));
   };
 
@@ -129,14 +150,17 @@ export const CourseManagement = () => {
     setFormData({
       title: "",
       price: "",
+      originalPrice: "",
       duration: "",
       maxStudents: "",
       description: "",
       profilePicData: "",
       accessFeatures: [],
-      pointableFeatures: []
+      pointableFeatures: [],
+      excludedFeatures: []
     });
     setNewPointableFeature("");
+    setNewExcludedFeature("");
     setOpen(true);
   };
 
@@ -145,14 +169,17 @@ export const CourseManagement = () => {
     setFormData({
       title: course.title || "",
       price: (course.price || 0).toString(),
+      originalPrice: (course.originalPrice || "").toString(),
       duration: course.duration || "",
       maxStudents: (course.maxStudents || 0).toString(),
       description: course.description || "",
       profilePicData: course.profilePicData || "",
       accessFeatures: course.accessFeatures || ['Lectures', 'Tests', 'Notes'],
-      pointableFeatures: course.pointableFeatures || []
+      pointableFeatures: course.pointableFeatures || [],
+      excludedFeatures: course.excludedFeatures || []
     });
     setNewPointableFeature("");
+    setNewExcludedFeature("");
     setOpen(true);
   };
 
@@ -190,11 +217,13 @@ export const CourseManagement = () => {
       const payload = {
         title: formData.title,
         price: Number(formData.price),
+        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : null,
         duration: formData.duration,
         maxStudents: Number(formData.maxStudents) || 100,
         description: formData.description,
         accessFeatures: formData.accessFeatures,
         pointableFeatures: formData.pointableFeatures,
+        excludedFeatures: formData.excludedFeatures,
         profilePicData: formData.profilePicData,
       };
 
@@ -281,12 +310,21 @@ export const CourseManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price (₹)</Label>
+                  <Label>Selling Price (₹)</Label>
                   <Input
                     type="number"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     placeholder="4999"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Original Price / MRP (₹) <span className="text-xs text-gray-400 font-normal">— shown as strikethrough</span></Label>
+                  <Input
+                    type="number"
+                    value={formData.originalPrice}
+                    onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                    placeholder="e.g. 7999"
                   />
                 </div>
                 <div className="space-y-2">
@@ -410,6 +448,37 @@ export const CourseManagement = () => {
                       <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
                         <span className="text-sm font-medium">{feature}</span>
                         <Button type="button" variant="ghost" size="sm" onClick={() => removePointableFeature(idx)} className="text-red-500 h-6 w-6 p-0 rounded-full">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Excluded Features (Not Provided) */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Not Included <span className="text-xs text-gray-400 font-normal">— shown with red ✗ cross</span></Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={newExcludedFeature}
+                    onChange={(e) => setNewExcludedFeature(e.target.value)}
+                    placeholder="e.g. Personal mentorship not included"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addExcludedFeature();
+                      }
+                    }}
+                  />
+                  <Button type="button" onClick={addExcludedFeature} variant="secondary">Add</Button>
+                </div>
+                {formData.excludedFeatures.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {formData.excludedFeatures.map((feature, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100">
+                        <span className="text-sm font-medium text-red-700">✗ {feature}</span>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeExcludedFeature(idx)} className="text-red-500 h-6 w-6 p-0 rounded-full">
                           <Trash2 size={14} />
                         </Button>
                       </div>
@@ -541,6 +610,14 @@ export const CourseManagement = () => {
                         <span className="flex items-center gap-1 font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-md">
                           <IndianRupee size={14} />
                           {Number(course.price).toLocaleString()}
+                          {course.originalPrice && Number(course.originalPrice) > Number(course.price) && (
+                            <span className="relative inline-flex items-center ml-1">
+                              <span className="text-xs font-semibold text-red-400">₹{Number(course.originalPrice).toLocaleString()}</span>
+                              <span className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                                <span className="block w-[110%] h-[1.5px] bg-red-500 -rotate-12 rounded-full"></span>
+                              </span>
+                            </span>
+                          )}
                         </span>
                         <span className="flex items-center gap-1">
                           <BookOpen size={14} />
@@ -565,6 +642,17 @@ export const CourseManagement = () => {
                           {course.pointableFeatures.map((feat: string, idx: number) => (
                             <div key={idx} className="flex items-center text-xs text-gray-600">
                               <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2" />
+                              {feat}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {course.excludedFeatures && course.excludedFeatures.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {course.excludedFeatures.map((feat: string, idx: number) => (
+                            <div key={idx} className="flex items-center text-xs text-red-500">
+                              <span className="font-bold mr-1.5 text-sm">✗</span>
                               {feat}
                             </div>
                           ))}

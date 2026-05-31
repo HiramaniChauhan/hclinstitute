@@ -61,6 +61,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [tabSwitchCount, setTabSwitchCount] = useState(0);
     const [showFullscreenPopup, setShowFullscreenPopup] = useState(false);
+    const [showSectionChangeDialog, setShowSectionChangeDialog] = useState(false);
     const leaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -350,6 +351,18 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
         }
     };
 
+    const handleChangeSectionRequest = () => {
+        if (activeSectionIdx >= test.sections.length - 1) return; // no next section
+        setShowSectionChangeDialog(true);
+    };
+
+    const handleConfirmSectionChange = () => {
+        setActiveSectionIdx(prev => prev + 1);
+        setActiveQuestionIdx(0);
+        setShowSectionChangeDialog(false);
+        toast.info(`Moved to section: ${test.sections[activeSectionIdx + 1].name}`);
+    };
+
     const handleSaveAndNext = () => {
         if (reviewMode) {
             moveToNextQuestion();
@@ -496,9 +509,21 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
 
                     <div className="flex items-center gap-2 md:gap-4">
                         {!reviewMode ? (
-                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
-                                <Clock size={16} className="md:w-5 md:h-5" />
-                                <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                            <div className="flex items-center gap-2 md:gap-3">
+                                {/* Change Section button - left of clock */}
+                                {activeSectionIdx < test.sections.length - 1 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleChangeSectionRequest}
+                                        className="border-orange-400 text-orange-600 hover:bg-orange-50 font-bold px-3 md:px-5 text-xs md:text-sm h-9 md:h-10"
+                                    >
+                                        <span className="hidden sm:inline">Change Section</span><span className="sm:hidden">Next Sec</span> →
+                                    </Button>
+                                )}
+                                <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
+                                    <Clock size={16} className="md:w-5 md:h-5" />
+                                    <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-1 md:gap-2">
@@ -710,6 +735,29 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 </Button>
                             </div>
                         </div>
+
+                        {/* Section change confirmation dialog */}
+                        <AlertDialog open={showSectionChangeDialog} onOpenChange={setShowSectionChangeDialog}>
+                            <AlertDialogContent className="z-[250]">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Change Section?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        <strong>Warning:</strong> Once you move to section <strong>{activeSectionIdx + 1 < test.sections.length ? test.sections[activeSectionIdx + 1].name : ''}</strong>, you <strong>cannot return</strong> to the current section (<strong>{activeSection.name}</strong>). Any unanswered questions in this section will be left blank.
+                                        <br /><br />
+                                        Are you sure you want to proceed?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Stay in Current Section</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleConfirmSectionChange}
+                                        className="bg-orange-600 hover:bg-orange-700"
+                                    >
+                                        Yes, Move to Next Section
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
 
                     {/* Sidebar Navigation */}

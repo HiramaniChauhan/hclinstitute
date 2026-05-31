@@ -117,6 +117,17 @@ export const Courses = () => {
                   </div>
                 )}
 
+                {course.excludedFeatures && course.excludedFeatures.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {course.excludedFeatures.map((feat: string, i: number) => (
+                      <div key={i} className="flex items-center text-xs text-red-500">
+                        <span className="font-bold mr-1.5 text-sm">✗</span>
+                        {feat}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="space-y-2 text-sm text-gray-600 mt-auto pt-4">
                   <div className="flex items-center gap-2">
                     <Clock size={14} />
@@ -128,6 +139,14 @@ export const Courses = () => {
                   <div className="flex items-center gap-1 text-lg font-bold text-green-600">
                     <IndianRupee size={18} />
                     {Number(course.price || 0).toLocaleString()}
+                    {course.originalPrice && Number(course.originalPrice) > Number(course.price) && (
+                      <span className="relative inline-flex items-center ml-2">
+                        <span className="text-base font-semibold text-red-400">₹{Number(course.originalPrice).toLocaleString()}</span>
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                          <span className="block w-[110%] h-[2px] bg-red-500 -rotate-12 rounded-full"></span>
+                        </span>
+                      </span>
+                    )}
                   </div>
                   <Button
                     size="sm"

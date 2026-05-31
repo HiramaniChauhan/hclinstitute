@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Calculator,
   CheckCircle2,
+  XCircle,
   Globe,
   AlertTriangle,
   Youtube
@@ -450,10 +451,21 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                     )}
 
                     {course.pointableFeatures && course.pointableFeatures.length > 0 && (
-                      <div className="mb-6 space-y-2">
+                      <div className="mb-3 space-y-2">
                         {course.pointableFeatures.map((feat: string, i: number) => (
                           <div key={i} className="flex items-start text-sm text-gray-300">
                             <CheckCircle2 className={`w-4 h-4 mr-2 shrink-0 ${theme.color}`} />
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {course.excludedFeatures && course.excludedFeatures.length > 0 && (
+                      <div className="mb-6 space-y-2">
+                        {course.excludedFeatures.map((feat: string, i: number) => (
+                          <div key={i} className="flex items-start text-sm text-red-400/80">
+                            <XCircle className="w-4 h-4 mr-2 shrink-0 text-red-500" />
                             <span>{feat}</span>
                           </div>
                         ))}
@@ -467,9 +479,19 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-                      <div className="flex items-center text-2xl font-bold text-white">
-                        <IndianRupee size={24} className={theme.color} />
-                        {course.price.toLocaleString()}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center text-2xl font-bold text-white">
+                          <IndianRupee size={24} className={theme.color} />
+                          {course.price.toLocaleString()}
+                        </div>
+                        {course.originalPrice && Number(course.originalPrice) > Number(course.price) && (
+                          <span className="relative inline-flex items-center">
+                            <span className="text-lg font-semibold text-red-400/80">₹{Number(course.originalPrice).toLocaleString()}</span>
+                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                              <span className="block w-[110%] h-[2px] bg-red-500 -rotate-12 rounded-full"></span>
+                            </span>
+                          </span>
+                        )}
                       </div>
                       <Button onClick={onRegister} className={`${theme.bg} text-white hover:bg-white hover:text-black transition-all font-bold`}>
                         Enroll Now
