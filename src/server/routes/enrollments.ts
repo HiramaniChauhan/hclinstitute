@@ -16,6 +16,13 @@ const parseDuration = (duration: string | number, fromDate: Date = new Date()): 
     return date.toISOString();
 };
 
+/** Returns true if the enrollment is still active AND not past its expiry date */
+const isEffectivelyActive = (enrollment: EnrollmentData): boolean => {
+    if (enrollment.status !== "active") return false;
+    if (enrollment.expiresAt && new Date(enrollment.expiresAt) <= new Date()) return false;
+    return true;
+};
+
 interface EnrollmentData {
     enrollmentId: string;
     userId: string;
@@ -24,7 +31,7 @@ interface EnrollmentData {
     enrolledAt: string;
     expiresAt?: string | null;
     enrolledBy?: string;
-    status: "active" | "completed" | "dropped";
+    status: "active" | "completed" | "dropped" | "expired";
 }
 
 // POST — Student enrolls in a batch/course
@@ -37,7 +44,7 @@ router.post("/", verifyToken, async (req: AuthRequest, res: Response) => {
 
         // Prevent duplicate enrollments (uses GSI instead of full scan)
         const existing = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user.id);
-        const alreadyEnrolled = existing.find(e => e.batchId === batchId && e.status === "active");
+        const alreadyEnrolled = existing.find(e => e.batchId === batchId && isEffectivelyActive(e));
         if (alreadyEnrolled) {
             return res.status(409).json({ error: "Already enrolled in this batch" });
         }
@@ -83,7 +90,7 @@ router.post("/enroll-course", verifyToken, requireAdmin, async (req: AuthRequest
 
         // Prevent duplicate enrollments (uses GSI instead of full scan)
         const existing = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user.id);
-        const alreadyEnrolled = existing.find(e => e.courseId === courseId && e.status === "active");
+        const alreadyEnrolled = existing.find(e => e.courseId === courseId && isEffectivelyActive(e));
         if (alreadyEnrolled) {
             return res.status(409).json({ error: "Already enrolled in this course" });
         }
@@ -134,7 +141,17 @@ router.get("/my", verifyToken, async (req: AuthRequest, res: Response) => {
 
         // Query by userId using GSI (instead of full table scan)
         const enrollments = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", req.user!.id);
-        res.json(enrollments);
+
+        // Mark expired enrollments so the frontend can distinguish them
+        const now = new Date();
+        const annotated = enrollments.map(e => {
+            if (e.status === "active" && e.expiresAt && new Date(e.expiresAt) <= now) {
+                return { ...e, status: "expired" as const };
+            }
+            return e;
+        });
+
+        res.json(annotated);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -267,7 +284,7 @@ router.post("/admin/enroll", verifyToken, requireAdmin, async (req: AuthRequest,
 
         // Prevent duplicate enrollments (uses GSI instead of full scan)
         const userEnrollments = await queryByField<EnrollmentData>(TABLES.ENROLLMENTS, "userId", userId);
-        const existing = userEnrollments.find(e => e.courseId === courseId && e.status === "active");
+        const existing = userEnrollments.find(e => e.courseId === courseId && isEffectivelyActive(e));
         if (existing) return res.status(409).json({ error: "Already enrolled in this course" });
 
         const enrolledAt = new Date().toISOString();

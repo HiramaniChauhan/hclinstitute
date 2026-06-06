@@ -152,7 +152,15 @@ export const Courses = () => {
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700 shadow-sm"
                     onClick={() => {
-                      const alreadyEnrolled = myEnrollments.some(e => e.courseId === course.id && e.status === 'active');
+                      const now = new Date();
+                      const alreadyEnrolled = myEnrollments.some(e => {
+                        if (e.courseId !== course.id) return false;
+                        if (e.status === 'expired') return false;
+                        if (e.status !== 'active') return false;
+                        // Also check expiresAt on the client side as a safety net
+                        if (e.expiresAt && new Date(e.expiresAt) <= now) return false;
+                        return true;
+                      });
                       if (alreadyEnrolled) {
                         toast.error("You are already enrolled in this course.", {
                           description: "Check 'My Enrolled Courses' below.",
@@ -189,15 +197,30 @@ export const Courses = () => {
                 const course = courses.find((c) => c.id === enrollment.courseId);
                 if (!course) return null; // Wait for courses to load or course no longer exists
 
+                const isExpired = enrollment.status === 'expired' ||
+                  (enrollment.status === 'active' && enrollment.expiresAt && new Date(enrollment.expiresAt) <= new Date());
+                const isActive = enrollment.status === 'active' && !isExpired;
+
                 return (
-                  <div key={enrollment.enrollmentId} className="p-4 border rounded-lg bg-green-50">
+                  <div key={enrollment.enrollmentId} className={`p-4 border rounded-lg ${isExpired ? 'bg-amber-50 border-amber-200' : 'bg-green-50'}`}>
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold">{course.title}</h3>
                         <p className="text-sm text-gray-600">Enrolled on: {new Date(enrollment.enrolledAt).toLocaleDateString()}</p>
+                        {enrollment.expiresAt && (
+                          <p className={`text-sm ${isExpired ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                            {isExpired ? 'Expired on' : 'Expires on'}: {new Date(enrollment.expiresAt).toLocaleDateString()}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="secondary" className={enrollment.status === 'active' ? 'bg-green-100 text-green-800' : ''}>
-                            {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                          <Badge variant="secondary" className={
+                            isExpired
+                              ? 'bg-red-100 text-red-800'
+                              : isActive
+                                ? 'bg-green-100 text-green-800'
+                                : ''
+                          }>
+                            {isExpired ? 'Expired' : enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
                           </Badge>
                           {course.accessFeatures && course.accessFeatures.map((feat: string, i: number) => (
                             <Badge key={i} variant="outline">{feat}</Badge>
