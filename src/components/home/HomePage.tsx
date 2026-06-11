@@ -65,6 +65,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
 
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   const [about, setAbout] = useState<any>({
     directorName: "Hiramani Chauhan",
@@ -438,7 +439,23 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                     <CardTitle className={`text-2xl font-bold ${theme.color}`}>{course.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-400 mb-6 text-sm line-clamp-2">{course.description}</p>
+                    <div className="mb-6">
+                      <p className={`text-gray-400 text-sm ${expandedDescriptions[course.id] ? '' : 'line-clamp-2'}`}>{course.description}</p>
+                      {course.description && course.description.length > 80 && (
+                        <button
+                          type="button"
+                          className="text-xs text-blue-400 hover:text-blue-300 font-medium mt-1 cursor-pointer hover:underline"
+                          onClick={() =>
+                            setExpandedDescriptions(prev => ({
+                              ...prev,
+                              [course.id]: !prev[course.id],
+                            }))
+                          }
+                        >
+                          {expandedDescriptions[course.id] ? 'Show less' : '...more'}
+                        </button>
+                      )}
+                    </div>
                     {course.accessFeatures && course.accessFeatures.length > 0 && (
                       <div className="mb-6 flex flex-wrap gap-2">
                         {course.accessFeatures.map((f: string, i: number) => (

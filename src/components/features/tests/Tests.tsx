@@ -375,11 +375,11 @@ export const Tests = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               {loading ? (
                 <div className="text-center py-6 text-gray-400">Loading tests...</div>
               ) : practiceTests.filter(matchesSearch).length === 0 ? (
-                <p className="col-span-full text-center py-6 text-gray-500">
+                <p className="text-center py-6 text-gray-500">
                   {searchQuery ? `No practice tests match "${searchQuery}".` : 'No practice tests available.'}
                 </p>
               ) : practiceTests.filter(matchesSearch).map((test) => {
@@ -396,77 +396,96 @@ export const Tests = () => {
                 const isPast = endTime && endTime < now;
 
                 return (
-                  <div key={testIdStr} className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow relative">
-                    <Badge className={`absolute top-2 right-2 ${completed ? 'bg-green-100 text-green-700' : isPast ? 'bg-slate-100 text-slate-600' : 'bg-blue-100 text-blue-700'}`}>
-                      {completed ? `Completed (${relatedResults.length}/2 attempts)` : isPast ? 'Ended' : 'Practice'}
-                    </Badge>
-                    <div className="flex items-center gap-2 mb-2 pr-24">
-                      <h3 className="font-semibold text-lg">{test.title}</h3>
-                      {test.isPremium ? (
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold flex items-center gap-0.5">
-                          <Crown className="h-3 w-3" /> PREMIUM
+                  <div key={testIdStr} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 border rounded-lg bg-white hover:bg-slate-50 transition-colors">
+                    {/* Left: Test info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-sm truncate">{test.title}</h3>
+                        {test.isPremium ? (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold flex items-center gap-0.5">
+                            <Crown className="h-3 w-3" /> PREMIUM
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
+                            FREE
+                          </Badge>
+                        )}
+                        <Badge className={`text-[10px] px-1.5 py-0 ${completed ? 'bg-green-100 text-green-700' : isPast ? 'bg-slate-100 text-slate-600' : 'bg-blue-100 text-blue-700'}`}>
+                          {completed ? `Completed (${relatedResults.length}/2)` : isPast ? 'Ended' : 'Practice'}
                         </Badge>
-                      ) : (
-                        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
-                          FREE
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div className="flex flex-wrap gap-3">
-                        <span className="flex items-center gap-1">
-                          <Target size={14} />
-                          {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} />
-                          {test.duration} minutes
-                        </span>
                       </div>
-                      {test.startDate && (
-                        <div className="flex items-center gap-1 text-blue-600">
-                          <Calendar size={14} />
-                          Start: {test.startDate} {test.startTime && `at ${test.startTime}`}
-                        </div>
-                      )}
-                      {test.endDate && (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <AlertCircle size={14} />
-                          End: {test.endDate} {test.endTime && `at ${test.endTime}`}
-                        </div>
-                      )}
-                      {/* Section names */}
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Target size={12} />
+                          {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} Q
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          {test.duration} min
+                        </span>
+                        {test.startDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar size={12} />
+                            {test.startDate} {test.startTime && `at ${test.startTime}`}
+                          </span>
+                        )}
+                        {test.endDate && (
+                          <span className="flex items-center gap-1 text-red-500">
+                            <AlertCircle size={12} />
+                            End: {test.endDate} {test.endTime && `at ${test.endTime}`}
+                          </span>
+                        )}
+                        <span className="text-gray-300">•</span>
                         {test.sections.map(s => (
-                          <Badge key={s.id} variant="outline" className="text-xs text-blue-700 border-blue-200 bg-blue-50">{s.name}</Badge>
+                          <Badge key={s.id} variant="outline" className="text-[10px] px-1 py-0 text-blue-600 border-blue-200 bg-blue-50/50">{s.name}</Badge>
                         ))}
                       </div>
+                      {test.subject && (
+                        <div className="mt-1">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{test.subject}</Badge>
+                        </div>
+                      )}
+                      {!hasRetake && completed && (
+                        <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+                          <AlertCircle size={12} /> 1 retake remaining
+                        </p>
+                      )}
                     </div>
 
-                    {!hasRetake && completed && (
-                      <div className="mt-3 flex items-center gap-2 p-2 bg-amber-50 border border-amber-100 rounded text-[11px] text-amber-700">
-                        <AlertCircle size={14} />
-                        You have 1 retake remaining. Practice again!
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center justify-between mt-4 gap-3">
-                      <div className="flex gap-2">
-                        <Badge variant="outline">{test.subject}</Badge>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        {completed && (
-                          <>
+                    {/* Right: Action buttons */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap sm:flex-nowrap">
+                      {completed && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-amber-600 border-amber-300 hover:bg-amber-50 text-xs h-7 px-2"
+                            onClick={async () => {
+                              try {
+                                const fullTest = await fetchTestById(String(test.testId || test.id), true);
+                                setAllAttempts(relatedResults);
+                                setSelectedResult(relatedResults[0]);
+                                setInitialAttemptIdx(0);
+                                setActiveTest(fullTest);
+                                setReviewMode(true);
+                              } catch (e) {
+                                toast.error("Failed to load test details");
+                              }
+                            }}
+                          >
+                            Review Original
+                          </Button>
+                          {hasRetake && (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-amber-600 border-amber-600 hover:bg-amber-50"
+                              className="text-blue-600 border-blue-300 hover:bg-blue-50 text-xs h-7 px-2"
                               onClick={async () => {
                                 try {
                                   const fullTest = await fetchTestById(String(test.testId || test.id), true);
                                   setAllAttempts(relatedResults);
-                                  setSelectedResult(relatedResults[0]);
-                                  setInitialAttemptIdx(0);
+                                  setSelectedResult(relatedResults[1]);
+                                  setInitialAttemptIdx(1);
                                   setActiveTest(fullTest);
                                   setReviewMode(true);
                                 } catch (e) {
@@ -474,44 +493,22 @@ export const Tests = () => {
                                 }
                               }}
                             >
-                              Review Original
+                              Review Retake
                             </Button>
-                            {hasRetake && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                                onClick={async () => {
-                                  try {
-                                    const fullTest = await fetchTestById(String(test.testId || test.id), true);
-                                    setAllAttempts(relatedResults);
-                                    setSelectedResult(relatedResults[1]);
-                                    setInitialAttemptIdx(1);
-                                    setActiveTest(fullTest);
-                                    setReviewMode(true);
-                                  } catch (e) {
-                                    toast.error("Failed to load test details");
-                                  }
-                                }}
-                              >
-                                Review Retaken
-                              </Button>
-                            )}
-                          </>
-                        )}
-                        <Button
-                          variant={completed ? "secondary" : "outline"}
-                          size="sm"
-                          className={`${(test.isPremium && !isEnrolled) ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500' : completed ? '' : 'text-blue-600 border-blue-600 hover:bg-blue-50'}`}
-                          onClick={() => handleStartTest(test)}
-                          disabled={relatedResults.length >= 2}
-                        >
-                          {test.isPremium && !isEnrolled && <Lock className="h-3.5 w-3.5 mr-1.5" />}
-                          {relatedResults.length >= 2
-                            ? "Max Attempts Reached (2/2)"
-                            : completed ? "Retake Practice" : isPast ? "Start Practice" : "Take Test"}
-                        </Button>
-                      </div>
+                          )}
+                        </>
+                      )}
+                      <Button
+                        size="sm"
+                        className={`text-xs h-7 px-3 ${(test.isPremium && !isEnrolled) ? 'bg-amber-500 hover:bg-amber-600' : completed ? 'bg-gray-500 hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                        onClick={() => handleStartTest(test)}
+                        disabled={relatedResults.length >= 2}
+                      >
+                        {test.isPremium && !isEnrolled && <Lock className="h-3 w-3 mr-1" />}
+                        {relatedResults.length >= 2
+                          ? "Max Attempts (2/2)"
+                          : completed ? "Retake" : isPast ? "Practice" : "Take Test"}
+                      </Button>
                     </div>
                   </div>
                 );

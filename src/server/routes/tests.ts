@@ -189,7 +189,6 @@ router.post("/", verifyToken, requireAdmin, async (req: AuthRequest, res: Respon
         await createItem(TABLES.TESTS, test);
         res.status(201).json(test);
     } catch (error: any) {
-        console.error("[TestCreation] Error creating test:", error.message, "Payload was:", JSON.stringify(req.body, null, 2));
         res.status(400).json({ error: error.message });
     }
 });

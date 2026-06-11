@@ -636,10 +636,28 @@ export const TestCreation = () => {
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingTest ? "Edit Test" : "Create New Test with Questions"}</DialogTitle>
-              <DialogDescription>
-                {editingTest ? "Update the test details and settings." : "Create comprehensive tests with multiple choice questions"}
-              </DialogDescription>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <DialogTitle>{editingTest ? "Edit Test" : "Create New Test with Questions"}</DialogTitle>
+                  <DialogDescription>
+                    {editingTest ? "Update the test details and settings." : "Create comprehensive tests with multiple choice questions"}
+                  </DialogDescription>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setOpen(false)}>Cancel</Button>
+                  <Button variant="secondary" size="sm" className="h-7 text-xs px-2" onClick={handleSaveTest}>Save as Draft</Button>
+                  {editingTest && (
+                    <Button size="sm" className="h-7 text-xs px-2 bg-blue-600 hover:bg-blue-700" onClick={handleSaveAsNewTest}>
+                      <Copy className="w-3 h-3 mr-1" />
+                      Save as New
+                    </Button>
+                  )}
+                  <Button size="sm" className="h-7 text-xs px-2 bg-green-600 hover:bg-green-700" onClick={handleSaveTest}>
+                    <Target className="w-3 h-3 mr-1" />
+                    {editingTest ? "Update" : "Create"}
+                  </Button>
+                </div>
+              </div>
             </DialogHeader>
 
             <div className="space-y-6 py-4">
@@ -997,20 +1015,7 @@ export const TestCreation = () => {
               </div>
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button variant="secondary" onClick={handleSaveTest}>Save as Draft</Button>
-              {editingTest && (
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveAsNewTest}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Save as New Test
-                </Button>
-              )}
-              <Button className="bg-green-600 hover:bg-green-700" onClick={handleSaveTest}>
-                <Target className="w-4 h-4 mr-2" />
-                {editingTest ? "Update Test" : "Create Test"}
-              </Button>
-            </DialogFooter>
+
           </DialogContent>
         </Dialog>
 
@@ -1344,13 +1349,13 @@ export const TestCreation = () => {
           </DialogContent>
         </Dialog>
       )}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <CardTitle>Existing Tests</CardTitle>
-            <div className="flex items-center gap-2 flex-wrap">
+      <Card className="flex flex-col">
+        <CardHeader className="sticky top-0 z-10 bg-white border-b shadow-sm rounded-t-lg py-2 px-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-sm">Existing Tests</CardTitle>
+            <div className="flex items-center gap-1.5 flex-wrap">
               {selectedTestId && (
-                <span className="text-sm text-indigo-600 font-medium mr-2">
+                <span className="text-xs text-indigo-600 font-medium mr-1">
                   Selected: {tests.find(t => (t.testId || t.id) === selectedTestId)?.title}
                 </span>
               )}
@@ -1362,9 +1367,9 @@ export const TestCreation = () => {
                   const test = tests.find(t => (t.testId || t.id) === selectedTestId);
                   if (test) handleEditTest(test);
                 }}
-                className={!selectedTestId ? "opacity-50" : ""}
+                className={`h-7 text-xs px-2 ${!selectedTestId ? "opacity-50" : ""}`}
               >
-                <Edit size={14} className="mr-1" />
+                <Edit size={12} className="mr-1" />
                 Edit
               </Button>
               <Button
@@ -1375,9 +1380,9 @@ export const TestCreation = () => {
                   const test = tests.find(t => (t.testId || t.id) === selectedTestId);
                   if (test) requestDeleteTest(test);
                 }}
-                className={`text-red-600 hover:bg-red-50 hover:text-red-700 ${!selectedTestId ? "opacity-50" : ""}`}
+                className={`h-7 text-xs px-2 text-red-600 hover:bg-red-50 hover:text-red-700 ${!selectedTestId ? "opacity-50" : ""}`}
               >
-                <Trash2 size={14} className="mr-1" />
+                <Trash2 size={12} className="mr-1" />
                 Delete
               </Button>
               <Button
@@ -1388,9 +1393,9 @@ export const TestCreation = () => {
                   const test = tests.find(t => (t.testId || t.id) === selectedTestId);
                   if (test) handleViewQuestions(test);
                 }}
-                className={!selectedTestId ? "opacity-50" : ""}
+                className={`h-7 text-xs px-2 ${!selectedTestId ? "opacity-50" : ""}`}
               >
-                <FileText size={14} className="mr-1" />
+                <FileText size={12} className="mr-1" />
                 Questions
               </Button>
               <Button
@@ -1401,9 +1406,9 @@ export const TestCreation = () => {
                   const test = tests.find(t => (t.testId || t.id) === selectedTestId);
                   if (test) handleViewResults(test);
                 }}
-                className={`text-amber-600 border-amber-200 hover:bg-amber-50 ${!selectedTestId ? "opacity-50" : ""}`}
+                className={`h-7 text-xs px-2 text-amber-600 border-amber-200 hover:bg-amber-50 ${!selectedTestId ? "opacity-50" : ""}`}
               >
-                <Trophy size={14} className="mr-1" />
+                <Trophy size={12} className="mr-1" />
                 Results
               </Button>
               {(() => {
@@ -1415,105 +1420,97 @@ export const TestCreation = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => { if (selectedTest) handleEditTest(selectedTest, true); }}
-                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                    className="h-7 text-xs px-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
                   >
-                    <Calendar size={14} className="mr-1" />
+                    <Calendar size={12} className="mr-1" />
                     Reschedule
                   </Button>
                 ) : null;
               })()}
-              <div className="relative w-52 ml-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <div className="relative w-40 ml-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <Input
                   placeholder="Search tests..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9"
+                  className="pl-7 h-7 text-xs"
                 />
               </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="overflow-y-auto max-h-[60vh] p-2">
+          <div className="space-y-1.5">
             {loading ? (
-              <div className="text-center py-10 text-gray-400">Loading tests...</div>
+              <div className="text-center py-6 text-gray-400 text-sm">Loading tests...</div>
             ) : tests.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">No tests available. Create one to get started.</div>
+              <div className="text-center py-6 text-gray-400 text-sm">No tests available. Create one to get started.</div>
             ) : (
               // Filter tests then map
               tests
                 .filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()) || (t.subject && t.subject.toLowerCase().includes(searchQuery.toLowerCase())))
                 .map((test) => {
-                  const testId = test.testId || test.id;
+                  const testId = String(test.testId || test.id);
                   const isScheduled = test.startDate && test.startTime && test.endDate && test.endTime;
                   const isEnded = isScheduled && new Date(`${test.endDate}T${test.endTime}`) < new Date();
 
                   return (
                     <div
                       key={testId}
-                      className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
+                      className={`px-3 py-2 border rounded-md transition-all cursor-pointer ${
                         isEnded ? 'bg-gray-50' : 'bg-white'
                       } ${
                         selectedTestId === testId
                           ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200'
-                          : 'border-transparent hover:border-gray-200'
+                          : 'border-gray-100 hover:border-gray-300'
                       }`}
                       onClick={() => setSelectedTestId(selectedTestId === testId ? null : testId)}
                     >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">{test.title}</h3>
-                          {selectedTestId === testId && (
-                            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
-                          )}
-                          {isEnded && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Completed/Ended</Badge>}
-                          {!isEnded && isScheduled && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active/Scheduled</Badge>}
-                          {!isScheduled && <Badge variant="outline" className="text-gray-400">Draft/No Schedule</Badge>}
-                          {test.isPremium ? (
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0 font-bold">
-                              <Crown className="h-3 w-3 mr-0.5" /> PREMIUM
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-bold">
-                              FREE
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <Target size={14} />
-                            {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} questions
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={14} />
-                            {test.duration} minutes
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users size={14} />
-                            {test.sections.length} sections
-                          </span>
-                        </div>
-
-                        {isScheduled && (
-                          <div className="mt-2 flex items-center gap-2 text-xs text-blue-600 font-medium">
-                            <Calendar size={12} />
-                            <span>{test.startDate} {test.startTime} to {test.endDate} {test.endTime}</span>
-                          </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-semibold text-sm">{test.title}</h3>
+                        {selectedTestId === testId && (
+                          <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] px-1.5 py-0">Selected</Badge>
                         )}
-
-                        <div className="flex items-center gap-2 mt-3">
-                          <Badge variant="secondary">{test.subject}</Badge>
-                          <div className="flex gap-1">
-                            {test.sections.map(s => (
-                              <Badge key={s.id} variant="outline" className="text-[10px] px-1 py-0">{s.name}</Badge>
-                            ))}
-                          </div>
-                          <Badge variant={test.difficulty === 'Easy' ? 'default' : test.difficulty === 'Medium' ? 'secondary' : 'destructive'}>
-                            {test.difficulty}
+                        {isEnded && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 text-[10px] px-1.5 py-0">Completed/Ended</Badge>}
+                        {!isEnded && isScheduled && <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-[10px] px-1.5 py-0">Active/Scheduled</Badge>}
+                        {!isScheduled && <Badge variant="outline" className="text-gray-400 text-[10px] px-1.5 py-0">Draft</Badge>}
+                        {test.isPremium ? (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1 py-0 font-bold flex items-center gap-0.5">
+                            <Crown className="h-2.5 w-2.5" /> PREMIUM
                           </Badge>
-                        </div>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1 py-0 font-bold">
+                            FREE
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Target size={11} />
+                          {test.sections.reduce((acc, s) => acc + s.questions.length, 0)} Q
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={11} />
+                          {test.duration} min
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users size={11} />
+                          {test.sections.length} sec
+                        </span>
+                        {isScheduled && (
+                          <span className="flex items-center gap-1 text-blue-600">
+                            <Calendar size={11} />
+                            {test.startDate} {test.startTime} → {test.endDate} {test.endTime}
+                          </span>
+                        )}
+                        <span className="text-gray-300">•</span>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">{test.subject}</Badge>
+                        {test.sections.map(s => (
+                          <Badge key={s.id} variant="outline" className="text-[10px] px-1 py-0 text-blue-600 border-blue-200">{s.name}</Badge>
+                        ))}
+                        <Badge className={`text-[10px] px-1 py-0 ${test.difficulty === 'Easy' ? 'bg-green-100 text-green-700' : test.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                          {test.difficulty}
+                        </Badge>
                       </div>
                     </div>
                   );

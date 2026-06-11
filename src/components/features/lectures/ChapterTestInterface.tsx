@@ -457,7 +457,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
     }, [reviewMode, currentAttempt, savedAnswers, test.sections]);
 
     return createPortal(
-        <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[200] overflow-hidden flex flex-col p-2 sm:p-4 md:p-6 lg:p-8 animate-in fade-in duration-500">
+        <div className="fixed inset-0 bg-slate-50 lg:bg-white z-[200] overflow-hidden flex flex-col p-1 sm:p-2 md:p-3 lg:p-4 animate-in fade-in duration-500">
             {/* Fullscreen Exit Warning Popup */}
             {showFullscreenPopup && !reviewMode && (
                 <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -481,13 +481,13 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                     </div>
                 </div>
             )}
-            <div className="max-w-7xl w-full mx-auto h-full flex flex-col space-y-3 md:space-y-6">
-                <div className="flex-shrink-0 flex items-center justify-between bg-white z-10 p-3 md:p-4 border-b rounded-xl shadow-sm mb-2 lg:mb-4">
+            <div className="max-w-7xl w-full mx-auto h-full flex flex-col space-y-1 md:space-y-2">
+                <div className="flex-shrink-0 flex items-center justify-between bg-white z-10 p-2 md:p-2.5 border-b rounded-lg shadow-sm mb-1 lg:mb-2">
                     <div>
-                        <h2 className="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 truncate max-w-[150px] md:max-w-md">{test.title}</h2>
-                        <div className="flex items-center gap-2 mt-1 hidden sm:flex">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{activeSection.name}</Badge>
-                            <span className="text-sm text-gray-500 font-medium">Section {activeSectionIdx + 1} of {test.sections.length}</span>
+                        <h2 className="text-sm md:text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 truncate max-w-[150px] md:max-w-md">{test.title}</h2>
+                        <div className="flex items-center gap-1.5 mt-0.5 hidden sm:flex">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">{activeSection.name}</Badge>
+                            <span className="text-xs text-gray-500 font-medium">Section {activeSectionIdx + 1} of {test.sections.length}</span>
                         </div>
                     </div>
 
@@ -515,14 +515,14 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                     <Button
                                         variant="outline"
                                         onClick={handleChangeSectionRequest}
-                                        className="border-orange-400 text-orange-600 hover:bg-orange-50 font-bold px-3 md:px-5 text-xs md:text-sm h-9 md:h-10"
+                                        className="border-orange-400 text-orange-600 hover:bg-orange-50 font-bold px-2 md:px-3 text-[10px] md:text-xs h-7 md:h-8"
                                     >
                                         <span className="hidden sm:inline">Change Section</span><span className="sm:hidden">Next Sec</span> →
                                     </Button>
                                 )}
-                                <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
-                                    <Clock size={16} className="md:w-5 md:h-5" />
-                                    <span className="text-lg md:text-2xl font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
+                                <div className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border-2 transition-colors ${sectionTimers[activeSection.id] < 60 ? 'border-red-500 text-red-600 animate-pulse bg-red-50' : 'border-blue-100 text-blue-700 bg-blue-50/50'}`}>
+                                    <Clock size={14} className="md:w-4 md:h-4" />
+                                    <span className="text-sm md:text-base font-mono font-bold">{formatTime(sectionTimers[activeSection.id])}</span>
                                 </div>
                             </div>
                         ) : (
@@ -554,20 +554,20 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                             </div>
                         )}
 
-                        <div className="flex items-center gap-1 md:gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setIsPanelOpen(!isPanelOpen)} className="mr-1 md:mr-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-slate-200 h-9 w-9 md:h-10 md:w-10 p-0">
-                                {isPanelOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+                        <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" onClick={() => setIsPanelOpen(!isPanelOpen)} className="mr-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-slate-200 h-7 w-7 md:h-8 md:w-8 p-0">
+                                {isPanelOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
                             </Button>
                             {reviewMode ? (
-                                <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-xs md:text-sm h-9 md:h-10 px-2 md:px-4" onClick={onCancel}>
-                                    <X size={16} className="md:mr-2" />
+                                <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 text-[10px] md:text-xs h-7 md:h-8 px-2 md:px-3" onClick={onCancel}>
+                                    <X size={14} className="md:mr-1" />
                                     <span className="hidden md:inline">Exit Review</span>
                                 </Button>
                             ) : (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
-                                        <Button className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 font-bold shadow-lg shadow-red-200 h-9 md:h-10 px-3 md:px-6 text-xs md:text-sm">
-                                            <Send size={16} className="md:mr-2" />
+                                        <Button className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 font-bold shadow-lg shadow-red-200 h-7 md:h-8 px-2 md:px-4 text-[10px] md:text-xs">
+                                            <Send size={14} className="md:mr-1" />
                                             <span className="hidden md:inline">Submit Test</span><span className="md:hidden ml-1">Submit</span>
                                         </Button>
                                     </AlertDialogTrigger>
@@ -597,23 +597,23 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start flex-1 min-h-0 w-full lg:overflow-hidden relative">
+                <div className="flex flex-col lg:flex-row gap-2 lg:gap-4 items-start flex-1 min-h-0 w-full lg:overflow-hidden relative">
                     {/* Main Question Area */}
-                    <div className="flex-1 w-full h-full flex flex-col min-h-0 space-y-4 lg:space-y-6">
-                        <Card className="flex-1 shadow-2xl border-none bg-white flex flex-col overflow-hidden rounded-2xl ring-1 ring-slate-200">
-                            <div className="bg-slate-50 p-2 md:p-3 flex flex-row items-center justify-between border-b flex-shrink-0">
-                                <div className="flex items-center gap-2 md:gap-3">
-                                    <Badge className="bg-slate-800 px-2 md:px-3 py-1 text-sm md:text-base">Q {activeQuestionIdx + 1}</Badge>
-                                    <Badge variant="outline" className="text-slate-500 border-slate-300 hidden sm:inline-flex">{activeSection.name}</Badge>
+                    <div className="flex-1 w-full h-full flex flex-col min-h-0 space-y-2 lg:space-y-3">
+                        <Card className="flex-1 shadow-2xl border-none bg-white flex flex-col overflow-hidden rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-slate-50 p-1.5 md:p-2 flex flex-row items-center justify-between border-b flex-shrink-0">
+                                <div className="flex items-center gap-1.5 md:gap-2">
+                                    <Badge className="bg-slate-800 px-1.5 md:px-2 py-0.5 text-xs">Q {activeQuestionIdx + 1}</Badge>
+                                    <Badge variant="outline" className="text-slate-500 border-slate-300 hidden sm:inline-flex text-[10px] px-1.5 py-0">{activeSection.name}</Badge>
                                 </div>
                                 {hasDraftChange && (
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-2 px-3 py-1 font-bold animate-pulse">
-                                        <AlertCircle size={16} /> Unsaved Selection
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold animate-pulse">
+                                        <AlertCircle size={12} /> Unsaved
                                     </Badge>
                                 )}
                             </div>
-                            <CardContent className="p-8 space-y-8 flex-1 overflow-y-auto">
-                                <div className="text-1xl font-semibold leading-relaxed text-slate-800">
+                            <CardContent className="p-4 md:p-6 space-y-4 flex-1 overflow-y-auto">
+                                <div className="text-sm font-semibold leading-relaxed text-slate-800">
                                     <Latex content={activeQuestion.question} />
                                 </div>
 
@@ -623,7 +623,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                     </div>
                                 )}
 
-                                <div className="grid grid-cols-1 gap-4 mt-8">
+                                <div className="grid grid-cols-1 gap-2 mt-4">
                                     {activeQuestion.options.map((option, idx) => {
                                         const isDraftSelected = draftAnswers[questionKey] !== undefined && Number(draftAnswers[questionKey]) === idx;
                                         const isSavedSelected = savedAnswers[questionKey] !== undefined && Number(savedAnswers[questionKey]) === idx;
@@ -637,28 +637,28 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                                 key={idx}
                                                 disabled={reviewMode}
                                                 onClick={() => handleOptionSelect(idx)}
-                                                className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-2xl border-[2px] text-left transition-all duration-300 group ${isAnsweredCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
+                                                className={`flex items-center gap-2 p-1.5 md:p-2 rounded-xl border-[2px] text-left transition-all duration-300 group ${isAnsweredCorrect ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100' :
                                                     isUnansweredCorrect ? 'border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-100' :
                                                         isUserWrong ? 'border-red-500 bg-red-100 shadow-md' :
-                                                            isDraftSelected ? 'border-blue-600 bg-blue-50 shadow-lg translate-x-1 md:translate-x-3' :
+                                                            isDraftSelected ? 'border-blue-600 bg-blue-50 shadow-lg translate-x-1 md:translate-x-2' :
                                                                 'border-slate-100 hover:border-blue-300 hover:bg-slate-50'
                                                     }`}
                                             >
-                                                <span className={`w-6 h-6 md:w-8 md:h-8 text-sm md:text-lg rounded-lg flex items-center justify-center font-bold border-2 transition-colors ${isAnsweredCorrect ? 'bg-green-500 text-white border-green-600' :
+                                                <span className={`w-5 h-5 md:w-6 md:h-6 text-xs md:text-sm rounded-md flex items-center justify-center font-bold border-2 transition-colors flex-shrink-0 ${isAnsweredCorrect ? 'bg-green-500 text-white border-green-600' :
                                                     isUnansweredCorrect ? 'bg-amber-500 text-white border-amber-600' :
                                                         isUserWrong ? 'bg-red-500 text-white border-red-600' :
                                                             isDraftSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-slate-100 text-slate-500 border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 group-hover:bg-blue-50'
                                                     }`}>
                                                     {String.fromCharCode(65 + idx)}
                                                 </span>
-                                                <span className="flex-1 text-base md:text-lg font-medium text-slate-700 break-words overflow-x-hidden">
+                                                <span className="flex-1 text-xs md:text-sm font-medium text-slate-700 break-words overflow-x-hidden">
                                                     <Latex content={option} />
                                                 </span>
-                                                {isAnsweredCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-4 py-1 text-sm">Correct</Badge>}
-                                                {isUnansweredCorrect && <Badge className="bg-amber-500 text-white font-bold ml-auto px-2 md:px-4 py-1 text-[10px] md:text-sm whitespace-nowrap">Missed</Badge>}
-                                                {isUserWrong && <Badge className="bg-red-600 text-white font-bold ml-auto px-4 py-1 text-sm">Your Answer</Badge>}
+                                                {isAnsweredCorrect && <Badge className="bg-green-600 text-white font-bold ml-auto px-2 py-0.5 text-[10px]">Correct</Badge>}
+                                                {isUnansweredCorrect && <Badge className="bg-amber-500 text-white font-bold ml-auto px-2 py-0.5 text-[10px] whitespace-nowrap">Missed</Badge>}
+                                                {isUserWrong && <Badge className="bg-red-600 text-white font-bold ml-auto px-2 py-0.5 text-[10px]">Your Answer</Badge>}
                                                 {isSavedSelected && !reviewMode && isDraftSelected && (
-                                                    <Badge className="bg-blue-600 text-white ml-auto px-4 py-1 text-sm">Saved</Badge>
+                                                    <Badge className="bg-blue-600 text-white ml-auto px-2 py-0.5 text-[10px]">Saved</Badge>
                                                 )}
                                             </button>
                                         );
@@ -666,12 +666,12 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 </div>
 
                                 {reviewMode && activeQuestion.explanation && (
-                                    <div className="mt-8 p-4 bg-slate-900 text-white rounded-2xl space-y-2 border-l-8 border-l-blue-500">
-                                        <div className="flex items-center gap-2 text-blue-400 font-bold uppercase tracking-wider text-sm">
-                                            <Award size={18} />
+                                    <div className="mt-4 p-3 bg-slate-900 text-white rounded-xl space-y-1.5 border-l-4 border-l-blue-500">
+                                        <div className="flex items-center gap-1.5 text-blue-400 font-bold uppercase tracking-wider text-xs">
+                                            <Award size={14} />
                                             Explanation
                                         </div>
-                                        <p className="text-xl leading-relaxed text-slate-300">
+                                        <p className="text-sm leading-relaxed text-slate-300">
                                             <Latex content={activeQuestion.explanation || ''} />
                                         </p>
                                     </div>
@@ -679,11 +679,11 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                             </CardContent>
                         </Card>
 
-                        <div className="flex-shrink-0 flex flex-wrap items-center justify-between p-2 md:p-4 bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 gap-2">
-                            <div className="flex gap-2">
+                        <div className="flex-shrink-0 flex flex-wrap items-center justify-between p-1.5 md:p-2 bg-white rounded-xl shadow-xl ring-1 ring-slate-200 gap-1.5">
+                            <div className="flex gap-1">
                                 <Button
                                     variant="ghost"
-                                    className="hover:bg-slate-100 font-bold px-2 md:px-4 h-9 md:h-12"
+                                    className="hover:bg-slate-100 font-bold px-2 md:px-3 h-7 md:h-8 text-xs"
                                     onClick={() => {
                                         if (activeQuestionIdx > 0) setActiveQuestionIdx(prev => prev - 1);
                                         else if (activeSectionIdx > 0) {
@@ -694,33 +694,33 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                     }}
                                     disabled={activeSectionIdx === 0 && activeQuestionIdx === 0}
                                 >
-                                    <ChevronLeft size={18} className="md:mr-2" /> <span className="hidden sm:inline">Previous</span>
+                                    <ChevronLeft size={14} className="md:mr-1" /> <span className="hidden sm:inline">Previous</span>
                                 </Button>
                             </div>
 
-                            <div className="flex gap-2 ml-auto lg:hidden" />
+                            <div className="flex gap-1 ml-auto lg:hidden" />
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-1">
                                 {!reviewMode && (
-                                    <Button variant="outline" onClick={handleClearResponse} className="text-slate-500 font-bold px-3 h-9 md:h-12 hover:bg-slate-50 text-xs md:text-sm">
+                                    <Button variant="outline" onClick={handleClearResponse} className="text-slate-500 font-bold px-2 h-7 md:h-8 hover:bg-slate-50 text-[10px] md:text-xs">
                                         <span className="hidden sm:inline">Clear Response</span><span className="sm:hidden">Clear</span>
                                     </Button>
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap gap-2 justify-end mt-1 lg:mt-0 ml-auto w-full lg:w-auto">
+                            <div className="flex flex-wrap gap-1.5 justify-end mt-0.5 lg:mt-0 ml-auto w-full lg:w-auto">
                                 {!reviewMode && (
                                     <>
                                         <Button
                                             variant="outline"
                                             onClick={handleMarkForReviewAndNext}
-                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-3 text-xs md:text-sm h-9 md:h-12 flex-1 sm:flex-none whitespace-nowrap"
+                                            className="border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold px-2 text-[10px] md:text-xs h-7 md:h-8 flex-1 sm:flex-none whitespace-nowrap"
                                         >
                                             <span className="hidden sm:inline">Mark for Review & Next</span><span className="sm:hidden">Mark & Next</span>
                                         </Button>
                                         <Button
                                             onClick={handleSaveAndMarkForReview}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 text-xs md:text-sm h-9 md:h-12 flex-1 sm:flex-none whitespace-nowrap"
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2 text-[10px] md:text-xs h-7 md:h-8 flex-1 sm:flex-none whitespace-nowrap"
                                         >
                                             <span className="hidden sm:inline">Save & Mark For Review</span><span className="sm:hidden">Save & Review</span>
                                         </Button>
@@ -728,10 +728,10 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                 )}
                                 <Button
                                     onClick={handleSaveAndNext}
-                                    className="bg-blue-600 hover:bg-blue-700 px-4 md:px-6 text-sm md:text-xl font-bold rounded-xl shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95 h-9 md:h-12 flex-1 sm:flex-none min-w-[100px]"
+                                    className="bg-blue-600 hover:bg-blue-700 px-3 md:px-4 text-xs md:text-sm font-bold rounded-lg shadow-md shadow-blue-200 transition-all hover:scale-105 active:scale-95 h-7 md:h-8 flex-1 sm:flex-none min-w-[80px]"
                                 >
                                     {reviewMode ? "Next" : "Save & Next"}
-                                    <ChevronRight size={18} className="ml-1 md:ml-2" />
+                                    <ChevronRight size={14} className="ml-1" />
                                 </Button>
                             </div>
                         </div>
@@ -814,7 +814,7 @@ export const ChapterTestInterface = ({ test, onComplete, onCancel, reviewMode = 
                                                                         setActiveSectionIdx(sIdx);
                                                                         setActiveQuestionIdx(qIdx);
                                                                     }}
-                                                                    className={`h-8 w-8 text-sm font-bold rounded-lg flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
+                                                                    className={`h-7 w-7 text-xs font-bold rounded-md flex items-center justify-center border-2 transition-all transform active:scale-95 ${btnClass}`}
                                                                 >
                                                                     {qIdx + 1}
                                                                 </button>

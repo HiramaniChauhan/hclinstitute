@@ -15,6 +15,7 @@ export const Courses = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchCourses();
@@ -94,7 +95,25 @@ export const Courses = () => {
                 <CardTitle className="text-lg leading-tight line-clamp-2">{course.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
-                <p className="text-sm text-gray-600 line-clamp-2 min-h-[40px]">{course.description}</p>
+                <div className="min-h-[40px]">
+                  <p className={`text-sm text-gray-600 ${expandedDescriptions[course.id] ? '' : 'line-clamp-2'}`}>
+                    {course.description}
+                  </p>
+                  {course.description && course.description.length > 80 && (
+                    <button
+                      type="button"
+                      className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 cursor-pointer hover:underline"
+                      onClick={() =>
+                        setExpandedDescriptions(prev => ({
+                          ...prev,
+                          [course.id]: !prev[course.id],
+                        }))
+                      }
+                    >
+                      {expandedDescriptions[course.id] ? 'Show less' : '...more'}
+                    </button>
+                  )}
+                </div>
 
                 {course.accessFeatures && course.accessFeatures.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">

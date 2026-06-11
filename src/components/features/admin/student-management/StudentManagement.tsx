@@ -336,17 +336,18 @@ export const StudentManagement = () => {
             </div>
 
             {/* Search + Table */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <div className="flex items-center gap-4">
-                            <CardTitle>Students {debouncedSearch && <span className="text-sm font-normal text-gray-500 ml-2">({pagination.total} results for "{debouncedSearch}")</span>}</CardTitle>
-                            <div className="flex bg-gray-100 p-1 rounded-lg">
+            <Card className="flex flex-col">
+                <div className="sticky top-0 z-10 bg-white rounded-t-lg shadow-sm">
+                <CardHeader className="py-2 px-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-3">
+                            <CardTitle className="text-sm">Students {debouncedSearch && <span className="text-xs font-normal text-gray-500 ml-1">({pagination.total} results for "{debouncedSearch}")</span>}</CardTitle>
+                            <div className="flex bg-gray-100 p-0.5 rounded-md">
                                 <Button
                                     size="sm"
                                     variant={viewMode === "active" ? "default" : "ghost"}
                                     onClick={() => setViewMode("active")}
-                                    className={viewMode === "active" ? "bg-white text-black shadow-sm" : "text-gray-500"}
+                                    className={`h-6 text-[11px] px-2 ${viewMode === "active" ? "bg-white text-black shadow-sm" : "text-gray-500"}`}
                                 >
                                     Active Students
                                 </Button>
@@ -354,18 +355,18 @@ export const StudentManagement = () => {
                                     size="sm"
                                     variant={viewMode === "deleted" ? "default" : "ghost"}
                                     onClick={() => setViewMode("deleted")}
-                                    className={viewMode === "deleted" ? "bg-white text-black shadow-sm" : "text-gray-500"}
+                                    className={`h-6 text-[11px] px-2 ${viewMode === "deleted" ? "bg-white text-black shadow-sm" : "text-gray-500"}`}
                                 >
                                     Deleted Accounts
                                 </Button>
                             </div>
                         </div>
-                        <div className="relative w-64">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                            {searchTerm && loading && <Loader2 className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 animate-spin" />}
+                        <div className="relative w-48">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                            {searchTerm && loading && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 animate-spin" />}
                             <Input
-                                placeholder="Search all students by name or email..."
-                                className="pl-8"
+                                placeholder="Search all students by name or e..."
+                                className="pl-7 h-7 text-xs"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -375,33 +376,33 @@ export const StudentManagement = () => {
 
                 {/* Action Toolbar for selected student */}
                 {selectedStudent && (
-                    <div className="px-6 pb-3">
-                        <div className="flex items-center gap-2 flex-wrap p-3 bg-indigo-50/60 rounded-lg border border-indigo-100">
-                            <span className="text-sm font-medium text-indigo-700 mr-2">
+                    <div className="px-3 pb-2">
+                        <div className="flex items-center gap-1.5 flex-wrap p-2 bg-indigo-50/60 rounded-md border border-indigo-100">
+                            <span className="text-xs font-medium text-indigo-700 mr-1">
                                 Actions for: <strong>{selectedStudent.name}</strong>
                             </span>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setSelectedStudentId(selectedStudent.id)}
-                                className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                className="h-6 text-[11px] px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                             >
-                                <FileText className="h-4 w-4 mr-1" /> Details
+                                <FileText className="h-3 w-3 mr-1" /> Details
                             </Button>
                             <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => openCourseDialog(selectedStudent)}
-                                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                                className="h-6 text-[11px] px-2 border-amber-200 text-amber-700 hover:bg-amber-50"
                             >
-                                <BookOpen className="h-4 w-4 mr-1" /> Courses
+                                <BookOpen className="h-3 w-3 mr-1" /> Courses
                             </Button>
                             {selectedStudent.aadharPhoto && !selectedStudent.isVerified && (
                                 <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => setPhotoDialog({ title: "Aadhar Photo", url: selectedStudent.aadharPhoto! })}
-                                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                    className="h-6 text-[11px] px-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                                 >
                                     View Aadhar
                                 </Button>
@@ -411,7 +412,7 @@ export const StudentManagement = () => {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => setPhotoDialog({ title: "10th Marksheet", url: selectedStudent.marksheet10th! })}
-                                    className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                                    className="h-6 text-[11px] px-2 border-purple-200 text-purple-700 hover:bg-purple-50"
                                 >
                                     View 10th Result
                                 </Button>
@@ -421,9 +422,9 @@ export const StudentManagement = () => {
                                     size="sm"
                                     onClick={() => doVerify(selectedStudent)}
                                     disabled={actionLoading === selectedStudent.id}
-                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    className="h-6 text-[11px] px-2 bg-green-600 hover:bg-green-700 text-white"
                                 >
-                                    <ShieldCheck className="h-4 w-4 mr-1" />
+                                    <ShieldCheck className="h-3 w-3 mr-1" />
                                     {actionLoading === selectedStudent.id ? "..." : "Verify"}
                                 </Button>
                             )}
@@ -433,9 +434,9 @@ export const StudentManagement = () => {
                                     variant="outline"
                                     onClick={() => doUnverify(selectedStudent)}
                                     disabled={actionLoading === selectedStudent.id}
-                                    className="border-yellow-200 text-yellow-600 hover:bg-yellow-50"
+                                    className="h-6 text-[11px] px-2 border-yellow-200 text-yellow-600 hover:bg-yellow-50"
                                 >
-                                    <ShieldOff className="h-4 w-4 mr-1" /> Unverify
+                                    <ShieldOff className="h-3 w-3 mr-1" /> Unverify
                                 </Button>
                             )}
                             {!selectedStudent.isDeleted && !selectedStudent.isSuspended && (
@@ -444,9 +445,9 @@ export const StudentManagement = () => {
                                     variant="outline"
                                     onClick={() => setSuspendDialog(selectedStudent)}
                                     disabled={actionLoading === selectedStudent.id}
-                                    className="border-red-200 text-red-600 hover:bg-red-50"
+                                    className="h-6 text-[11px] px-2 border-red-200 text-red-600 hover:bg-red-50"
                                 >
-                                    <ShieldOff className="h-4 w-4 mr-1" /> Suspend
+                                    <ShieldOff className="h-3 w-3 mr-1" /> Suspend
                                 </Button>
                             )}
                             {!selectedStudent.isDeleted && selectedStudent.isSuspended && (
@@ -455,9 +456,9 @@ export const StudentManagement = () => {
                                     variant="outline"
                                     onClick={() => doUnsuspend(selectedStudent)}
                                     disabled={actionLoading === selectedStudent.id}
-                                    className="border-green-200 text-green-600 hover:bg-green-50"
+                                    className="h-6 text-[11px] px-2 border-green-200 text-green-600 hover:bg-green-50"
                                 >
-                                    <ShieldCheck className="h-4 w-4 mr-1" /> Reinstate
+                                    <ShieldCheck className="h-3 w-3 mr-1" /> Reinstate
                                 </Button>
                             )}
                             {selectedStudent.isDeleted ? (
@@ -467,17 +468,18 @@ export const StudentManagement = () => {
                                         variant="outline"
                                         onClick={() => doRestore(selectedStudent)}
                                         disabled={actionLoading === selectedStudent.id}
-                                        className="border-green-200 text-green-600 hover:bg-green-50"
+                                        className="h-6 text-[11px] px-2 border-green-200 text-green-600 hover:bg-green-50"
                                     >
-                                        <RefreshCw className="h-4 w-4 mr-1" /> Restore
+                                        <RefreshCw className="h-3 w-3 mr-1" /> Restore
                                     </Button>
                                     <Button
                                         size="sm"
                                         variant="destructive"
                                         onClick={() => setPermanentDeleteDialog(selectedStudent)}
                                         disabled={actionLoading === selectedStudent.id}
+                                        className="h-6 text-[11px] px-2"
                                     >
-                                        <Trash2 className="h-4 w-4 mr-1" /> Delete Permanently
+                                        <Trash2 className="h-3 w-3 mr-1" /> Delete Permanently
                                     </Button>
                                 </>
                             ) : (
@@ -486,20 +488,22 @@ export const StudentManagement = () => {
                                     variant="destructive"
                                     onClick={() => setDeleteDialog(selectedStudent)}
                                     disabled={actionLoading === selectedStudent.id}
+                                    className="h-6 text-[11px] px-2"
                                 >
-                                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                    <Trash2 className="h-3 w-3 mr-1" /> Remove
                                 </Button>
                             )}
                         </div>
                     </div>
                 )}
-                <CardContent>
+                </div>
+                <CardContent className="overflow-y-auto max-h-[55vh] p-2">
                     {loading ? (
-                        <div className="space-y-3">
-                            {[...Array(4)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-gray-200 animate-pulse" />)}
+                        <div className="space-y-1.5">
+                            {[...Array(4)].map((_, i) => <div key={i} className="h-12 rounded-md bg-gray-200 animate-pulse" />)}
                         </div>
                     ) : filtered.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
+                        <div className="text-center py-8 text-gray-500 text-sm">
                             {pagination.total === 0 && !debouncedSearch
                                 ? "No students registered yet. Students who register will appear here."
                                 : debouncedSearch
@@ -507,46 +511,44 @@ export const StudentManagement = () => {
                                     : `No ${viewMode} students on this page`}
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-1">
                             {filtered.map(student => (
                                 <div
                                     key={student.id}
-                                    className={`p-4 border-2 rounded-xl transition-all cursor-pointer ${
+                                    className={`px-3 py-2 border rounded-md transition-all cursor-pointer ${
                                         selectedStudent?.id === student.id
                                             ? "border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-200"
-                                            : "border-transparent hover:bg-gray-50 hover:border-gray-200"
+                                            : "border-gray-100 hover:bg-gray-50 hover:border-gray-300"
                                     }`}
                                     onClick={() => setSelectedStudent(selectedStudent?.id === student.id ? null : student)}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
-                                                {student.name.charAt(0).toUpperCase()}
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs flex-shrink-0">
+                                            {student.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <p className="font-semibold text-sm">{student.name}</p>
+                                                {selectedStudent?.id === student.id && (
+                                                    <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px] px-1.5 py-0">Selected</Badge>
+                                                )}
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-semibold">{student.name}</p>
-                                                    {selectedStudent?.id === student.id && (
-                                                        <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">Selected</Badge>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1 text-sm text-gray-500">
-                                                    <Mail className="h-3 w-3" />{student.email}
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                                    <Badge variant={student.isVerified ? "default" : "outline"} className={student.isVerified ? "bg-green-500 text-white" : ""}>
-                                                        {student.isVerified ? "Verified" : "Unverified"}
-                                                    </Badge>
-                                                    {student.isSuspended && (
-                                                        <Badge className="bg-red-100 text-red-700">Suspended</Badge>
-                                                    )}
-                                                    {student.batchName && (
-                                                        <Badge variant="outline">{student.batchName}</Badge>
-                                                    )}
-                                                    <span className="text-xs text-gray-400">
-                                                        Joined {new Date(student.createdAt).toLocaleDateString("en-IN")}
-                                                    </span>
-                                                </div>
+                                            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                                <span className="flex items-center gap-1 text-xs text-gray-500">
+                                                    <Mail className="h-2.5 w-2.5" />{student.email}
+                                                </span>
+                                                <Badge variant={student.isVerified ? "default" : "outline"} className={`text-[10px] px-1 py-0 ${student.isVerified ? "bg-green-500 text-white" : ""}`}>
+                                                    {student.isVerified ? "Verified" : "Unverified"}
+                                                </Badge>
+                                                {student.isSuspended && (
+                                                    <Badge className="bg-red-100 text-red-700 text-[10px] px-1 py-0">Suspended</Badge>
+                                                )}
+                                                {student.batchName && (
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0">{student.batchName}</Badge>
+                                                )}
+                                                <span className="text-[10px] text-gray-400">
+                                                    Joined {new Date(student.createdAt).toLocaleDateString("en-IN")}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
