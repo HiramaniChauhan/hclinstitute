@@ -81,7 +81,9 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
     additionalLinks: [],
     siteNotices: [],
     welcomeVideoUrl: "",
-    wallOfFameBottomImage: ""
+    wallOfFameBottomImage: "",
+    heroImageLeft: "",
+    heroImageRight: ""
   });
 
   useEffect(() => {
@@ -109,6 +111,8 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
             additionalLinks: 'additionalLinks',
             welcomeVideoUrl: 'welcomeVideoUrl',
             wallOfFameBottomImage: 'wallOfFameBottomImage',
+            heroImageLeft: 'heroImageLeft',
+            heroImageRight: 'heroImageRight',
           };
 
           setAbout(prevAbout => {
@@ -210,62 +214,35 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden z-10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
-          {/* Left Text */}
-          <div className="flex-1 text-left">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight tracking-tight text-white">
-              New standard <br />
-              <span className="text-gray-300">in education.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-lg font-light leading-relaxed">
-              {about.instituteDescription}
-            </p>
-            <div className="flex flex-col sm:flex-row justify-start gap-4">
-              <Button
-                size="lg"
-                onClick={onRegister}
-                variant="outline"
-                className="h-12 px-8 text-sm border-[#ef5350] text-[#ef5350] bg-transparent hover:bg-[#ef5350] hover:text-white rounded font-medium transition-all uppercase tracking-wider"
-              >
-                DISCOVER PLATFORM
-              </Button>
-            </div>
-
-
-          </div>
-
-          {/* Right Graphic Placeholder */}
-          <div className="flex-1 w-full h-full flex justify-center items-center relative mt-10 md:mt-0">
-            <div className="absolute inset-0 w-[300px] md:w-[500px] h-[300px] md:h-[500px] max-w-[100vw] mx-auto bg-[#ef5350]/10 rounded-full blur-[100px] z-0"></div>
-            <div className="relative z-10 w-full max-w-[90vw] md:max-w-md bg-[#242428] border border-white/5 rounded-2xl p-6 md:p-8 shadow-2xl skew-y-3 transform hover:skew-y-0 transition-transform duration-500">
-              <div className="flex space-x-2 mb-6">
-                <div className="w-3 h-3 rounded-full bg-[#ef5350]"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-4 w-1/2 bg-white/10 rounded"></div>
-                <div className="h-32 w-full bg-[#ef5350]/20 rounded flex items-end p-4 gap-2">
-                  <div className="w-1/4 bg-[#ef5350] h-[40%] rounded-t"></div>
-                  <div className="w-1/4 bg-[#ef5350] h-[60%] rounded-t"></div>
-                  <div className="w-1/4 bg-[#ef5350] h-[30%] rounded-t"></div>
-                  <div className="w-1/4 bg-[#ef5350] h-[80%] rounded-t"></div>
+      {/* Hero Banner Section */}
+      {(about.heroImageLeft || about.heroImageRight) && (
+        <section className="relative pt-8 pb-8 px-4 sm:px-6 lg:px-8 overflow-hidden z-10 bg-[#1a1a1d]">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              {/* Left Image */}
+              {about.heroImageLeft && (
+                <div className="relative group overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-[#242428]">
+                  <img
+                    src={about.heroImageLeft}
+                    alt="Hero Banner Left"
+                    className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                  />
                 </div>
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
-                  <div className="flex -space-x-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-[#242428] bg-blue-500"></div>
-                    <div className="w-8 h-8 rounded-full border-2 border-[#242428] bg-[#ef5350]"></div>
-                    <div className="w-8 h-8 rounded-full border-2 border-[#242428] bg-yellow-500"></div>
-                  </div>
-                  <span className="text-white font-bold text-xl">Bright Minds</span>
+              )}
+              {/* Right Image */}
+              {about.heroImageRight && (
+                <div className="relative group overflow-hidden rounded-2xl border border-white/10 shadow-2xl bg-[#242428]">
+                  <img
+                    src={about.heroImageRight}
+                    alt="Hero Banner Right"
+                    className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                  />
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Courses Section as Liquid "Multiply wealth" Cards */}
       <section className="py-24 bg-[#141416]">

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram, Plus, Trash2, Link as LinkIcon, Pencil, X, AlertTriangle, Video } from "lucide-react";
+import { Info, Save, Upload, User, Mail, Phone, Linkedin, Instagram, Plus, Trash2, Link as LinkIcon, Pencil, X, AlertTriangle, Video, ImageIcon, RotateCw, Maximize, Square, RectangleHorizontal, Image as ImageLucide } from "lucide-react";
 import { useState, useEffect, ChangeEvent } from "react";
 import { fetchAboutInfo, updateAboutInfo } from "@/api/portalApi";
 import { toast } from "sonner";
@@ -35,16 +35,20 @@ export const AboutManagement = () => {
     additionalLinks: [],
     siteNotices: [] as string[],
     welcomeVideoUrl: "",
-    wallOfFameBottomImage: ""
+    wallOfFameBottomImage: "",
+    heroImageLeft: "",
+    heroImageRight: ""
   });
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingNotice, setEditingNotice] = useState(false);
   const [noticeLoading, setNoticeLoading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [cropTarget, setCropTarget] = useState<'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage' | null>(null);
+  const [cropTarget, setCropTarget] = useState<'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage' | 'heroImageLeft' | 'heroImageRight' | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [cropAspect, setCropAspect] = useState<number | undefined>(undefined);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   useEffect(() => {
@@ -101,7 +105,7 @@ export const AboutManagement = () => {
     setAboutData((prev: any) => ({ ...prev, additionalLinks: newLinks }));
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldName: 'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage') => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldName: 'directorPhoto' | 'instituteLogo' | 'wallOfFameBottomImage' | 'heroImageLeft' | 'heroImageRight') => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -110,6 +114,13 @@ export const AboutManagement = () => {
         setCropTarget(fieldName);
         setCrop({ x: 0, y: 0 });
         setZoom(1);
+        setRotation(0);
+        // Set default aspect based on target
+        if (fieldName === 'directorPhoto' || fieldName === 'instituteLogo') {
+          setCropAspect(1);
+        } else {
+          setCropAspect(undefined); // free crop
+        }
         // Clear input so same file can be selected again
         e.target.value = '';
       };
@@ -124,7 +135,7 @@ export const AboutManagement = () => {
   const handleCropSave = async () => {
     if (imageToCrop && croppedAreaPixels && cropTarget) {
       try {
-        const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels);
+        const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels, rotation);
         setAboutData((prev: any) => ({ ...prev, [cropTarget]: croppedImage }));
         setImageToCrop(null);
         setCropTarget(null);
@@ -132,6 +143,14 @@ export const AboutManagement = () => {
         console.error("Failed to crop image:", e);
         toast.error("Failed to crop image");
       }
+    }
+  };
+
+  const handleUseOriginal = () => {
+    if (imageToCrop && cropTarget) {
+      setAboutData((prev: any) => ({ ...prev, [cropTarget]: imageToCrop }));
+      setImageToCrop(null);
+      setCropTarget(null);
     }
   };
 
@@ -489,6 +508,106 @@ export const AboutManagement = () => {
         </CardContent>
       </Card>
 
+      {/* Hero Banner Images Section */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-600">
+            <ImageIcon className="h-5 w-5" />
+            Home Page Hero Banner Images
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">These two images appear side by side at the top of the home page, right below the header. Upload both for a balanced layout.</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Hero Image */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-700">Left Image</h4>
+              <div className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative overflow-hidden group ${!editing ? 'opacity-70 pointer-events-none' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => handleFileChange(e, 'heroImageLeft')}
+                  disabled={!editing}
+                />
+                {aboutData.heroImageLeft ? (
+                  <div className="relative h-40 w-full">
+                    <img src={aboutData.heroImageLeft} alt="Left Hero Image Preview" className="h-full w-full object-cover rounded" />
+                    {editing && (
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded">
+                        <Upload className="h-6 w-6 mb-1" />
+                        <span className="text-sm">Change Image</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-600">Upload Left Image</p>
+                    <p className="text-sm text-gray-500 mt-1">PNG, JPG files only</p>
+                  </div>
+                )}
+              </div>
+              {aboutData.heroImageLeft && editing && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => setAboutData((prev: any) => ({ ...prev, heroImageLeft: "" }))}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Right Hero Image */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2 text-gray-700">Right Image</h4>
+              <div className={`border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative overflow-hidden group ${!editing ? 'opacity-70 pointer-events-none' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => handleFileChange(e, 'heroImageRight')}
+                  disabled={!editing}
+                />
+                {aboutData.heroImageRight ? (
+                  <div className="relative h-40 w-full">
+                    <img src={aboutData.heroImageRight} alt="Right Hero Image Preview" className="h-full w-full object-cover rounded" />
+                    {editing && (
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded">
+                        <Upload className="h-6 w-6 mb-1" />
+                        <span className="text-sm">Change Image</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-600">Upload Right Image</p>
+                    <p className="text-sm text-gray-500 mt-1">PNG, JPG files only</p>
+                  </div>
+                )}
+              </div>
+              {aboutData.heroImageRight && editing && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => setAboutData((prev: any) => ({ ...prev, heroImageRight: "" }))}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Remove
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Wall of Fame Bottom Image Section */}
       <Card>
         <CardHeader>
@@ -547,42 +666,112 @@ export const AboutManagement = () => {
         </Button>
       )}
 
-      {/* Crop Modal */}
+      {/* WhatsApp-Style Crop Modal */}
       <Dialog open={!!imageToCrop} onOpenChange={() => setImageToCrop(null)}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Crop Image</DialogTitle>
-          </DialogHeader>
-          <div className="relative h-64 w-full bg-black/5 rounded-md overflow-hidden">
+        <DialogContent className="sm:max-w-2xl p-0 bg-[#1a1a1d] border-[#333] text-white overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 pt-5 pb-2">
+            <DialogTitle className="text-white text-lg font-semibold">Crop & Adjust</DialogTitle>
+            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-white/10" onClick={handleUseOriginal}>
+              <ImageLucide className="h-4 w-4 mr-1.5" /> Use Original
+            </Button>
+          </div>
+
+          {/* Crop Area */}
+          <div className="relative w-full bg-black" style={{ height: '400px' }}>
             {imageToCrop && (
               <Cropper
                 image={imageToCrop}
                 crop={crop}
                 zoom={zoom}
-                aspect={1}
+                rotation={rotation}
+                aspect={cropAspect}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
+                onRotationChange={setRotation}
+                showGrid={true}
+                objectFit="contain"
               />
             )}
           </div>
-          <div className="flex items-center gap-4 py-4">
-            <span className="text-sm font-medium">Zoom</span>
-            <input
-              type="range"
-              value={zoom}
-              min={0.1}
-              max={3}
-              step={0.1}
-              aria-labelledby="Zoom"
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-full flex-1"
-            />
+
+          {/* Controls */}
+          <div className="px-5 py-4 space-y-4 bg-[#1a1a1d]">
+            {/* Aspect Ratio Presets */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-400 mr-2 uppercase tracking-wider">Ratio</span>
+              <div className="flex gap-1.5">
+                {[
+                  { label: 'Free', value: undefined, icon: <Maximize className="h-3.5 w-3.5" /> },
+                  { label: '1:1', value: 1, icon: <Square className="h-3.5 w-3.5" /> },
+                  { label: '4:3', value: 4 / 3, icon: <RectangleHorizontal className="h-3.5 w-3.5" /> },
+                  { label: '16:9', value: 16 / 9, icon: <RectangleHorizontal className="h-3.5 w-3.5" /> },
+                  { label: '3:4', value: 3 / 4, icon: <RectangleHorizontal className="h-3.5 w-3.5 rotate-90" /> },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setCropAspect(preset.value)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      cropAspect === preset.value
+                        ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/30'
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    {preset.icon}
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Zoom Slider */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider w-12">Zoom</span>
+              <input
+                type="range"
+                value={zoom}
+                min={0.1}
+                max={3}
+                step={0.05}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-[#00a884]"
+              />
+              <span className="text-xs text-gray-400 w-10 text-right">{Math.round(zoom * 100)}%</span>
+            </div>
+
+            {/* Rotation Slider */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider w-12">Rotate</span>
+              <input
+                type="range"
+                value={rotation}
+                min={0}
+                max={360}
+                step={1}
+                onChange={(e) => setRotation(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-[#00a884]"
+              />
+              <button
+                type="button"
+                onClick={() => setRotation((r) => (r + 90) % 360)}
+                className="flex items-center gap-1 px-2 py-1 rounded bg-white/10 text-gray-300 hover:bg-white/20 text-xs transition-all"
+              >
+                <RotateCw className="h-3.5 w-3.5" /> {rotation}°
+              </button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setImageToCrop(null)}>Cancel</Button>
-            <Button onClick={handleCropSave}>Confirm Crop</Button>
-          </DialogFooter>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 px-5 pb-5">
+            <Button variant="ghost" onClick={() => setImageToCrop(null)} className="text-gray-300 hover:text-white hover:bg-white/10">
+              Cancel
+            </Button>
+            <Button onClick={handleCropSave} className="bg-[#00a884] hover:bg-[#00c49a] text-white border-none font-semibold px-6 shadow-lg shadow-[#00a884]/20">
+              ✓ Apply Crop
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
