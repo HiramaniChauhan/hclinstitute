@@ -24,6 +24,7 @@ export const AboutManagement = () => {
     contactLinkedin: "",
     contactInstagram: "",
     instituteName: "",
+    instituteTagline: "",
     establishedYear: "",
     instituteDescription: "",
     address: "",
@@ -436,6 +437,7 @@ export const AboutManagement = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Input placeholder="Institute Name" name="instituteName" value={aboutData.instituteName} onChange={handleChange} disabled={!editing} className={!editing ? "bg-gray-50 cursor-not-allowed" : ""} />
+          <Input placeholder="Institute Tagline (e.g. Your Dream, Our Commitment)" name="instituteTagline" value={aboutData.instituteTagline} onChange={handleChange} disabled={!editing} className={!editing ? "bg-gray-50 cursor-not-allowed" : ""} />
           <Input placeholder="Established Year" name="establishedYear" value={aboutData.establishedYear} onChange={handleChange} disabled={!editing} className={!editing ? "bg-gray-50 cursor-not-allowed" : ""} />
           <Textarea
             placeholder="Institute Description"

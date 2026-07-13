@@ -72,6 +72,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
     directorBio: "",
     directorDesignation: "",
     instituteName: "HCL Institute",
+    instituteTagline: "Your Dream, Our Commitment",
     instituteLogo: "/logo.png",
     instituteDescription: "",
     contactLinkedin: "#",
@@ -99,6 +100,7 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
           // Map API fields to state fields
           const fieldMapping: Record<string, string> = {
             instituteName: 'instituteName',
+            instituteTagline: 'instituteTagline',
             instituteDescription: 'instituteDescription',
             directorName: 'directorName',
             directorBio: 'directorBio',
@@ -173,10 +175,15 @@ export const HomePage = ({ onLogin, onRegister, onAdminLogin, onViewAllCourses, 
                   <span className="text-2xl md:text-5xl font-black text-white px-2 md:px-4">{about.instituteName?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'HC'}</span>
                 </div>
               )}
-              <div className="flex items-center ml-2 md:ml-4">
+              <div className="flex flex-col justify-center ml-2 md:ml-4">
                 <h1 className="text-xl md:text-3xl font-bold tracking-tight text-white line-clamp-2">
                   {about.instituteName || 'Institute Name'}
                 </h1>
+                {about.instituteTagline && (
+                  <p className="text-[10px] md:text-sm font-medium tracking-[0.15em] md:tracking-[0.25em] text-white/70 uppercase mt-0.5 md:mt-1">
+                    {about.instituteTagline}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 items-center">
