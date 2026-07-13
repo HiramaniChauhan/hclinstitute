@@ -654,11 +654,13 @@ app.post("/api/auth/login", loginLimiter, validate(loginSchema), async (req, res
             return res.status(403).json({ error: "Your account has been deleted. Please register again to restore your account." });
         }
 
-        if (user.provider === "local") {
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return res.status(401).json({ error: "Invalid credentials" });
-            }
+        if (user.provider !== "local") {
+            return res.status(401).json({ error: "This account uses Google login. Please sign in with Google." });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid credentials" });
         }
 
         const sessionId = Date.now().toString();
@@ -828,7 +830,7 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
 });
 
-app.use("/api/about", aboutRouter);
+app.use("/api/about", express.json({ limit: '50mb' }), aboutRouter);
 app.use("/api/terms", termsRouter);
 
 // Error handling middleware

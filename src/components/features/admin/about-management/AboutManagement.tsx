@@ -8,7 +8,7 @@ import { useState, useEffect, ChangeEvent } from "react";
 import { fetchAboutInfo, updateAboutInfo } from "@/api/portalApi";
 import { toast } from "sonner";
 import Cropper from 'react-easy-crop';
-import getCroppedImg from '@/utils/cropImage';
+import getCroppedImg, { compressBase64Image } from '@/utils/cropImage';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export const AboutManagement = () => {
@@ -74,9 +74,17 @@ export const AboutManagement = () => {
       await updateAboutInfo(aboutData);
       toast.success("About Management data saved successfully!");
       setEditing(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save about info:", error);
-      toast.error("Failed to save changes");
+      // Try to parse a meaningful error message from the server
+      let errorMsg = "Failed to save changes";
+      try {
+        const parsed = JSON.parse(error?.message || "{}");
+        if (parsed.error) errorMsg = parsed.error;
+      } catch {
+        if (error?.message) errorMsg = error.message;
+      }
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -147,9 +155,15 @@ export const AboutManagement = () => {
     }
   };
 
-  const handleUseOriginal = () => {
+  const handleUseOriginal = async () => {
     if (imageToCrop && cropTarget) {
-      setAboutData((prev: any) => ({ ...prev, [cropTarget]: imageToCrop }));
+      try {
+        const compressed = await compressBase64Image(imageToCrop);
+        setAboutData((prev: any) => ({ ...prev, [cropTarget]: compressed }));
+      } catch {
+        // Fallback to original if compression fails
+        setAboutData((prev: any) => ({ ...prev, [cropTarget]: imageToCrop }));
+      }
       setImageToCrop(null);
       setCropTarget(null);
     }
